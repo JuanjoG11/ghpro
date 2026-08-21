@@ -618,3 +618,94 @@ window.resetAndReseed = async function() {
     showLoading(false);
   }
 };
+
+/* ============================================================
+   INCAPACIDADES — capa de datos
+   ============================================================ */
+const Incapacidades = {
+
+  async getAll() {
+    const { data, error } = await sb
+      .from('incapacidades')
+      .select('*')
+      .order('fecha_inicio', { ascending: false });
+    if (sbErr(error, 'incapacidades.getAll')) return [];
+    return data;
+  },
+
+  async getByTrabajador(trabajadorId) {
+    const { data, error } = await sb
+      .from('incapacidades')
+      .select('*')
+      .eq('trabajador_id', trabajadorId)
+      .order('fecha_inicio', { ascending: false });
+    if (sbErr(error, 'incapacidades.getByTrabajador')) return [];
+    return data;
+  },
+
+  async insert(row) {
+    const { data, error } = await sb
+      .from('incapacidades')
+      .insert([row])
+      .select()
+      .single();
+    if (sbErr(error, 'incapacidades.insert')) return null;
+    return data;
+  },
+
+  async update(id, row) {
+    const { data, error } = await sb
+      .from('incapacidades')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+    if (sbErr(error, 'incapacidades.update')) return null;
+    return data;
+  },
+
+  async updateStatus(id, status) {
+    const { data, error } = await sb
+      .from('incapacidades')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+    if (sbErr(error, 'incapacidades.updateStatus')) return null;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await sb
+      .from('incapacidades')
+      .delete()
+      .eq('id', id);
+    return !sbErr(error, 'incapacidades.delete');
+  },
+
+  // Resumen agrupado por trabajador (calculado en cliente desde cache)
+  resumenPorTrabajador(lista) {
+    const map = {};
+    lista.forEach(i => {
+      const k = i.trabajador_id;
+      if (!map[k]) map[k] = {
+        trabajador_id: k,
+        trabajador_nombre: i.trabajador_nombre,
+        total: 0, total_dias: 0,
+        pagadas: 0, en_tramite: 0, radicadas: 0,
+        sin_fisico: 0, sin_historia: 0,
+        ultima_fecha: null,
+      };
+      const r = map[k];
+      r.total++;
+      r.total_dias += (i.dias || 0);
+      if (i.status === 'pagada')     r.pagadas++;
+      if (i.status === 'en_tramite') r.en_tramite++;
+      if (i.status === 'radicada')   r.radicadas++;
+      if (!i.tiene_fisico)           r.sin_fisico++;
+      if (!i.historia_clinica)       r.sin_historia++;
+      if (!r.ultima_fecha || i.fecha_inicio > r.ultima_fecha) r.ultima_fecha = i.fecha_inicio;
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  },
+};

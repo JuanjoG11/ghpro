@@ -473,6 +473,14 @@
     </div>
 
     <div class="nav-section">
+      <div class="nav-label">Personal</div>
+      <div class="nav-item" data-page="incapacidades">
+        <span class="nav-icon">🏥</span> Incapacidades
+        <span class="nav-badge warning" id="incapBadge" style="display:none">0</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
       <div class="nav-label">Sistema</div>
       <div class="nav-item" data-page="alertas">
         <span class="nav-icon">🔔</span> Alertas
@@ -740,6 +748,139 @@
       </div>
     </div>
 
+    <!-- ===== INCAPACIDADES ===== -->
+    <div class="page" id="page-incapacidades">
+      <div class="page-header">
+        <div class="page-title">🏥 <span>Incapacidades</span></div>
+        <div class="page-subtitle">Seguimiento de incapacidades médicas del personal</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalIncapacidad')">➕ Nueva incapacidad</button>
+          <button class="btn btn-secondary" onclick="exportarIncapacidades()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Stats rápidas -->
+      <div class="stats-grid" id="incapStats"></div>
+
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body" style="padding:14px 20px">
+          <div class="search-bar" style="margin-bottom:0">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="search-input" id="searchIncap"
+                placeholder="Buscar por nombre, diagnóstico, radicado..." oninput="renderIncapacidades()">
+            </div>
+            <select class="filter-select" id="filterIncapStatus" onchange="renderIncapacidades()">
+              <option value="">Todos los estados</option>
+              <option value="ingresada">Ingresada</option>
+              <option value="cobrada">Cobrada</option>
+              <option value="transcrita">Transcrita</option>
+              <option value="pagada">Pagada</option>
+              <option value="en_tramite">En trámite</option>
+              <option value="radicada">Radicada</option>
+            </select>
+            <select class="filter-select" id="filterIncapTipo" onchange="renderIncapacidades()">
+              <option value="">Todos los tipos</option>
+              <option value="EG">Enfermedad General</option>
+              <option value="EP">Enfermedad Profesional</option>
+              <option value="AT">Accidente de Trabajo</option>
+              <option value="LM">Licencia Maternidad</option>
+            </select>
+            <select class="filter-select" id="filterIncapFisico" onchange="renderIncapacidades()">
+              <option value="">Físico: todos</option>
+              <option value="si">Con físico</option>
+              <option value="no">Sin físico</option>
+            </select>
+            <select class="filter-select" id="filterIncapHC" onchange="renderIncapacidades()">
+              <option value="">HC: todos</option>
+              <option value="si">Con historia clínica</option>
+              <option value="no">Sin historia clínica</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs: lista / por trabajador -->
+      <div class="tabs" id="incapTabs">
+        <button class="tab-btn active" data-tab="tab-incap-lista">📋 Listado</button>
+        <button class="tab-btn" data-tab="tab-incap-pendientes">⏳ Pendientes</button>
+        <button class="tab-btn" data-tab="tab-incap-trabajador">👤 Por trabajador</button>
+      </div>
+
+      <!-- Tab: listado general -->
+      <div class="tab-content active" id="tab-incap-lista">
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Días</th>
+                    <th>Tipo</th>
+                    <th>Diagnóstico</th>
+                    <th>Estado</th>
+                    <th>Físico</th>
+                    <th>HC</th>
+                    <th>Radicado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaIncapacidades"></tbody>
+              </table>
+            </div>
+            <div id="emptyIncapacidades" class="empty-state" style="display:none">
+              <div class="empty-state-icon">🏥</div>
+              <div class="empty-state-text">No hay incapacidades registradas</div>
+              <div class="empty-state-sub">Haz clic en "Nueva incapacidad" para empezar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: pendientes (sin físico o sin HC) -->
+      <div class="tab-content" id="tab-incap-pendientes">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="pendientesGrid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">📂 Sin documento físico</span></div>
+            <div class="card-body" id="listaSinFisico"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">🗂️ Sin historia clínica</span></div>
+            <div class="card-body" id="listaSinHC"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: resumen por trabajador -->
+      <div class="tab-content" id="tab-incap-trabajador">
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Total</th>
+                    <th>Días</th>
+                    <th>Pagadas</th>
+                    <th>En trámite</th>
+                    <th>Sin físico</th>
+                    <th>Sin HC</th>
+                    <th>Última</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaIncapPorTrabajador"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== ALERTAS ===== -->
     <div class="page" id="page-alertas">
       <div class="page-header">
@@ -935,6 +1076,95 @@
 
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- Modal Incapacidad -->
+<div class="modal-overlay" id="modalIncapacidad">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title" id="modalIncapTitle">🏥 Nueva Incapacidad</div>
+      <button class="modal-close" onclick="closeModal('modalIncapacidad')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="iId">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Trabajador *</label>
+          <select id="iTrabajador"><option value="">Seleccionar...</option></select>
+        </div>
+        <div class="form-group">
+          <label>Fecha inicio *</label>
+          <input type="date" id="iFechaInicio">
+        </div>
+        <div class="form-group">
+          <label>Fecha fin</label>
+          <input type="date" id="iFechaFin">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="iTipo">
+            <option value="EG">EG — Enfermedad General</option>
+            <option value="EP">EP — Enfermedad Profesional</option>
+            <option value="AT">AT — Accidente de Trabajo</option>
+            <option value="LM">LM — Licencia Maternidad</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Entidad / IPS</label>
+          <input type="text" id="iEntidad" placeholder="EPS, ARL, nombre entidad...">
+        </div>
+        <div class="form-group">
+          <label>Código CIE-10</label>
+          <input type="text" id="iCodigoDx" placeholder="Ej: J06.9, M54.5...">
+        </div>
+        <div class="form-group">
+          <label>Diagnóstico</label>
+          <input type="text" id="iDiagnostico" placeholder="Descripción del diagnóstico">
+        </div>
+        <div class="form-group">
+          <label>Estado *</label>
+          <select id="iStatus">
+            <option value="ingresada">Ingresada</option>
+            <option value="cobrada">Cobrada</option>
+            <option value="transcrita">Transcrita</option>
+            <option value="pagada">Pagada</option>
+            <option value="en_tramite">En trámite</option>
+            <option value="radicada">Radicada</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>N° Radicado</label>
+          <input type="text" id="iRadicado" placeholder="Número de radicado">
+        </div>
+        <div class="form-group">
+          <label>Valor liquidado ($)</label>
+          <input type="number" id="iValor" placeholder="0" min="0" step="100">
+        </div>
+        <div class="form-group">
+          <label>Documento físico</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            <input type="checkbox" id="iFisico" style="width:20px;height:20px;cursor:pointer;accent-color:var(--accent)">
+            <span id="iFisicoLabel" style="font-size:13px;color:var(--text-secondary)">No recibido</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Historia clínica</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+            <input type="checkbox" id="iHistoria" style="width:20px;height:20px;cursor:pointer;accent-color:var(--accent)">
+            <span id="iHistoriaLabel" style="font-size:13px;color:var(--text-secondary)">No recibida</span>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Observaciones</label>
+          <textarea id="iObs" placeholder="Notas adicionales sobre la incapacidad..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalIncapacidad')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarIncapacidad()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Supabase SDK (CDN, ESM-compatible UMD build) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>

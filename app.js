@@ -1111,3 +1111,375 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateAlertBadge(count);
   }, 5 * 60 * 1000);
 });
+
+// ═══════════════════════════════════════════
+// INCAPACIDADES — helpers de presentación
+// ═══════════════════════════════════════════
+
+// Cache propio para incapacidades
+Cache.incapacidades = null;
+
+const INCAP_STATUS = {
+  ingresada:  { label: 'Ingresada',   cls: 'badge-neutral',  icon: '📥' },
+  cobrada:    { label: 'Cobrada',     cls: 'badge-info',     icon: '📤' },
+  transcrita: { label: 'Transcrita',  cls: 'badge-warning',  icon: '📝' },
+  pagada:     { label: 'Pagada',      cls: 'badge-success',  icon: '✅' },
+  en_tramite: { label: 'En trámite',  cls: 'badge-warning',  icon: '⏳' },
+  radicada:   { label: 'Radicada',    cls: 'badge-info',     icon: '📂' },
+};
+
+const INCAP_TIPO = {
+  EG: { label: 'Enfermedad General',    short: 'EG', color: '#6c63ff' },
+  EP: { label: 'Enfermedad Profesional',short: 'EP', color: '#f7971e' },
+  AT: { label: 'Accidente de Trabajo',  short: 'AT', color: '#ff6584' },
+  LM: { label: 'Licencia Maternidad',   short: 'LM', color: '#43e97b' },
+};
+
+function statusBadgeIncap(status) {
+  const s = INCAP_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '•' };
+  return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
+}
+
+function tipoBadgeIncap(tipo) {
+  const t = INCAP_TIPO[tipo] || { short: tipo, color: 'var(--text-muted)' };
+  return `<span class="badge" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}44">${t.short}</span>`;
+}
+
+function fmtPeso(n) {
+  if (!n && n !== 0) return '—';
+  return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 }).format(n);
+}
+
+function iconCheck(val, siText = 'Sí', noText = 'No') {
+  return val
+    ? `<span style="color:var(--success);font-weight:600">✔ ${siText}</span>`
+    : `<span style="color:var(--danger);font-weight:600">✘ ${noText}</span>`;
+}
+
+// ═══════════════════════════════════════════
+// INCAPACIDADES — render principal
+// ═══════════════════════════════════════════
+async function renderIncapacidades() {
+  showLoading(true);
+  try {
+    if (!Cache.incapacidades) Cache.incapacidades = await Incapacidades.getAll();
+    if (!Cache.trabajadores)  Cache.trabajadores  = await Trabajadores.getAll();
+    poblarSelectTrabajadores('iTrabajador');
+
+    const lista = Cache.incapacidades;
+
+    // ── Stats ───────────────────────────────
+    const totalDias   = lista.reduce((s, i) => s + (i.dias || 0), 0);
+    const sinFisico   = lista.filter(i => !i.tiene_fisico).length;
+    const sinHC       = lista.filter(i => !i.historia_clinica).length;
+    const enTramite   = lista.filter(i => i.status === 'en_tramite' || i.status === 'radicada').length;
+
+    const statsEl = document.getElementById('incapStats');
+    if (statsEl) {
+      statsEl.innerHTML = [
+        { icon:'🏥', value: lista.length, label:'Total',        color:'var(--accent)' },
+        { icon:'📅', value: totalDias,    label:'Días acum.',   color:'var(--info)' },
+        { icon:'⏳', value: enTramite,    label:'En gestión',   color:'var(--warning)' },
+        { icon:'📂', value: sinFisico,    label:'Sin físico',   color: sinFisico  > 0 ? 'var(--danger)' : 'var(--success)' },
+        { icon:'🗂️', value: sinHC,        label:'Sin HC',       color: sinHC      > 0 ? 'var(--danger)' : 'var(--success)' },
+      ].map(s => `
+        <div class="stat-card" style="--card-color:${s.color}">
+          <div class="stat-icon">${s.icon}</div>
+          <div class="stat-value">${s.value}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>`).join('');
+    }
+
+    // Badge en sidebar
+    const pendientes = sinFisico + sinHC;
+    const incapBadge = document.getElementById('incapBadge');
+    if (incapBadge) { incapBadge.textContent = pendientes; incapBadge.style.display = pendientes > 0 ? '' : 'none'; }
+
+    // ── Aplicar filtros ─────────────────────
+    const q          = (document.getElementById('searchIncap')?.value || '').toLowerCase();
+    const fStatus    = document.getElementById('filterIncapStatus')?.value  || '';
+    const fTipo      = document.getElementById('filterIncapTipo')?.value    || '';
+    const fFisico    = document.getElementById('filterIncapFisico')?.value  || '';
+    const fHC        = document.getElementById('filterIncapHC')?.value      || '';
+
+    const filtered = lista.filter(i => {
+      const txt = [i.trabajador_nombre, i.diagnostico, i.codigo_dx, i.radicado, i.entidad, i.observaciones].join(' ').toLowerCase();
+      return (!q       || txt.includes(q))
+          && (!fStatus || i.status        === fStatus)
+          && (!fTipo   || i.tipo          === fTipo)
+          && (!fFisico || (fFisico === 'si' ? i.tiene_fisico : !i.tiene_fisico))
+          && (!fHC     || (fHC     === 'si' ? i.historia_clinica : !i.historia_clinica));
+    });
+
+    // ── Tab listado ─────────────────────────
+    _renderTablaIncap(filtered);
+
+    // ── Tab pendientes ──────────────────────
+    _renderPendientes(lista);
+
+    // ── Tab por trabajador ──────────────────
+    _renderResumenTrabajador(lista);
+
+  } finally { showLoading(false); }
+}
+
+function _renderTablaIncap(filtered) {
+  const tbody = document.getElementById('tablaIncapacidades');
+  const empty = document.getElementById('emptyIncapacidades');
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(i => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="background:${avatarColor(i.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
+            ${(i.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+          </div>
+          <span style="font-weight:600;font-size:13px">${i.trabajador_nombre}</span>
+        </div>
+      </td>
+      <td>${fmtDate(i.fecha_inicio)}</td>
+      <td>${fmtDate(i.fecha_fin)}</td>
+      <td>
+        ${i.dias != null
+          ? `<span style="font-weight:700;color:var(--accent)">${i.dias}d</span>`
+          : '<span style="color:var(--text-muted)">—</span>'}
+      </td>
+      <td>${tipoBadgeIncap(i.tipo)}</td>
+      <td>
+        <div style="max-width:160px">
+          ${i.codigo_dx ? `<span style="font-size:11px;color:var(--accent);font-weight:600">${i.codigo_dx}</span> ` : ''}
+          <span style="font-size:12px;color:var(--text-secondary)">${i.diagnostico || '—'}</span>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+          ${statusBadgeIncap(i.status)}
+          <select class="filter-select" style="font-size:11px;padding:3px 6px;margin-top:2px"
+            onchange="cambiarStatusIncap('${i.id}', this.value)">
+            ${Object.entries(INCAP_STATUS).map(([k,v]) =>
+              `<option value="${k}" ${i.status===k?'selected':''}>${v.icon} ${v.label}</option>`
+            ).join('')}
+          </select>
+        </div>
+      </td>
+      <td style="text-align:center">${iconCheck(i.tiene_fisico,'Sí','No')}</td>
+      <td style="text-align:center">${iconCheck(i.historia_clinica,'Sí','No')}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${i.radicado || '—'}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarIncapacidad('${i.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon"   title="Eliminar" onclick="eliminarIncapacidad('${i.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function _renderPendientes(lista) {
+  const sinFisico  = lista.filter(i => !i.tiene_fisico);
+  const sinHC      = lista.filter(i => !i.historia_clinica);
+
+  const renderMini = (arr) => arr.length === 0
+    ? '<div class="empty-state" style="padding:30px"><div class="empty-state-icon">✅</div><div class="empty-state-text">Todo en orden</div></div>'
+    : arr.map(i => `
+        <div class="alert-item info" style="margin-bottom:8px">
+          <div class="alert-icon">🏥</div>
+          <div class="alert-content" style="flex:1">
+            <div class="alert-title" style="font-size:13px">${i.trabajador_nombre}</div>
+            <div class="alert-desc">${fmtDate(i.fecha_inicio)}${i.fecha_fin ? ' → '+fmtDate(i.fecha_fin) : ''} · ${tipoBadgeIncap(i.tipo)}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="editarIncapacidad('${i.id}')">✏️</button>
+        </div>`).join('');
+
+  const sf = document.getElementById('listaSinFisico');
+  const sh = document.getElementById('listaSinHC');
+  if (sf) sf.innerHTML = renderMini(sinFisico);
+  if (sh) sh.innerHTML = renderMini(sinHC);
+
+  // Responsive
+  const grid = document.getElementById('pendientesGrid');
+  if (grid && window.innerWidth <= 768) grid.style.gridTemplateColumns = '1fr';
+}
+
+function _renderResumenTrabajador(lista) {
+  const resumen = Incapacidades.resumenPorTrabajador(lista);
+  const tbody   = document.getElementById('tablaIncapPorTrabajador');
+  if (!tbody) return;
+  if (!resumen.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:30px">Sin datos</td></tr>'; return; }
+
+  tbody.innerHTML = resumen.map(r => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="background:${avatarColor(r.trabajador_nombre)};width:30px;height:30px;font-size:11px">
+            ${(r.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+          </div>
+          <span style="font-weight:600">${r.trabajador_nombre}</span>
+        </div>
+      </td>
+      <td><strong>${r.total}</strong></td>
+      <td><span style="color:var(--accent);font-weight:700">${r.total_dias}d</span></td>
+      <td>${r.pagadas   > 0 ? `<span class="badge badge-success">${r.pagadas}</span>`   : '<span style="color:var(--text-muted)">0</span>'}</td>
+      <td>${r.en_tramite> 0 ? `<span class="badge badge-warning">${r.en_tramite}</span>`: '<span style="color:var(--text-muted)">0</span>'}</td>
+      <td>${r.sin_fisico> 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
+      <td>${r.sin_historia>0? `<span class="badge badge-danger">${r.sin_historia}</span>`:'<span style="color:var(--success)">✔</span>'}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${fmtDate(r.ultima_fecha)}</td>
+    </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// INCAPACIDADES — CRUD
+// ═══════════════════════════════════════════
+async function guardarIncapacidad() {
+  const id           = document.getElementById('iId').value;
+  const trabajadorId = document.getElementById('iTrabajador').value;
+  const fechaInicio  = document.getElementById('iFechaInicio').value;
+  if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
+  if (!fechaInicio)  return toast('La fecha de inicio es obligatoria', 'error');
+
+  const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
+  const fechaFin   = document.getElementById('iFechaFin').value || null;
+  const valor      = parseFloat(document.getElementById('iValor').value) || null;
+
+  const row = {
+    trabajador_id:     trabajadorId,
+    trabajador_nombre: trabajador?.nombre || '',
+    fecha_inicio:      fechaInicio,
+    fecha_fin:         fechaFin,
+    tipo:              document.getElementById('iTipo').value,
+    entidad:           document.getElementById('iEntidad').value.trim(),
+    codigo_dx:         document.getElementById('iCodigoDx').value.trim().toUpperCase(),
+    diagnostico:       document.getElementById('iDiagnostico').value.trim(),
+    status:            document.getElementById('iStatus').value,
+    radicado:          document.getElementById('iRadicado').value.trim(),
+    valor,
+    tiene_fisico:      document.getElementById('iFisico').checked,
+    historia_clinica:  document.getElementById('iHistoria').checked,
+    observaciones:     document.getElementById('iObs').value.trim(),
+  };
+
+  showLoading(true);
+  const result = id ? await Incapacidades.update(id, row) : await Incapacidades.insert(row);
+  showLoading(false);
+  if (!result) return;
+
+  Cache.incapacidades = null;
+  closeModal('modalIncapacidad');
+  resetIncapacidadForm();
+  await renderIncapacidades();
+  toast(id ? 'Incapacidad actualizada ✅' : 'Incapacidad registrada ✅');
+}
+
+function editarIncapacidad(id) {
+  const i = (Cache.incapacidades || []).find(x => x.id === id);
+  if (!i) return;
+  document.getElementById('iId').value             = i.id;
+  document.getElementById('iTrabajador').value     = i.trabajador_id;
+  document.getElementById('iFechaInicio').value    = i.fecha_inicio  ? i.fecha_inicio.split('T')[0]  : '';
+  document.getElementById('iFechaFin').value       = i.fecha_fin     ? i.fecha_fin.split('T')[0]     : '';
+  document.getElementById('iTipo').value           = i.tipo          || 'EG';
+  document.getElementById('iEntidad').value        = i.entidad       || '';
+  document.getElementById('iCodigoDx').value       = i.codigo_dx     || '';
+  document.getElementById('iDiagnostico').value    = i.diagnostico   || '';
+  document.getElementById('iStatus').value         = i.status        || 'ingresada';
+  document.getElementById('iRadicado').value       = i.radicado      || '';
+  document.getElementById('iValor').value          = i.valor         || '';
+  document.getElementById('iFisico').checked       = !!i.tiene_fisico;
+  document.getElementById('iHistoria').checked     = !!i.historia_clinica;
+  document.getElementById('iObs').value            = i.observaciones || '';
+  _updateFisicoLabel(); _updateHistoriaLabel();
+  document.getElementById('modalIncapTitle').textContent = '✏️ Editar Incapacidad';
+  openModal('modalIncapacidad');
+}
+
+async function eliminarIncapacidad(id) {
+  if (!confirm('¿Eliminar esta incapacidad? La acción no se puede deshacer.')) return;
+  showLoading(true);
+  const ok = await Incapacidades.delete(id);
+  showLoading(false);
+  if (!ok) return;
+  Cache.incapacidades = null;
+  await renderIncapacidades();
+  toast('Incapacidad eliminada', 'warning');
+}
+
+async function cambiarStatusIncap(id, status) {
+  showLoading(true);
+  const result = await Incapacidades.updateStatus(id, status);
+  showLoading(false);
+  if (!result) return;
+  // Actualizar cache en lugar de recargar todo
+  if (Cache.incapacidades) {
+    const idx = Cache.incapacidades.findIndex(x => x.id === id);
+    if (idx > -1) Cache.incapacidades[idx].status = status;
+  }
+  toast(`Estado → ${INCAP_STATUS[status]?.label || status} ✅`);
+  // Re-render solo los stats y tabla sin refetch
+  _renderTablaIncap(Cache.incapacidades || []);
+  _renderPendientes(Cache.incapacidades || []);
+  _renderResumenTrabajador(Cache.incapacidades || []);
+}
+
+function resetIncapacidadForm() {
+  ['iId','iFechaInicio','iFechaFin','iEntidad','iCodigoDx','iDiagnostico','iRadicado','iValor','iObs']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const selT = document.getElementById('iTrabajador'); if (selT) selT.value = '';
+  const tipo = document.getElementById('iTipo');       if (tipo) tipo.value = 'EG';
+  const stat = document.getElementById('iStatus');     if (stat) stat.value = 'ingresada';
+  const fis  = document.getElementById('iFisico');     if (fis)  fis.checked = false;
+  const hc   = document.getElementById('iHistoria');   if (hc)   hc.checked  = false;
+  _updateFisicoLabel(); _updateHistoriaLabel();
+  document.getElementById('modalIncapTitle').textContent = '🏥 Nueva Incapacidad';
+}
+
+// Labels dinámicos para checkboxes
+function _updateFisicoLabel() {
+  const el = document.getElementById('iFisicoLabel');
+  if (el) el.textContent = document.getElementById('iFisico')?.checked ? 'Recibido ✔' : 'No recibido';
+}
+function _updateHistoriaLabel() {
+  const el = document.getElementById('iHistoriaLabel');
+  if (el) el.textContent = document.getElementById('iHistoria')?.checked ? 'Recibida ✔' : 'No recibida';
+}
+
+// Listeners checkboxes del modal
+document.getElementById('iFisico')?.addEventListener('change', _updateFisicoLabel);
+document.getElementById('iHistoria')?.addEventListener('change', _updateHistoriaLabel);
+
+// Registrar incapacidades en el mapa de navegación
+// (sobreescribe el navigate existente para incluir el nuevo módulo)
+const _navigateOrig = navigate;
+window.navigate = function(pageId) {
+  if (pageId === 'incapacidades') {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const page = document.getElementById('page-incapacidades');
+    if (page) page.classList.add('active');
+    document.querySelectorAll('[data-page="incapacidades"]').forEach(n => n.classList.add('active'));
+    renderIncapacidades();
+    if (window.innerWidth <= 768) closeSidebar();
+    return;
+  }
+  _navigateOrig(pageId);
+};
+
+// ═══════════════════════════════════════════
+// INCAPACIDADES — exportar CSV
+// ═══════════════════════════════════════════
+async function exportarIncapacidades() {
+  if (!Cache.incapacidades) Cache.incapacidades = await Incapacidades.getAll();
+  const data = Cache.incapacidades;
+  if (!data.length) return toast('No hay datos para exportar', 'warning');
+  const headers = [
+    'Trabajador','Fecha Inicio','Fecha Fin','Días','Tipo','Diagnóstico',
+    'Código CIE-10','Entidad','Estado','Radicado','Valor','Físico','Historia Clínica','Observaciones'
+  ];
+  const rows = data.map(i => [
+    i.trabajador_nombre, i.fecha_inicio, i.fecha_fin, i.dias ?? '',
+    INCAP_TIPO[i.tipo]?.label || i.tipo, i.diagnostico, i.codigo_dx,
+    i.entidad, INCAP_STATUS[i.status]?.label || i.status, i.radicado,
+    i.valor ?? '', i.tiene_fisico ? 'Sí' : 'No', i.historia_clinica ? 'Sí' : 'No', i.observaciones
+  ]);
+  downloadCSV('incapacidades', headers, rows);
+}
