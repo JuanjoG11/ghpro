@@ -1,0 +1,7 @@
+# Archivos temporales
+icons/*.svg
+icons/gen.html
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

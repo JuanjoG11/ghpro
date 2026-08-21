@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#6c63ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GH Pro" />
+  <meta name="description" content="Sistema integral de gestión humana" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Gestión Humana Pro</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-primary:    #0a0a1a;
+      --bg-secondary:  #0f0f2e;
+      --bg-card:       rgba(255,255,255,0.05);
+      --bg-card-hover: rgba(255,255,255,0.09);
+      --border:        rgba(255,255,255,0.10);
+      --border-glow:   rgba(108,99,255,0.50);
+      --accent:        #6c63ff;
+      --accent2:       #ff6584;
+      --accent3:       #43e97b;
+      --accent4:       #f7971e;
+      --text-primary:  #f0f0ff;
+      --text-secondary:#a0a0c0;
+      --text-muted:    #606080;
+      --danger:        #ff4757;
+      --warning:       #ffa502;
+      --success:       #2ed573;
+      --info:          #1e90ff;
+      --radius:        16px;
+      --radius-sm:     10px;
+      --shadow:        0 8px 32px rgba(0,0,0,0.40);
+      --shadow-glow:   0 0 30px rgba(108,99,255,0.25);
+      --transition:    0.3s cubic-bezier(0.4,0,0.2,1);
+      --sidebar-w:     260px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== ANIMATED BACKGROUND ===== */
+    .bg-orbs {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; animation: floatOrb 20s infinite ease-in-out;
+    }
+    .orb-1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -200px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; right: -100px; animation-delay: -7s; }
+    .orb-3 { width: 300px; height: 300px; background: var(--accent3); top: 50%; left: 50%; animation-delay: -14s; }
+    @keyframes floatOrb {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33% { transform: translate(60px,-40px) scale(1.1); }
+      66% { transform: translate(-40px,60px) scale(0.9); }
+    }
+
+    /* ===== LAYOUT ===== */
+    .app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: var(--sidebar-w); min-height: 100vh; background: rgba(10,10,26,0.95);
+      backdrop-filter: blur(20px); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; position: fixed; left: 0; top: 0; bottom: 0;
+      z-index: 100; transition: transform var(--transition);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+    }
+    .sidebar-header {
+      padding: 24px 20px 20px; border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(255,101,132,0.08));
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; box-shadow: 0 4px 15px rgba(108,99,255,0.4); flex-shrink: 0;
+    }
+    .logo-text { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+    .logo-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .nav-section { padding: 12px 12px 4px; }
+    .nav-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); padding: 8px 8px 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: all var(--transition); color: var(--text-secondary);
+      font-size: 14px; font-weight: 500; margin-bottom: 2px; position: relative; overflow: hidden;
+      border: 1px solid transparent;
+    }
+    .nav-item:hover { background: var(--bg-card-hover); color: var(--text-primary); border-color: var(--border); }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(108,99,255,0.25), rgba(108,99,255,0.10));
+      color: #a89fff; border-color: rgba(108,99,255,0.3);
+      box-shadow: inset 0 0 20px rgba(108,99,255,0.1);
+    }
+    .nav-item.active::before {
+      content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
+      width: 3px; background: var(--accent); border-radius: 0 3px 3px 0;
+    }
+    .nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; background: var(--danger); color: #fff; font-size: 10px;
+      font-weight: 700; padding: 2px 6px; border-radius: 10px; min-width: 20px; text-align: center;
+    }
+    .nav-badge.warning { background: var(--warning); }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 16px; border-top: 1px solid var(--border);
+    }
+    .install-btn {
+      width: 100%; padding: 10px; background: linear-gradient(135deg, var(--accent), #9c63ff);
+      border: none; border-radius: var(--radius-sm); color: #fff; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all var(--transition); display: none; align-items: center;
+      justify-content: center; gap: 8px;
+    }
+    .install-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,0.4); }
+    .install-btn.show { display: flex; }
+
+    /* ===== MOBILE TOPBAR ===== */
+    .topbar {
+      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(10,10,26,0.95); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border); padding: 12px 16px;
+      align-items: center; gap: 12px;
+    }
+    .topbar-logo { flex: 1; font-size: 15px; font-weight: 700; }
+    .hamburger {
+      background: none; border: none; cursor: pointer; color: var(--text-primary);
+      font-size: 22px; padding: 4px; border-radius: 8px;
+    }
+    .hamburger:hover { background: var(--bg-card); }
+    .mobile-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px); z-index: 99;
+    }
+    .mobile-overlay.show { display: block; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+      margin-left: var(--sidebar-w); flex: 1; padding: 32px;
+      min-height: 100vh; transition: margin var(--transition);
+    }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .page-title span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-subtitle { color: var(--text-secondary); margin-top: 6px; font-size: 14px; }
+    .page-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+    /* ===== STATS GRID ===== */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; transition: all var(--transition); cursor: default;
+      position: relative; overflow: hidden;
+    }
+    .stat-card:hover { border-color: var(--border-glow); transform: translateY(-3px); box-shadow: var(--shadow-glow); }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--card-color, var(--accent)), transparent);
+    }
+    .stat-icon { font-size: 28px; margin-bottom: 12px; }
+    .stat-value { font-size: 32px; font-weight: 800; line-height: 1; color: var(--card-color, var(--text-primary)); }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
+      border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all var(--transition); border: none; text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #9c63ff);
+      color: #fff; box-shadow: 0 4px 15px rgba(108,99,255,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,99,255,0.5); }
+    .btn-secondary { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--bg-card-hover); color: var(--text-primary); border-color: var(--border-glow); }
+    .btn-danger { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid rgba(255,71,87,0.3); }
+    .btn-danger:hover { background: rgba(255,71,87,0.25); }
+    .btn-success { background: rgba(46,213,115,0.15); color: var(--success); border: 1px solid rgba(46,213,115,0.3); }
+    .btn-success:hover { background: rgba(46,213,115,0.25); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-icon { padding: 8px; }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; transition: all var(--transition);
+    }
+    .card:hover { border-color: rgba(255,255,255,0.15); }
+    .card-header {
+      padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .card-title { font-size: 15px; font-weight: 700; }
+    .card-body { padding: 20px; }
+
+    /* ===== SEARCH & FILTERS ===== */
+    .search-bar {
+      display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .search-input-wrap { flex: 1; min-width: 200px; position: relative; }
+    .search-input-wrap .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px; }
+    .search-input {
+      width: 100%; padding: 10px 14px 10px 38px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary);
+      font-size: 14px; transition: all var(--transition);
+    }
+    .search-input:focus { outline: none; border-color: var(--border-glow); box-shadow: 0 0 0 3px rgba(108,99,255,0.15); }
+    .search-input::placeholder { color: var(--text-muted); }
+    select.filter-select {
+      padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-primary); font-size: 14px;
+      cursor: pointer; transition: all var(--transition);
+    }
+    select.filter-select:focus { outline: none; border-color: var(--border-glow); }
+
+    /* ===== TABLE ===== */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: rgba(108,99,255,0.08); color: var(--text-muted); text-transform: uppercase;
+      font-size: 11px; letter-spacing: 1px; padding: 12px 14px; text-align: left;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background var(--transition); }
+    tbody tr:hover { background: rgba(255,255,255,0.04); }
+    tbody td { padding: 12px 14px; color: var(--text-secondary); vertical-align: middle; }
+    tbody td:first-child { color: var(--text-primary); font-weight: 500; }
+    .td-actions { display: flex; gap: 6px; }
+
+    /* ===== BADGES ===== */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+      border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .badge-success { background: rgba(46,213,115,0.15); color: var(--success); border: 1px solid rgba(46,213,115,0.25); }
+    .badge-warning { background: rgba(255,165,2,0.15); color: var(--warning); border: 1px solid rgba(255,165,2,0.25); }
+    .badge-danger  { background: rgba(255,71,87,0.15);  color: var(--danger);  border: 1px solid rgba(255,71,87,0.25); }
+    .badge-info    { background: rgba(30,144,255,0.15); color: var(--info);    border: 1px solid rgba(30,144,255,0.25); }
+    .badge-neutral { background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid var(--border); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      padding: 20px; opacity: 0; pointer-events: none; transition: opacity var(--transition);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #12122a; border: 1px solid var(--border); border-radius: 20px;
+      width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(108,99,255,0.2);
+      transform: scale(0.9) translateY(20px); transition: transform var(--transition);
+    }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+    .modal-header {
+      padding: 22px 24px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px; border-radius: 8px; transition: all var(--transition); }
+    .modal-close:hover { background: var(--bg-card); color: var(--text-primary); }
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ===== FORMS ===== */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid.single { grid-template-columns: 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }
+    input, select, textarea {
+      padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-primary); font-size: 14px;
+      transition: all var(--transition); width: 100%;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-glow); box-shadow: 0 0 0 3px rgba(108,99,255,0.15); background: rgba(255,255,255,0.07); }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    textarea { resize: vertical; min-height: 80px; }
+    select option { background: #12122a; }
+
+    /* ===== ALERT CARDS ===== */
+    .alert-item {
+      display: flex; align-items: flex-start; gap: 14px; padding: 16px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); margin-bottom: 10px; transition: all var(--transition);
+    }
+    .alert-item:hover { border-color: rgba(255,255,255,0.15); }
+    .alert-item.danger { border-left: 3px solid var(--danger); background: rgba(255,71,87,0.05); }
+    .alert-item.warning { border-left: 3px solid var(--warning); background: rgba(255,165,2,0.05); }
+    .alert-item.info { border-left: 3px solid var(--info); background: rgba(30,144,255,0.05); }
+    .alert-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .alert-content { flex: 1; }
+    .alert-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .alert-desc { color: var(--text-secondary); font-size: 13px; }
+    .alert-date { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    /* ===== DOTACION CARDS ===== */
+    .dotacion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; }
+    .dotacion-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; transition: all var(--transition); position: relative; overflow: hidden;
+    }
+    .dotacion-card:hover { border-color: var(--border-glow); transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+    .dotacion-card-icon { font-size: 36px; margin-bottom: 12px; }
+    .dotacion-card-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .dotacion-card-stock { font-size: 28px; font-weight: 800; color: var(--accent3); }
+    .dotacion-card-unit { font-size: 12px; color: var(--text-muted); margin-left: 4px; }
+    .dotacion-progress { margin-top: 12px; }
+    .progress-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent3)); transition: width 0.6s ease; }
+
+    /* ===== TABS ===== */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg-card); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .tab-btn {
+      flex: 1; padding: 8px 14px; background: none; border: none; border-radius: 8px;
+      color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all var(--transition);
+    }
+    .tab-btn.active { background: linear-gradient(135deg, var(--accent), #9c63ff); color: #fff; box-shadow: 0 2px 10px rgba(108,99,255,0.3); }
+    .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ===== TOAST ===== */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      background: #1a1a35; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 14px 18px; min-width: 280px; max-width: 360px; display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5); animation: slideInRight 0.3s ease;
+    }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast-icon { font-size: 20px; flex-shrink: 0; }
+    .toast-msg { font-size: 13px; color: var(--text-secondary); flex: 1; }
+    @keyframes slideInRight { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ===== PAGES ===== */
+    .page { display: none; animation: fadeIn 0.4s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-state-text { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary); }
+    .empty-state-sub { font-size: 14px; }
+
+    /* ===== TIMELINE ===== */
+    .timeline { position: relative; padding-left: 24px; }
+    .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .timeline-item { position: relative; margin-bottom: 20px; }
+    .timeline-item::before {
+      content: ''; position: absolute; left: -20px; top: 6px; width: 10px; height: 10px;
+      border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-primary);
+      box-shadow: 0 0 8px rgba(108,99,255,0.5);
+    }
+    .timeline-date { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .timeline-content { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; }
+    .timeline-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+    .timeline-desc { font-size: 12px; color: var(--text-secondary); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 16px; padding-top: 72px; }
+      .topbar { display: flex; }
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .page-title { font-size: 22px; }
+      .table-wrap { font-size: 12px; }
+      tbody td { padding: 10px 10px; }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .tabs { flex-wrap: wrap; }
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ===== AVATAR ===== */
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0; text-transform: uppercase;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      background: rgba(255,255,255,0.07); border-radius: 20px; font-size: 12px; color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Animated background orbs -->
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Mobile topbar -->
+<div class="topbar" id="topbar">
+  <button class="hamburger" id="hamburgerBtn" aria-label="Menú">☰</button>
+  <div class="topbar-logo">🏢 GH Pro</div>
+  <div id="alertBadgeMobile" class="nav-badge danger" style="display:none">0</div>
+</div>
+<div class="mobile-overlay" id="mobileOverlay"></div>
+
+<!-- App shell -->
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🏢</div>
+        <div>
+          <div class="logo-text">GH Pro</div>
+          <div class="logo-sub">Gestión Humana</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Personal</div>
+      <div class="nav-item" data-page="trabajadores">
+        <span class="nav-icon">👥</span> Trabajadores
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Inventario</div>
+      <div class="nav-item" data-page="dotacion">
+        <span class="nav-icon">👕</span> Inventario Dotación
+      </div>
+      <div class="nav-item" data-page="entregas">
+        <span class="nav-icon">📦</span> Entregas
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Documentos</div>
+      <div class="nav-item" data-page="documentos">
+        <span class="nav-icon">📋</span> BPM / Carnet
+      </div>
+      <div class="nav-item" data-page="vehiculos">
+        <span class="nav-icon">🚗</span> Vehículos
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Sistema</div>
+      <div class="nav-item" data-page="alertas">
+        <span class="nav-icon">🔔</span> Alertas
+        <span class="nav-badge danger" id="alertBadge" style="display:none">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="install-btn" id="installBtn">⬇️ Instalar App</button>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px;font-size:12px" onclick="window.resetAndReseed && window.resetAndReseed()">🔄 Recargar datos</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">Bienvenido al <span>Panel Principal</span></div>
+        <div class="page-subtitle" id="dashDate">Cargando...</div>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="dashCards">
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚠️ Alertas recientes</span></div>
+          <div class="card-body" id="dashAlerts"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Sin alertas</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📅 Últimas entregas</span></div>
+          <div class="card-body" id="dashEntregas"><div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">Sin entregas</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TRABAJADORES ===== -->
+    <div class="page" id="page-trabajadores">
+      <div class="page-header">
+        <div class="page-title">👥 <span>Trabajadores</span></div>
+        <div class="page-subtitle">Gestiona el personal de la empresa</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalTrabajador')">➕ Nuevo trabajador</button>
+          <button class="btn btn-secondary" onclick="exportarTrabajadores()">📥 Exportar CSV</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="search-bar">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="search-input" id="searchTrabajador" placeholder="Buscar por nombre, cédula, cargo..." oninput="renderTrabajadores()">
+            </div>
+            <select class="filter-select" id="filterCiudad" onchange="renderTrabajadores()">
+              <option value="">Todas las ciudades</option>
+            </select>
+            <select class="filter-select" id="filterMarca" onchange="renderTrabajadores()">
+              <option value="">Todos los proveedores</option>
+            </select>
+            <select class="filter-select" id="filterCargo" onchange="renderTrabajadores()">
+              <option value="">Todos los cargos</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px;font-size:12px;color:var(--text-muted)" id="trabajadoresCount"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trabajador</th>
+                  <th>Cargo</th>
+                  <th>Proveedor</th>
+                  <th>Ciudad</th>
+                  <th>Jefe Inmediato</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaTrabajadores"></tbody>
+            </table>
+          </div>
+          <div id="emptyTrabajadores" class="empty-state" style="display:none">
+            <div class="empty-state-icon">👥</div>
+            <div class="empty-state-text">No hay trabajadores registrados</div>
+            <div class="empty-state-sub">Haz clic en "Nuevo trabajador" para empezar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DOTACION INVENTARIO ===== -->
+    <div class="page" id="page-dotacion">
+      <div class="page-header">
+        <div class="page-title">👕 <span>Inventario de Dotación</span></div>
+        <div class="page-subtitle">Control de stock de prendas y EPP</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalDotacion')">➕ Nuevo ítem</button>
+        </div>
+      </div>
+      <div class="dotacion-grid" id="gridDotacion"></div>
+      <div id="emptyDotacion" class="empty-state" style="display:none">
+        <div class="empty-state-icon">👕</div>
+        <div class="empty-state-text">No hay ítems en el inventario</div>
+        <div class="empty-state-sub">Agrega prendas y equipos de protección</div>
+      </div>
+    </div>
+
+    <!-- ===== ENTREGAS ===== -->
+    <div class="page" id="page-entregas">
+      <div class="page-header">
+        <div class="page-title">📦 <span>Entregas de Dotación</span></div>
+        <div class="page-subtitle">Registro histórico de entregas por trabajador</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalEntrega')">➕ Registrar entrega</button>
+          <button class="btn btn-secondary" onclick="exportarEntregas()">📥 Exportar CSV</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="search-bar">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="search-input" id="searchEntrega" placeholder="Buscar entrega..." oninput="renderEntregas()">
+            </div>
+            <select class="filter-select" id="filterEntregaTrabajador" onchange="renderEntregas()">
+              <option value="">Todos los trabajadores</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Trabajador</th>
+                  <th>Artículo</th>
+                  <th>Cantidad</th>
+                  <th>Talla/Ref</th>
+                  <th>Observaciones</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaEntregas"></tbody>
+            </table>
+          </div>
+          <div id="emptyEntregas" class="empty-state" style="display:none">
+            <div class="empty-state-icon">📦</div>
+            <div class="empty-state-text">Sin entregas registradas</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DOCUMENTOS BPM ===== -->
+    <div class="page" id="page-documentos">
+      <div class="page-header">
+        <div class="page-title">📋 <span>Carnet BPM</span></div>
+        <div class="page-subtitle">Carnets de Buenas Prácticas de Manufactura por trabajador</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalBPM')">➕ Registrar carnet</button>
+          <button class="btn btn-secondary" onclick="exportarBPM()">📥 Exportar CSV</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="search-bar">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="search-input" id="searchBPM" placeholder="Buscar carnet..." oninput="renderBPM()">
+            </div>
+            <select class="filter-select" id="filterBPMEstado" onchange="renderBPM()">
+              <option value="">Todos los estados</option>
+              <option value="vigente">Vigente</option>
+              <option value="por_vencer">Por vencer</option>
+              <option value="vencido">Vencido</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trabajador</th>
+                  <th>N° Carnet</th>
+                  <th>Emisión</th>
+                  <th>Vencimiento</th>
+                  <th>Estado</th>
+                  <th>Días</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaBPM"></tbody>
+            </table>
+          </div>
+          <div id="emptyBPM" class="empty-state" style="display:none">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-text">Sin carnets registrados</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VEHICULOS ===== -->
+    <div class="page" id="page-vehiculos">
+      <div class="page-header">
+        <div class="page-title">🚗 <span>Documentos Vehiculares</span></div>
+        <div class="page-subtitle">SOAT, Tecnomecánica, Tarjeta de Propiedad y Licencias</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalVehiculo')">➕ Nuevo vehículo</button>
+          <button class="btn btn-secondary" onclick="exportarVehiculos()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <div class="tabs" id="vehiculoTabs">
+        <button class="tab-btn active" data-tab="tab-soat">🛡️ SOAT</button>
+        <button class="tab-btn" data-tab="tab-tecno">🔧 TECNO</button>
+        <button class="tab-btn" data-tab="tab-propiedad">📄 T. Propiedad</button>
+        <button class="tab-btn" data-tab="tab-licencia">🪪 Licencias</button>
+        <button class="tab-btn" data-tab="tab-todos">📋 Todos</button>
+      </div>
+
+      <div class="tab-content active" id="tab-soat">
+        <div class="card"><div class="card-body">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Placa</th><th>Propietario/Conductor</th><th>Vencimiento</th><th>Estado</th><th>Días</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaSOAT"></tbody>
+          </table></div>
+          <div id="emptySOAT" class="empty-state" style="display:none"><div class="empty-state-icon">🛡️</div><div class="empty-state-text">Sin registros SOAT</div></div>
+        </div></div>
+      </div>
+
+      <div class="tab-content" id="tab-tecno">
+        <div class="card"><div class="card-body">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Placa</th><th>Propietario/Conductor</th><th>Vencimiento</th><th>Estado</th><th>Días</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaTecno"></tbody>
+          </table></div>
+          <div id="emptyTecno" class="empty-state" style="display:none"><div class="empty-state-icon">🔧</div><div class="empty-state-text">Sin registros Tecnomecánica</div></div>
+        </div></div>
+      </div>
+
+      <div class="tab-content" id="tab-propiedad">
+        <div class="card"><div class="card-body">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Placa</th><th>Propietario</th><th>Marca/Modelo</th><th>Año</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaPropiedad"></tbody>
+          </table></div>
+          <div id="emptyPropiedad" class="empty-state" style="display:none"><div class="empty-state-icon">📄</div><div class="empty-state-text">Sin tarjetas de propiedad</div></div>
+        </div></div>
+      </div>
+
+      <div class="tab-content" id="tab-licencia">
+        <div class="card"><div class="card-body">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Conductor</th><th>N° Licencia</th><th>Categoría</th><th>Vencimiento</th><th>Estado</th><th>Días</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaLicencia"></tbody>
+          </table></div>
+          <div id="emptyLicencia" class="empty-state" style="display:none"><div class="empty-state-icon">🪪</div><div class="empty-state-text">Sin licencias registradas</div></div>
+        </div></div>
+      </div>
+
+      <div class="tab-content" id="tab-todos">
+        <div class="card"><div class="card-body">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Tipo</th><th>Placa/Persona</th><th>Vencimiento</th><th>Estado</th><th>Días</th></tr></thead>
+            <tbody id="tablaTodos"></tbody>
+          </table></div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ===== ALERTAS ===== -->
+    <div class="page" id="page-alertas">
+      <div class="page-header">
+        <div class="page-title">🔔 <span>Centro de Alertas</span></div>
+        <div class="page-subtitle">Documentos próximos a vencer y vencidos</div>
+        <div class="page-actions">
+          <button class="btn btn-secondary" onclick="renderAlertas()">🔄 Actualizar</button>
+          <button class="btn btn-primary" onclick="solicitarNotificaciones()">🔔 Activar notificaciones</button>
+        </div>
+      </div>
+      <div class="stats-grid" id="alertStats"></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Todas las alertas</span>
+          <select class="filter-select" id="filterAlerta" onchange="renderAlertas()">
+            <option value="">Todos</option>
+            <option value="vencido">Vencidos</option>
+            <option value="critico">Críticos (≤7 días)</option>
+            <option value="proximo">Próximos (≤30 días)</option>
+          </select>
+        </div>
+        <div class="card-body" id="listaAlertas"></div>
+      </div>
+    </div>
+
+  </main><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ===== MODALS ===== -->
+
+<!-- Modal Trabajador -->
+<div class="modal-overlay" id="modalTrabajador">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTrabajadorTitle">👤 Nuevo Trabajador</div>
+      <button class="modal-close" onclick="closeModal('modalTrabajador')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tId">
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre completo *</label><input type="text" id="tNombre" placeholder="Ej: Juan Pérez"></div>
+        <div class="form-group"><label>Cédula / ID *</label><input type="text" id="tCedula" placeholder="123456789"></div>
+        <div class="form-group"><label>Cargo *</label><input type="text" id="tCargo" list="cargosDatalist" placeholder="Ej: Operario, Supervisor...">
+          <datalist id="cargosDatalist"></datalist></div>
+        <div class="form-group"><label>Proveedor / Área *</label><input type="text" id="tMarca" list="marcasDatalist" placeholder="Ej: Zenú, Fleischmann, General...">
+          <datalist id="marcasDatalist"></datalist></div>
+        <div class="form-group"><label>Ciudad *</label><input type="text" id="tCiudad" list="ciudadesDatalist" placeholder="Pereira, Manizales, Armenia...">
+          <datalist id="ciudadesDatalist"><option value="Pereira"><option value="Manizales"><option value="Armenia"></datalist></div>
+        <div class="form-group"><label>Jefe Inmediato</label><input type="text" id="tJefe" list="jefesDatalist" placeholder="Nombre del jefe">
+          <datalist id="jefesDatalist"></datalist></div>
+        <div class="form-group"><label>Fecha de ingreso</label><input type="date" id="tFechaIngreso"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="tTelefono" placeholder="+57 300 000 0000"></div>
+        <div class="form-group"><label>Estado</label>
+          <select id="tEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option><option value="licencia">En licencia</option></select>
+        </div>
+        <div class="form-group full"><label>Observaciones</label><textarea id="tObs" placeholder="Notas adicionales..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalTrabajador')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarTrabajador()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Dotacion -->
+<div class="modal-overlay" id="modalDotacion">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalDotacionTitle">👕 Nuevo Ítem de Dotación</div>
+      <button class="modal-close" onclick="closeModal('modalDotacion')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="dId">
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre del artículo *</label><input type="text" id="dNombre" placeholder="Ej: Camiseta, Botas..."></div>
+        <div class="form-group"><label>Categoría</label>
+          <select id="dCategoria">
+            <option value="ropa">Ropa</option><option value="calzado">Calzado</option>
+            <option value="epp">EPP</option><option value="accesorio">Accesorio</option><option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Stock actual *</label><input type="number" id="dStock" min="0" placeholder="0"></div>
+        <div class="form-group"><label>Stock mínimo</label><input type="number" id="dStockMin" min="0" placeholder="5"></div>
+        <div class="form-group"><label>Unidad</label><input type="text" id="dUnidad" placeholder="Unidades, pares..."></div>
+        <div class="form-group"><label>Emoji / Icono</label><input type="text" id="dEmoji" placeholder="👕" maxlength="4"></div>
+        <div class="form-group full"><label>Descripción</label><textarea id="dDesc" placeholder="Descripción del artículo..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalDotacion')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarDotacion()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Entrega -->
+<div class="modal-overlay" id="modalEntrega">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📦 Registrar Entrega</div>
+      <button class="modal-close" onclick="closeModal('modalEntrega')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eId">
+      <div class="form-grid">
+        <div class="form-group"><label>Trabajador *</label>
+          <select id="eTrabajador"><option value="">Seleccionar...</option></select></div>
+        <div class="form-group"><label>Artículo *</label>
+          <select id="eArticulo"><option value="">Seleccionar...</option></select></div>
+        <div class="form-group"><label>Cantidad *</label><input type="number" id="eCantidad" min="1" value="1"></div>
+        <div class="form-group"><label>Talla / Referencia</label><input type="text" id="eTalla" placeholder="M, 42, XL..."></div>
+        <div class="form-group"><label>Fecha de entrega *</label><input type="date" id="eFecha"></div>
+        <div class="form-group"><label>Entregado por</label><input type="text" id="eEntregadoPor" placeholder="Nombre responsable"></div>
+        <div class="form-group full"><label>Observaciones</label><textarea id="eObs" placeholder="Notas de la entrega..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEntrega')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEntrega()">💾 Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal BPM -->
+<div class="modal-overlay" id="modalBPM">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalBPMTitle">📋 Carnet BPM</div>
+      <button class="modal-close" onclick="closeModal('modalBPM')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="bId">
+      <div class="form-grid">
+        <div class="form-group"><label>Trabajador *</label>
+          <select id="bTrabajador"><option value="">Seleccionar...</option></select></div>
+        <div class="form-group"><label>N° Carnet</label><input type="text" id="bNumero" placeholder="BPM-2024-001"></div>
+        <div class="form-group"><label>Fecha de emisión *</label><input type="date" id="bEmision"></div>
+        <div class="form-group"><label>Fecha de vencimiento *</label><input type="date" id="bVencimiento"></div>
+        <div class="form-group"><label>Entidad emisora</label><input type="text" id="bEntidad" placeholder="Nombre entidad..."></div>
+        <div class="form-group"><label>Capacitación</label><input type="text" id="bCapacitacion" placeholder="Tema de capacitación"></div>
+        <div class="form-group full"><label>Observaciones</label><textarea id="bObs" placeholder="Notas..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalBPM')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarBPM()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Vehiculo -->
+<div class="modal-overlay" id="modalVehiculo">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div class="modal-title" id="modalVehiculoTitle">🚗 Vehículo / Documento</div>
+      <button class="modal-close" onclick="closeModal('modalVehiculo')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="vId">
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Tipo de documento *</label>
+        <select id="vTipo" onchange="toggleVehiculoFields()">
+          <option value="soat">SOAT</option>
+          <option value="tecno">Tecnomecánica</option>
+          <option value="propiedad">Tarjeta de Propiedad</option>
+          <option value="licencia">Licencia de Conducción</option>
+        </select>
+      </div>
+      <div class="form-grid">
+        <div class="form-group" id="vPlacaGroup"><label>Placa *</label><input type="text" id="vPlaca" placeholder="ABC123" style="text-transform:uppercase"></div>
+        <div class="form-group" id="vConductorGroup"><label>Conductor / Propietario *</label>
+          <select id="vConductor"><option value="">Seleccionar trabajador...</option></select></div>
+        <div class="form-group veh-field soat tecno licencia"><label>Fecha vencimiento *</label><input type="date" id="vVencimiento"></div>
+        <div class="form-group veh-field soat tecno"><label>N° Póliza / Certificado</label><input type="text" id="vPoliza" placeholder="Número..."></div>
+        <div class="form-group veh-field soat tecno"><label>Aseguradora / CDA</label><input type="text" id="vAseguradora" placeholder="Nombre entidad"></div>
+        <div class="form-group veh-field propiedad"><label>Marca</label><input type="text" id="vMarcaCarro" placeholder="Toyota, Renault..."></div>
+        <div class="form-group veh-field propiedad"><label>Modelo</label><input type="text" id="vModelo" placeholder="Hilux, Logan..."></div>
+        <div class="form-group veh-field propiedad"><label>Año</label><input type="number" id="vAnio" placeholder="2020" min="1990" max="2030"></div>
+        <div class="form-group veh-field licencia"><label>N° Licencia</label><input type="text" id="vNumLicencia" placeholder="12345678"></div>
+        <div class="form-group veh-field licencia"><label>Categoría</label>
+          <select id="vCategoria"><option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option><option value="B2">B2</option><option value="B3">B3</option><option value="C1">C1</option><option value="C2">C2</option><option value="C3">C3</option></select>
+        </div>
+        <div class="form-group full"><label>Observaciones</label><textarea id="vObs" placeholder="Notas adicionales..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalVehiculo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarVehiculo()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Supabase SDK (CDN, ESM-compatible UMD build) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- Data layer + App logic -->
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
