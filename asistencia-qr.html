@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- width=1280 fija el viewport a 1280px lógicos.
+       Con el zoom del TV al 300%, el navegador escala el contenido para que quepa,
+       igual que hace con cualquier sitio de escritorio. El QR siempre será visible. -->
+  <meta name="viewport" content="width=1280" />
   <title>GH Pro — Pantalla QR Asistencia</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,21 +27,22 @@
     .orb-3 { width:300px;height:300px;background:var(--accent3);top:40%;left:40%;animation:drift 10s ease-in-out infinite alternate; }
     @keyframes drift { from{transform:translate(0,0) scale(1);}to{transform:translate(30px,20px) scale(1.08);} }
 
-    .screen { position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:28px; }
+    .screen { position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(12px,2.5vh,36px);padding:28px; }
 
     .header { text-align:center; }
-    .header-logo  { font-size:18px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px; }
-    .header-title { font-size:clamp(24px,3.5vw,42px);font-weight:800; }
+    .header-logo  { font-size:clamp(16px,2.5vw,32px);font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px; }
+    .header-title { font-size:clamp(28px,6vw,80px);font-weight:800; }
     .header-title span { color:var(--accent); }
-    .header-sub   { font-size:clamp(13px,1.6vw,18px);color:var(--muted);margin-top:6px; }
+    .header-sub   { font-size:clamp(14px,2vw,28px);color:var(--muted);margin-top:6px; }
 
-    .qr-card { background:var(--card);border:2px solid var(--border);border-radius:28px;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;align-items:center;gap:18px;animation:cardPulse 4s ease-in-out infinite; }
+    .qr-card { background:var(--card);border:2px solid var(--border);border-radius:28px;padding:clamp(18px,3vw,48px);display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2vh,28px);animation:cardPulse 4s ease-in-out infinite; }
     @keyframes cardPulse { 0%,100%{box-shadow:0 0 60px rgba(108,99,255,0.2);}50%{box-shadow:0 0 90px rgba(108,99,255,0.4);} }
 
-    /* Contenedor QR: tamaño fijo, fondo blanco */
+    /* Contenedor QR: tamaño basado en viewport para verse bien en TV grande */
     .qr-wrap {
       position: relative;
-      width: 280px; height: 280px;
+      width: min(40vmin, 380px);
+      height: min(40vmin, 380px);
       background: #ffffff;
       border-radius: 18px;
       display: flex; align-items: center; justify-content: center;
@@ -50,29 +54,40 @@
     }
     @keyframes ringPulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(108,99,255,0.5);}50%{opacity:0.7;box-shadow:0 0 0 10px rgba(108,99,255,0);} }
 
-    /* El QR generado (SVG o tabla) dentro del wrap */
-    #qrContainer { width:260px; height:260px; }
-    #qrContainer svg { width:260px !important; height:260px !important; display:block; }
-    #qrContainer table { border:0; border-collapse:collapse; }
+    /* El QR generado ocupa todo el contenedor */
+    /* El QR generado ocupa todo el contenedor */
+    #qrContainer {
+      width: 100%;
+      height: 100%;
+      /* Forzar que el SVG interno llene el espacio */
+      display: flex; align-items: center; justify-content: center;
+    }
+    #qrContainer svg {
+      width:  100% !important;
+      height: 100% !important;
+      display: block;
+      shape-rendering: crispEdges;
+    }
+    #qrContainer table { border:0; border-collapse:collapse; width:100%; height:100%; }
 
     .countdown-wrap { display:flex;flex-direction:column;align-items:center;gap:8px;width:100%; }
-    .countdown-label { font-size:clamp(12px,1.4vw,15px);color:var(--muted);display:flex;justify-content:space-between;width:100%; }
+    .countdown-label { font-size:clamp(14px,2vw,24px);color:var(--muted);display:flex;justify-content:space-between;width:100%; }
     .countdown-secs { color:var(--accent);font-weight:700; }
-    .progress-bar { width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden; }
+    .progress-bar { width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden; }
     .progress-fill { height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width 1s linear; }
 
-    .instruction { text-align:center;font-size:clamp(13px,1.6vw,18px);color:var(--muted);max-width:420px;line-height:1.6; }
+    .instruction { text-align:center;font-size:clamp(15px,2.2vw,30px);color:var(--muted);max-width:600px;line-height:1.6; }
     .instruction strong { color:var(--text); }
 
-    .clock { font-size:clamp(28px,5vw,64px);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:3px;color:var(--text); }
-    .clock-date { font-size:clamp(12px,1.4vw,16px);color:var(--muted);text-align:center;margin-top:-14px; }
+    .clock { font-size:clamp(40px,9vw,130px);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:3px;color:var(--text); }
+    .clock-date { font-size:clamp(14px,2vw,26px);color:var(--muted);text-align:center;margin-top:-14px; }
 
-    .fullscreen-btn { position:fixed;top:18px;right:18px;z-index:200;background:var(--accent);border:none;color:#fff;border-radius:12px;padding:12px 22px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(108,99,255,0.5);transition:background 0.2s,opacity 0.5s; }
+    .fullscreen-btn { position:fixed;top:18px;right:18px;z-index:200;background:var(--accent);border:none;color:#fff;border-radius:12px;padding:clamp(10px,1.5vh,18px) clamp(18px,2.5vw,32px);font-size:clamp(14px,2vw,22px);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(108,99,255,0.5);transition:background 0.2s,opacity 0.5s; }
     .fullscreen-btn:hover { background:#8076ff; }
     .fullscreen-btn.fs-active { opacity:0;pointer-events:none; }
     body:hover .fullscreen-btn.fs-active { opacity:1;pointer-events:auto; }
 
-    .recent-flash { position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:rgba(67,233,123,0.15);border:1px solid rgba(67,233,123,0.4);border-radius:14px;padding:14px 28px;display:flex;align-items:center;gap:14px;font-size:clamp(13px,1.5vw,17px);font-weight:600;opacity:0;transition:opacity 0.4s ease;pointer-events:none;z-index:10;white-space:nowrap; }
+    .recent-flash { position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:rgba(67,233,123,0.15);border:1px solid rgba(67,233,123,0.4);border-radius:14px;padding:clamp(12px,2vh,20px) clamp(20px,3vw,40px);display:flex;align-items:center;gap:14px;font-size:clamp(15px,2.5vw,32px);font-weight:600;opacity:0;transition:opacity 0.4s ease;pointer-events:none;z-index:10;white-space:nowrap; }
     .recent-flash.show   { opacity:1; }
     .recent-flash.salida { background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.4); }
   </style>
@@ -167,11 +182,16 @@ function dibujarQR() {
   var el = document.getElementById('qrContainer');
   if (!el) return;
   el.innerHTML = ''; // limpiar el anterior
+
+  // Leer el tamaño real del contenedor padre (qr-wrap) en el momento de dibujar
+  var wrap = el.parentElement;
+  var sz   = (wrap && wrap.offsetWidth > 40) ? (wrap.offsetWidth - 20) : 300;
+
   try {
     new QRCode(el, {
       text:         getLoginUrl(),
-      width:        260,
-      height:       260,
+      width:        sz,
+      height:       sz,
       colorDark:    '#0a0a1a',
       colorLight:   '#ffffff',
       correctLevel: QRCode.CorrectLevel.M,
@@ -256,7 +276,10 @@ document.addEventListener('mozfullscreenchange',    onFsChange);
 // Init
 window.addEventListener('load', function() {
   actualizarReloj();
-  dibujarQR();
+  // Delay mínimo para que el layout esté pintado y offsetWidth sea correcto
+  setTimeout(function() {
+    dibujarQR();
+  }, 100);
   setInterval(tick, 1000);
   setInterval(actualizarReloj, 1000);
   suscribirRegistros();
