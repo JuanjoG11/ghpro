@@ -189,7 +189,8 @@ function generarToken() {
 
 function getLoginUrl() {
   const token = generarToken();
-  const base  = location.href.replace('asistencia-qr.html', 'asistencia-login.html');
+  // Construir la URL base limpia (sin params del TV) apuntando a asistencia-login.html
+  const base  = location.origin + location.pathname.replace('asistencia-qr.html', 'asistencia-login.html');
   return base + '?qr=' + encodeURIComponent(token);
 }
 
