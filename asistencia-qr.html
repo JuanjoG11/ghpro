@@ -88,7 +88,14 @@
       0%,100% { opacity: 1;   box-shadow: 0 0 0 0   rgba(108,99,255,0.5); }
       50%      { opacity: 0.6; box-shadow: 0 0 0 10px rgba(108,99,255,0); }
     }
-    #qrCanvas { display: block; border-radius: 10px; }
+    #qrCanvas  { display: block; border-radius: 10px; }
+    #qrImg     { display: block; border-radius: 10px; max-width: 100%; max-height: 100%; }
+    #qrDebug   {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,60,60,0.85); color: #fff; padding: 10px 20px;
+      border-radius: 10px; font-size: 13px; font-weight: 600;
+      z-index: 999; display: none; text-align: center; max-width: 90vw;
+    }
 
     /* Countdown */
     .countdown-wrap {
@@ -209,7 +216,8 @@
 
   <div class="qr-card">
     <div class="qr-ring-wrap" id="qrWrap">
-      <canvas id="qrCanvas"></canvas>
+      <canvas id="qrCanvas" style="display:none"></canvas>
+      <img id="qrImg" alt="QR Asistencia" />
     </div>
     <div class="countdown-wrap">
       <div class="countdown-label">
@@ -235,6 +243,9 @@
   <span id="recentText">—</span>
 </div>
 
+<!-- Debug visible en TV si algo falla -->
+<div id="qrDebug"></div>
+
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <!-- QR Code generator (local) -->
@@ -253,49 +264,97 @@ function generarToken() {
   return btoa(JSON.stringify({ app: 'ghpro-asist', w }));
 }
 
-// ── Calcular tamaño QR de forma confiable ────────────────────────
+// ── Helper de debug visible en pantalla ─────────────────────────
+function dbg(msg) {
+  console.warn('[QR]', msg);
+  const el = document.getElementById('qrDebug');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+function dbgOk() {
+  const el = document.getElementById('qrDebug');
+  if (el) el.style.display = 'none';
+}
+
+// ── Calcular tamaño QR ───────────────────────────────────────────
 function calcQrSize() {
-  // Método 1: leer la variable CSS --qr-size
-  const cssVal = getComputedStyle(document.documentElement)
-                   .getPropertyValue('--qr-size').trim();
-  if (cssVal) {
-    // clamp(...) no es evaluable directamente; usamos el offsetWidth del wrap
-    const wrap = document.getElementById('qrWrap');
-    if (wrap && wrap.offsetWidth > 40) {
-      return wrap.offsetWidth - 24; // restar el padding del wrap (12px * 2)
-    }
-  }
-  // Método 2: 28% del lado más corto de la ventana, entre 200 y 340
+  // Prioridad 1: offsetWidth del contenedor (ya tiene tamaño fijo en CSS)
+  const wrap = document.getElementById('qrWrap');
+  if (wrap && wrap.offsetWidth > 40) return wrap.offsetWidth - 24;
+  // Prioridad 2: 28% del lado más corto de la pantalla
   const vmin = Math.min(
-    window.innerWidth  || screen.width  || 800,
+    window.innerWidth  || screen.width  || 900,
     window.innerHeight || screen.height || 600
   );
-  return Math.max(200, Math.min(Math.floor(vmin * 0.28), 340));
+  const s = Math.floor(vmin * 0.28);
+  return Math.max(200, Math.min(s, 340));
 }
 
 // ── QR Canvas ───────────────────────────────────────────────────
 let secsLeft = 30;
 
 async function dibujarQR() {
+  const img    = document.getElementById('qrImg');
   const canvas = document.getElementById('qrCanvas');
-  if (!canvas) return;
+  if (!img && !canvas) { dbg('Sin elemento QR en el DOM'); return; }
 
   const token = generarToken();
   const url   = location.origin
     + location.pathname.replace('asistencia-qr.html', 'asistencia-login.html')
     + '?qr=' + encodeURIComponent(token);
+  const size  = calcQrSize();
 
-  const size = calcQrSize();
+  // ── Estrategia 1: toDataURL → <img>  (más compatible con TVs) ──
+  if (typeof QRCode !== 'undefined' && img) {
+    try {
+      const dataUrl = await QRCode.toDataURL(url, {
+        width: size, margin: 1,
+        color: { dark: '#0a0a1a', light: '#ffffff' },
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+      });
+      img.src = dataUrl;
+      img.style.width  = size + 'px';
+      img.style.height = size + 'px';
+      dbgOk();
+      return;
+    } catch (e) {
+      dbg('toDataURL falló: ' + e.message + ' | intentando toCanvas…');
+    }
+  }
 
-  try {
-    await QRCode.toCanvas(canvas, url, {
-      width: size,
-      margin: 1,
-      color: { dark: '#0a0a1a', light: '#ffffff' },
-      errorCorrectionLevel: 'M',
-    });
-  } catch (e) {
-    console.error('QR error', e);
+  // ── Estrategia 2: toCanvas  (fallback) ──────────────────────────
+  if (typeof QRCode !== 'undefined' && canvas) {
+    try {
+      canvas.style.display = 'block';
+      if (img) img.style.display = 'none';
+      await QRCode.toCanvas(canvas, url, {
+        width: size, margin: 1,
+        color: { dark: '#0a0a1a', light: '#ffffff' },
+        errorCorrectionLevel: 'M',
+      });
+      dbgOk();
+      return;
+    } catch (e) {
+      dbg('toCanvas falló: ' + e.message + ' | intentando API externa…');
+    }
+  }
+
+  // ── Estrategia 3: QR via API pública (si las anteriores fallan) ──
+  if (img) {
+    try {
+      const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=0a0a1a&margin=1`;
+      img.src = apiUrl;
+      img.style.width  = size + 'px';
+      img.style.height = size + 'px';
+      dbg('Usando API externa de QR (sin librería local)');
+      return;
+    } catch (e) {
+      dbg('Todos los métodos QR fallaron: ' + e.message);
+    }
+  }
+
+  if (typeof QRCode === 'undefined') {
+    dbg('ERROR: qrcode.min.js no se cargó. Revisar la ruta del archivo.');
   }
 }
 
