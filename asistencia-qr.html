@@ -15,8 +15,6 @@
       --accent3: #43e97b;
       --text:    #f0f0ff;
       --muted:   #7070a0;
-      /* Tamaño del QR definido en CSS para que JS pueda leerlo de forma confiable */
-      --qr-size: clamp(200px, 28vmin, 340px);
     }
 
     html, body {
@@ -25,17 +23,13 @@
       overflow: hidden;
     }
 
-    /* Fondo animado */
     .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-    .orb {
-      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25;
-    }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25; }
     .orb-1 { width: 500px; height: 500px; background: var(--accent);  top: -120px; left: -120px; animation: drift 14s ease-in-out infinite alternate; }
     .orb-2 { width: 400px; height: 400px; background: #ff6584;        bottom: -100px; right: -100px; animation: drift 18s ease-in-out infinite alternate-reverse; }
     .orb-3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 40%; animation: drift 10s ease-in-out infinite alternate; }
     @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.08); } }
 
-    /* Layout principal */
     .screen {
       position: relative; z-index: 1;
       height: 100vh;
@@ -44,60 +38,65 @@
       gap: 24px; padding: 28px;
     }
 
-    /* Cabecera */
     .header { text-align: center; }
-    .header-logo { font-size: 18px; font-weight: 700; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+    .header-logo  { font-size: 18px; font-weight: 700; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
     .header-title { font-size: clamp(24px, 3.5vw, 42px); font-weight: 800; }
     .header-title span { color: var(--accent); }
-    .header-sub { font-size: clamp(13px, 1.6vw, 18px); color: var(--muted); margin-top: 6px; }
+    .header-sub   { font-size: clamp(13px, 1.6vw, 18px); color: var(--muted); margin-top: 6px; }
 
-    /* Tarjeta QR */
     .qr-card {
       background: var(--card);
       border: 2px solid var(--border);
       border-radius: 28px;
       padding: clamp(20px, 3vw, 40px);
       display: flex; flex-direction: column; align-items: center; gap: 20px;
-      box-shadow: 0 0 60px rgba(108,99,255,0.2), 0 0 0 1px rgba(108,99,255,0.1);
+      box-shadow: 0 0 60px rgba(108,99,255,0.2);
       animation: cardPulse 4s ease-in-out infinite;
     }
     @keyframes cardPulse {
-      0%,100% { box-shadow: 0 0 60px rgba(108,99,255,0.2), 0 0 0 1px rgba(108,99,255,0.1); }
-      50%      { box-shadow: 0 0 90px rgba(108,99,255,0.35), 0 0 0 1px rgba(108,99,255,0.25); }
+      0%,100% { box-shadow: 0 0 60px rgba(108,99,255,0.2); }
+      50%      { box-shadow: 0 0 90px rgba(108,99,255,0.4); }
     }
 
-    /* Anillo QR */
-    .qr-ring-wrap {
+    /* Contenedor QR — tamaño fijo y explícito */
+    .qr-wrap {
       position: relative;
-      padding: 12px;
-      border-radius: 20px;
+      width:  280px;
+      height: 280px;
       background: #fff;
-      /* Tamaño fijo para que JS pueda calcularlo sin depender de offsetWidth */
-      width:  calc(var(--qr-size) + 24px);
-      height: calc(var(--qr-size) + 24px);
+      border-radius: 18px;
       display: flex; align-items: center; justify-content: center;
+      padding: 10px;
     }
-    .qr-ring-wrap::before {
+    .qr-wrap::before {
       content: '';
-      position: absolute; inset: -4px;
-      border-radius: 24px;
+      position: absolute; inset: -5px;
+      border-radius: 22px;
       border: 3px solid var(--accent);
       animation: ringPulse 2s ease-in-out infinite;
     }
     @keyframes ringPulse {
       0%,100% { opacity: 1;   box-shadow: 0 0 0 0   rgba(108,99,255,0.5); }
-      50%      { opacity: 0.6; box-shadow: 0 0 0 10px rgba(108,99,255,0); }
-    }
-    #qrCanvas  { display: block; border-radius: 10px; }
-    #qrImg     { display: block; border-radius: 10px; max-width: 100%; max-height: 100%; }
-    #qrDebug   {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-      background: rgba(255,60,60,0.85); color: #fff; padding: 10px 20px;
-      border-radius: 10px; font-size: 13px; font-weight: 600;
-      z-index: 999; display: none; text-align: center; max-width: 90vw;
+      50%      { opacity: 0.7; box-shadow: 0 0 0 10px rgba(108,99,255,0); }
     }
 
-    /* Countdown */
+    /* La imagen QR ocupa todo el contenedor */
+    #qrImg {
+      width:  260px;
+      height: 260px;
+      border-radius: 10px;
+      display: block;
+      background: #fff;
+    }
+
+    /* Spinner mientras carga */
+    .qr-spinner {
+      position: absolute;
+      font-size: 32px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .countdown-wrap {
       display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
     }
@@ -106,77 +105,34 @@
       display: flex; justify-content: space-between; width: 100%;
     }
     .countdown-secs { color: var(--accent); font-weight: 700; }
-    .progress-bar {
-      width: 100%; height: 6px; background: rgba(255,255,255,0.08);
-      border-radius: 6px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; border-radius: 6px;
-      background: linear-gradient(90deg, var(--accent), var(--accent3));
-      transition: width 1s linear;
-    }
+    .progress-bar   { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 6px; overflow: hidden; }
+    .progress-fill  { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--accent), var(--accent3)); transition: width 1s linear; }
 
-    /* Instrucción */
     .instruction {
-      text-align: center;
-      font-size: clamp(13px, 1.6vw, 18px);
-      color: var(--muted);
-      max-width: 420px;
-      line-height: 1.6;
+      text-align: center; font-size: clamp(13px, 1.6vw, 18px);
+      color: var(--muted); max-width: 420px; line-height: 1.6;
     }
     .instruction strong { color: var(--text); }
 
-    /* Reloj */
     .clock {
-      font-size: clamp(28px, 5vw, 64px);
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 3px;
-      color: var(--text);
+      font-size: clamp(28px, 5vw, 64px); font-weight: 800;
+      font-variant-numeric: tabular-nums; letter-spacing: 3px; color: var(--text);
     }
-    .clock-date {
-      font-size: clamp(12px, 1.4vw, 16px);
-      color: var(--muted);
-      text-align: center;
-      margin-top: -16px;
-    }
+    .clock-date { font-size: clamp(12px, 1.4vw, 16px); color: var(--muted); text-align: center; margin-top: -16px; }
 
-    /* ── Botón pantalla completa ── */
+    /* Botón pantalla completa */
     .fullscreen-btn {
-      position: fixed;
-      top: 18px; right: 18px;
-      z-index: 200;
-      background: var(--accent);
-      border: none;
-      color: #fff;
-      border-radius: 12px;
-      padding: 12px 22px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      position: fixed; top: 18px; right: 18px; z-index: 200;
+      background: var(--accent); border: none; color: #fff;
+      border-radius: 12px; padding: 12px 22px; font-size: 16px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
       box-shadow: 0 4px 20px rgba(108,99,255,0.5);
       transition: background 0.2s, transform 0.15s, opacity 0.5s;
-      opacity: 1;
-      letter-spacing: 0.3px;
     }
     .fullscreen-btn:hover  { background: #8076ff; transform: scale(1.05); }
-    .fullscreen-btn:active { transform: scale(0.97); }
-    /* Una vez en fullscreen: casi invisible, reaparece al mover el ratón */
-    .fullscreen-btn.fs-active {
-      opacity: 0;
-      pointer-events: none;
-    }
-    /* Al mover el ratón/dedo se vuelve a mostrar */
-    body:hover .fullscreen-btn.fs-active,
-    .fullscreen-btn.fs-active:hover {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    .fullscreen-btn.fs-active { opacity: 0; pointer-events: none; }
+    body:hover .fullscreen-btn.fs-active { opacity: 1; pointer-events: auto; }
 
-    /* Registro reciente (flash) */
     .recent-flash {
       position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
       background: rgba(67,233,123,0.15); border: 1px solid rgba(67,233,123,0.4);
@@ -198,7 +154,6 @@
   <div class="orb orb-3"></div>
 </div>
 
-<!-- Botón pantalla completa — bien visible, esquina superior derecha -->
 <button class="fullscreen-btn" id="fsBtn" onclick="toggleFullscreen()">
   <span id="fsIcon">⛶</span>
   <span id="fsLabel">Pantalla completa</span>
@@ -215,9 +170,9 @@
   <div class="clock-date" id="clockDate"></div>
 
   <div class="qr-card">
-    <div class="qr-ring-wrap" id="qrWrap">
-      <canvas id="qrCanvas" style="display:none"></canvas>
-      <img id="qrImg" alt="QR Asistencia" />
+    <div class="qr-wrap" id="qrWrap">
+      <div class="qr-spinner" id="qrSpinner">⏳</div>
+      <img id="qrImg" alt="QR" style="display:none" />
     </div>
     <div class="countdown-wrap">
       <div class="countdown-label">
@@ -232,133 +187,95 @@
 
   <div class="instruction">
     <strong>¿Cómo registrar?</strong><br>
-    Abre el link de registro en tu celular o escanea este QR.<br>
+    Escanea este QR con tu celular o abre el link de registro.<br>
     Ingresa tu cédula y confirma tu asistencia.
   </div>
 </div>
 
-<!-- Flash de último registro -->
 <div class="recent-flash" id="recentFlash">
   <span id="recentIcon">🟢</span>
   <span id="recentText">—</span>
 </div>
 
-<!-- Debug visible en TV si algo falla -->
-<div id="qrDebug"></div>
-
-<!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<!-- QR Code generator (local) -->
-<script src="qrcode.min.js"></script>
 <script>
 'use strict';
 
-// ── Supabase ────────────────────────────────────────────────────
+// ── Supabase ─────────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ── QR Token ────────────────────────────────────────────────────
+// ── Token QR (ventana de 30 s) ────────────────────────────────────
 function generarToken() {
   const w = Math.floor(Date.now() / 30000);
   return btoa(JSON.stringify({ app: 'ghpro-asist', w }));
 }
 
-// ── Helper de debug visible en pantalla ─────────────────────────
-function dbg(msg) {
-  console.warn('[QR]', msg);
-  const el = document.getElementById('qrDebug');
-  if (el) { el.textContent = msg; el.style.display = 'block'; }
-}
-function dbgOk() {
-  const el = document.getElementById('qrDebug');
-  if (el) el.style.display = 'none';
-}
-
-// ── Calcular tamaño QR ───────────────────────────────────────────
-function calcQrSize() {
-  // Prioridad 1: offsetWidth del contenedor (ya tiene tamaño fijo en CSS)
-  const wrap = document.getElementById('qrWrap');
-  if (wrap && wrap.offsetWidth > 40) return wrap.offsetWidth - 24;
-  // Prioridad 2: 28% del lado más corto de la pantalla
-  const vmin = Math.min(
-    window.innerWidth  || screen.width  || 900,
-    window.innerHeight || screen.height || 600
-  );
-  const s = Math.floor(vmin * 0.28);
-  return Math.max(200, Math.min(s, 340));
-}
-
-// ── QR Canvas ───────────────────────────────────────────────────
-let secsLeft = 30;
-
-async function dibujarQR() {
-  const img    = document.getElementById('qrImg');
-  const canvas = document.getElementById('qrCanvas');
-  if (!img && !canvas) { dbg('Sin elemento QR en el DOM'); return; }
-
+// ── URL de destino del QR ─────────────────────────────────────────
+function getLoginUrl() {
   const token = generarToken();
-  const url   = location.origin
-    + location.pathname.replace('asistencia-qr.html', 'asistencia-login.html')
-    + '?qr=' + encodeURIComponent(token);
-  const size  = calcQrSize();
-
-  // ── Estrategia 1: toDataURL → <img>  (más compatible con TVs) ──
-  if (typeof QRCode !== 'undefined' && img) {
-    try {
-      const dataUrl = await QRCode.toDataURL(url, {
-        width: size, margin: 1,
-        color: { dark: '#0a0a1a', light: '#ffffff' },
-        errorCorrectionLevel: 'M',
-        type: 'image/png',
-      });
-      img.src = dataUrl;
-      img.style.width  = size + 'px';
-      img.style.height = size + 'px';
-      dbgOk();
-      return;
-    } catch (e) {
-      dbg('toDataURL falló: ' + e.message + ' | intentando toCanvas…');
-    }
-  }
-
-  // ── Estrategia 2: toCanvas  (fallback) ──────────────────────────
-  if (typeof QRCode !== 'undefined' && canvas) {
-    try {
-      canvas.style.display = 'block';
-      if (img) img.style.display = 'none';
-      await QRCode.toCanvas(canvas, url, {
-        width: size, margin: 1,
-        color: { dark: '#0a0a1a', light: '#ffffff' },
-        errorCorrectionLevel: 'M',
-      });
-      dbgOk();
-      return;
-    } catch (e) {
-      dbg('toCanvas falló: ' + e.message + ' | intentando API externa…');
-    }
-  }
-
-  // ── Estrategia 3: QR via API pública (si las anteriores fallan) ──
-  if (img) {
-    try {
-      const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=0a0a1a&margin=1`;
-      img.src = apiUrl;
-      img.style.width  = size + 'px';
-      img.style.height = size + 'px';
-      dbg('Usando API externa de QR (sin librería local)');
-      return;
-    } catch (e) {
-      dbg('Todos los métodos QR fallaron: ' + e.message);
-    }
-  }
-
-  if (typeof QRCode === 'undefined') {
-    dbg('ERROR: qrcode.min.js no se cargó. Revisar la ruta del archivo.');
-  }
+  const base  = location.href.replace('asistencia-qr.html', 'asistencia-login.html');
+  return base + '?qr=' + encodeURIComponent(token);
 }
 
-// ── Tick (countdown) ────────────────────────────────────────────
+// ── Dibujar QR usando API externa (sin canvas, sin librería local) ─
+// qrserver.com es una API REST gratuita y confiable.
+// Solo necesita que el TV tenga acceso a internet.
+let secsLeft  = 30;
+let qrLoading = false;
+
+function dibujarQR() {
+  if (qrLoading) return;
+  qrLoading = true;
+
+  const img     = document.getElementById('qrImg');
+  const spinner = document.getElementById('qrSpinner');
+  const loginUrl = getLoginUrl();
+
+  // Mostramos el spinner mientras carga
+  if (spinner) spinner.style.display = 'block';
+  if (img)     img.style.display     = 'none';
+
+  const qrApiUrl =
+    'https://api.qrserver.com/v1/create-qr-code/' +
+    '?size=260x260' +
+    '&data='    + encodeURIComponent(loginUrl) +
+    '&bgcolor=ffffff' +
+    '&color=0a0a1a' +
+    '&margin=2' +
+    '&ecc=M' +
+    '&t=' + Date.now(); // evitar caché del TV
+
+  if (!img) { qrLoading = false; return; }
+
+  img.onload = function () {
+    if (spinner) spinner.style.display = 'none';
+    img.style.display = 'block';
+    qrLoading = false;
+  };
+
+  img.onerror = function () {
+    // Si la API externa falla, intentar con Google Charts
+    img.onerror = function () {
+      // Si Google también falla, mostrar texto de fallback
+      if (spinner) spinner.textContent = '❌ Sin internet';
+      qrLoading = false;
+    };
+    img.src =
+      'https://chart.googleapis.com/chart' +
+      '?cht=qr' +
+      '&chs=260x260' +
+      '&chl=' + encodeURIComponent(loginUrl) +
+      '&choe=UTF-8';
+  };
+
+  img.src = qrApiUrl;
+}
+
+// ── Countdown ─────────────────────────────────────────────────────
+let secsInterval = null;
+
 function tick() {
   secsLeft--;
   const fill = document.getElementById('progressFill');
@@ -372,7 +289,7 @@ function tick() {
   }
 }
 
-// ── Reloj ────────────────────────────────────────────────────────
+// ── Reloj ─────────────────────────────────────────────────────────
 function actualizarReloj() {
   const now   = new Date();
   const hora  = now.toTimeString().slice(0, 8);
@@ -385,7 +302,7 @@ function actualizarReloj() {
   if (dateEl)  dateEl.textContent  = fecha.charAt(0).toUpperCase() + fecha.slice(1);
 }
 
-// ── Flash de último registro ─────────────────────────────────────
+// ── Flash registro reciente ───────────────────────────────────────
 let flashTimeout = null;
 
 function mostrarFlash(nombre, tipo) {
@@ -393,26 +310,23 @@ function mostrarFlash(nombre, tipo) {
   const icon  = document.getElementById('recentIcon');
   const text  = document.getElementById('recentText');
   if (!flash) return;
-
   flash.classList.remove('show', 'salida');
   void flash.offsetWidth;
-
   icon.textContent = tipo === 'entrada' ? '🟢' : '🔴';
-  text.textContent = `${tipo === 'entrada' ? 'Entrada' : 'Salida'}: ${nombre}`;
+  text.textContent = (tipo === 'entrada' ? 'Entrada' : 'Salida') + ': ' + nombre;
   if (tipo === 'salida') flash.classList.add('salida');
   flash.classList.add('show');
-
   clearTimeout(flashTimeout);
   flashTimeout = setTimeout(() => flash.classList.remove('show'), 5000);
 }
 
-// ── Realtime ─────────────────────────────────────────────────────
+// ── Realtime Supabase ─────────────────────────────────────────────
 function suscribirRegistros() {
   sb.channel('asistencia-realtime')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'asistencia' }, (payload) => {
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'asistencia' }, function(payload) {
       const r = payload.new;
       mostrarFlash(r.trabajador_nombre, r.tipo);
-      secsLeft = 0; // forzar renovación inmediata del QR
+      secsLeft = 0; // renovar QR inmediatamente
     })
     .subscribe();
 }
@@ -420,73 +334,41 @@ function suscribirRegistros() {
 // ── Pantalla completa ─────────────────────────────────────────────
 function toggleFullscreen() {
   const el   = document.documentElement;
-  const isFs = !!(
-    document.fullscreenElement ||
-    document.webkitFullscreenElement ||
-    document.mozFullScreenElement
-  );
-
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
   if (!isFs) {
-    const req = el.requestFullscreen
-      || el.webkitRequestFullscreen
-      || el.mozRequestFullScreen
-      || el.msRequestFullscreen;
-    if (req) req.call(el);
+    (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen || function(){}).call(el);
   } else {
-    const exit = document.exitFullscreen
-      || document.webkitExitFullscreen
-      || document.mozCancelFullScreen
-      || document.msExitFullscreen;
-    if (exit) exit.call(document);
+    (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen || function(){}).call(document);
   }
 }
 
-function _onFsChange() {
+function onFsChange() {
   const btn   = document.getElementById('fsBtn');
   const icon  = document.getElementById('fsIcon');
   const label = document.getElementById('fsLabel');
-  const isFs  = !!(
-    document.fullscreenElement ||
-    document.webkitFullscreenElement ||
-    document.mozFullScreenElement
-  );
-
+  const isFs  = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
   if (isFs) {
     icon.textContent  = '✕';
     label.textContent = 'Salir fullscreen';
     btn.classList.add('fs-active');
-    // Tras 3 s sin interacción el botón desaparece
-    clearTimeout(btn._hideTimer);
-    btn._hideTimer = setTimeout(() => btn.classList.add('fs-active'), 3000);
   } else {
     icon.textContent  = '⛶';
     label.textContent = 'Pantalla completa';
     btn.classList.remove('fs-active');
   }
-  // Redibujar QR por si el viewport cambió al entrar/salir de fullscreen
-  setTimeout(dibujarQR, 200);
 }
+document.addEventListener('fullscreenchange',       onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+document.addEventListener('mozfullscreenchange',    onFsChange);
 
-document.addEventListener('fullscreenchange',       _onFsChange);
-document.addEventListener('webkitfullscreenchange', _onFsChange);
-document.addEventListener('mozfullscreenchange',    _onFsChange);
-
-// ── Init ─────────────────────────────────────────────────────────
-window.addEventListener('load', async () => {
+// ── Init ──────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
   actualizarReloj();
-
-  // Esperar a que el layout esté pintado (importante en TVs lentos)
-  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 200)));
-
-  await dibujarQR();
-
+  dibujarQR();
   setInterval(tick, 1000);
   setInterval(actualizarReloj, 1000);
-
   suscribirRegistros();
 });
-
-window.addEventListener('resize', () => dibujarQR());
 </script>
 </body>
 </html>
