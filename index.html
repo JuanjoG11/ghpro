@@ -1046,11 +1046,91 @@
       </div>
     </div>
 
+<div class="page" id="page-asistencia">
+  <div class="page-header">
+    <div class="page-title">🕐 <span>Asistencia</span></div>
+    <div class="page-subtitle" id="asistFecha">Historial de registros</div>
+    <div class="page-actions">
+      <button class="btn btn-secondary" onclick="exportarAsistencia()">📥 Exportar CSV</button>
+    </div>
+  </div>
+
+  <!-- Links a páginas externas -->
+  <div class="asist-links">
+    <a class="asist-link-card" href="asistencia-qr.html" target="_blank">
+      <div class="asist-link-icon">📺</div>
+      <div>
+        <div class="asist-link-title">Pantalla QR</div>
+        <div class="asist-link-sub">Abrir en el monitor o TV de la entrada</div>
+      </div>
+    </a>
+    <a class="asist-link-card" href="asistencia-login.html" target="_blank">
+      <div class="asist-link-icon">📱</div>
+      <div>
+        <div class="asist-link-title">Registro Trabajador</div>
+        <div class="asist-link-sub">Ingresar cédula o escanear QR desde el celular</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Stats del día -->
+  <div class="stats-grid" id="asistStats" style="margin-bottom:24px"></div>
+
+  <!-- Historial -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📋 Historial de asistencia</span>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="date" id="asistFiltroFecha" onchange="renderTablaAsistencia();_actualizarStatsHoy();"
+          style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text-primary);padding:6px 10px;font-size:13px">
+        <div class="search-input-wrap" style="min-width:200px">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="asistSearch"
+            placeholder="Buscar nombre o cédula..."
+            oninput="renderTablaAsistencia()">
+        </div>
+        <select id="asistFiltroTipo" onchange="renderTablaAsistencia()"
+          style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text-primary);padding:6px 10px;font-size:13px">
+          <option value="">Todos</option>
+          <option value="entrada">Entradas</option>
+          <option value="salida">Salidas</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Tipo</th>
+              <th>Trabajador</th>
+              <th>Cédula</th>
+              <th>Cargo</th>
+              <th>Ciudad</th>
+              <th>Método</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="asistTbody"></tbody>
+        </table>
+      </div>
+      <div id="asistLogEmpty" class="empty-state" style="display:none">
+        <div class="empty-state-icon">🕐</div>
+        <div class="empty-state-text">Sin registros para esta fecha</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /page-asistencia -->
   </main><!-- /main-content -->
 </div><!-- /app-shell -->
 
 <!-- ===== MODALS ===== -->
-
 <!-- Modal Trabajador -->
 <div class="modal-overlay" id="modalTrabajador">
   <div class="modal">
@@ -1418,87 +1498,6 @@
   }
 </style>
 
-<div class="page" id="page-asistencia">
-  <div class="page-header">
-    <div class="page-title">🕐 <span>Asistencia</span></div>
-    <div class="page-subtitle" id="asistFecha">Historial de registros</div>
-    <div class="page-actions">
-      <button class="btn btn-secondary" onclick="exportarAsistencia()">📥 Exportar CSV</button>
-    </div>
-  </div>
-
-  <!-- Links a páginas externas -->
-  <div class="asist-links">
-    <a class="asist-link-card" href="asistencia-qr.html" target="_blank">
-      <div class="asist-link-icon">📺</div>
-      <div>
-        <div class="asist-link-title">Pantalla QR</div>
-        <div class="asist-link-sub">Abrir en el monitor o TV de la entrada</div>
-      </div>
-    </a>
-    <a class="asist-link-card" href="asistencia-login.html" target="_blank">
-      <div class="asist-link-icon">📱</div>
-      <div>
-        <div class="asist-link-title">Registro Trabajador</div>
-        <div class="asist-link-sub">Ingresar cédula o escanear QR desde el celular</div>
-      </div>
-    </a>
-  </div>
-
-  <!-- Stats del día -->
-  <div class="stats-grid" id="asistStats" style="margin-bottom:24px"></div>
-
-  <!-- Historial -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">📋 Historial de asistencia</span>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <input type="date" id="asistFiltroFecha" onchange="renderTablaAsistencia();_actualizarStatsHoy();"
-          style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text-primary);padding:6px 10px;font-size:13px">
-        <div class="search-input-wrap" style="min-width:200px">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="asistSearch"
-            placeholder="Buscar nombre o cédula..."
-            oninput="renderTablaAsistencia()">
-        </div>
-        <select id="asistFiltroTipo" onchange="renderTablaAsistencia()"
-          style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text-primary);padding:6px 10px;font-size:13px">
-          <option value="">Todos</option>
-          <option value="entrada">Entradas</option>
-          <option value="salida">Salidas</option>
-        </select>
-      </div>
-    </div>
-    <div class="card-body" style="padding:0">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Hora</th>
-              <th>Tipo</th>
-              <th>Trabajador</th>
-              <th>Cédula</th>
-              <th>Cargo</th>
-              <th>Ciudad</th>
-              <th>Método</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="asistTbody"></tbody>
-        </table>
-      </div>
-      <div id="asistLogEmpty" class="empty-state" style="display:none">
-        <div class="empty-state-icon">🕐</div>
-        <div class="empty-state-text">Sin registros para esta fecha</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-</div><!-- /page-asistencia -->
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
