@@ -72,6 +72,11 @@
       padding: 12px;
       border-radius: 20px;
       background: #fff;
+      min-width: 180px;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .qr-ring-wrap::before {
       content: '';
@@ -163,7 +168,7 @@
   <div class="clock-date" id="clockDate"></div>
 
   <div class="qr-card">
-    <div class="qr-ring-wrap">
+    <div class="qr-ring-wrap" id="qrWrap">
       <canvas id="qrCanvas"></canvas>
     </div>
     <div class="countdown-wrap">
@@ -217,7 +222,14 @@ async function dibujarQR() {
   const token  = generarToken();
   // Codificamos el token como una URL que abre directamente la página de login
   const url = `${location.origin}${location.pathname.replace('asistencia-qr.html','asistencia-login.html')}?qr=${encodeURIComponent(token)}`;
-  const size = Math.min(Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.28), 320);
+
+  // Tamaño robusto para TV, PC y móvil:
+  // Usamos el contenedor padre como referencia y limitamos entre 180 y 360px.
+  const wrap = document.getElementById('qrWrap');
+  const refSize = wrap ? Math.min(wrap.offsetWidth || 280, wrap.offsetHeight || 280) : 280;
+  const vmin = Math.min(window.innerWidth || 800, window.innerHeight || 600);
+  const size = Math.max(180, Math.min(Math.floor(vmin * 0.28), refSize || 320, 360));
+
   try {
     await QRCode.toCanvas(canvas, url, {
       width: size, margin: 1,
@@ -288,8 +300,12 @@ function suscribirRegistros() {
 
 // ── Init ─────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
+  // Pequeño delay para asegurar que el DOM y la GPU del TV estén listos
+  await new Promise(r => setTimeout(r, 150));
+
   await dibujarQR();
-  document.getElementById('progressFill').style.width = '100%';
+  const fill = document.getElementById('progressFill');
+  if (fill) fill.style.width = '100%';
 
   setInterval(tick, 1000);
   setInterval(actualizarReloj, 1000);
