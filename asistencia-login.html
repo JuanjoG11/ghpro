@@ -347,7 +347,7 @@ function setTipo(tipo) {
 }
 
 // ── Búsqueda cédula en tiempo real ───────────────────────────────
-function onCedula(val) {
+async function onCedula(val) {
   const cedula = val.trim();
   const card   = document.getElementById('trabajadorCard');
   const btn    = document.getElementById('btnContinuar');
@@ -356,6 +356,7 @@ function onCedula(val) {
     card.className = 'trabajador-card';
     State.trabajador = null;
     btn.disabled = true;
+    btn.innerHTML = '📷 Continuar — Escanear QR';
     return;
   }
 
@@ -365,7 +366,47 @@ function onCedula(val) {
     document.getElementById('tAvatar').style.background = avatarColor(t.nombre);
     document.getElementById('tAvatar').textContent      = t.nombre.charAt(0).toUpperCase();
     document.getElementById('tNombre').textContent      = t.nombre;
-    document.getElementById('tSub').textContent         = [t.cargo, t.ciudad].filter(Boolean).join(' · ');
+
+    // Consultar registros de hoy para este trabajador
+    const { data: hoy } = await sb
+      .from('asistencia')
+      .select('tipo, hora')
+      .eq('cedula', cedula)
+      .eq('fecha', today())
+      .order('hora', { ascending: false });
+
+    const registrosHoy = hoy || [];
+    const ultimoEntrada = registrosHoy.find(r => r.tipo === 'entrada');
+    const ultimaSalida  = registrosHoy.find(r => r.tipo === 'salida');
+
+    // Construir estado descriptivo
+    let estadoTexto = [t.cargo, t.ciudad].filter(Boolean).join(' · ');
+    let estadoExtra = '';
+
+    if (registrosHoy.length > 0) {
+      const partes = [];
+      if (ultimoEntrada) partes.push(`🟢 Entrada: ${fmtHora(ultimoEntrada.hora)}`);
+      if (ultimaSalida)  partes.push(`🔴 Salida: ${fmtHora(ultimaSalida.hora)}`);
+      estadoExtra = partes.join('  ·  ');
+    }
+
+    document.getElementById('tSub').innerHTML = estadoTexto +
+      (estadoExtra ? `<br><span style="font-size:11px;color:var(--accent3)">${estadoExtra}</span>` : '');
+
+    // Sugerir tipo automáticamente
+    if (ultimoEntrada && !ultimaSalida) {
+      // Ya tiene entrada, sugerir salida
+      setTipo('salida');
+      btn.innerHTML = '📷 Continuar — Registrar Salida';
+    } else if (ultimoEntrada && ultimaSalida) {
+      // Ya tiene ambos
+      setTipo('entrada');
+      btn.innerHTML = '📷 Continuar — Nueva Entrada';
+    } else {
+      setTipo('entrada');
+      btn.innerHTML = '📷 Continuar — Registrar Entrada';
+    }
+
     card.className = 'trabajador-card show';
     btn.disabled   = false;
   } else {
@@ -376,6 +417,7 @@ function onCedula(val) {
     document.getElementById('tAvatar').style.background = '#333';
     card.className = 'trabajador-card show not-found';
     btn.disabled   = true;
+    btn.innerHTML  = '📷 Continuar — Escanear QR';
   }
 }
 
