@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gh-pro-v2.0.2';
+const CACHE_NAME = 'gh-pro-v2.0.3';
 const STATIC_ASSETS = [
   '/index.html',
   '/app.js',
@@ -41,10 +41,27 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
+      // Para archivos HTML usar network-first: siempre intentar la red primero
+      // así el TV siempre carga la versión más nueva al actualizar
+      const isHTML = event.request.headers.get('accept') &&
+                     event.request.headers.get('accept').includes('text/html');
+
+      if (isHTML) {
+        return fetch(event.request)
+          .then((response) => {
+            if (response && response.status === 200) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            }
+            return response;
+          })
+          .catch(() => cached || new Response('Sin conexión', { status: 503 }));
+      }
+
+      // Para el resto: cache-first (JS, CSS, imágenes — cambian poco)
       if (cached) return cached;
 
       return fetch(event.request).then((response) => {
-        // Solo cachear respuestas básicas y exitosas con esquema http/https
         const reqUrl = new URL(event.request.url);
         const cacheble =
           response &&
@@ -59,14 +76,12 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       }).catch(() => {
-        // Sin red y sin caché: devolver index.html solo para navegación
         if (event.request.mode === 'navigate') {
           return caches.match('/index.html').then((r) => r || new Response('Sin conexión', {
             status: 503,
             headers: { 'Content-Type': 'text/plain' },
           }));
         }
-        // Para otros recursos (imágenes, scripts) devolver respuesta vacía válida
         return new Response('', {
           status: 503,
           headers: { 'Content-Type': 'text/plain' },

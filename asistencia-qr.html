@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <!-- width=1280 fija el viewport a 1280px lógicos.
+  <!-- Anti-caché: fuerza al TV a siempre bajar la versión más nueva -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <!-- width=1280 fija el viewport a 1280px lógicos. -->
        Con el zoom del TV al 300%, el navegador escala el contenido para que quepa,
        igual que hace con cualquier sitio de escritorio. El QR siempre será visible. -->
   <meta name="viewport" content="width=1280" />
@@ -38,11 +42,11 @@
     .qr-card { background:var(--card);border:2px solid var(--border);border-radius:28px;padding:clamp(18px,3vw,48px);display:flex;flex-direction:column;align-items:center;gap:clamp(14px,2vh,28px);animation:cardPulse 4s ease-in-out infinite; }
     @keyframes cardPulse { 0%,100%{box-shadow:0 0 60px rgba(108,99,255,0.2);}50%{box-shadow:0 0 90px rgba(108,99,255,0.4);} }
 
-    /* Contenedor QR: tamaño basado en viewport para verse bien en TV grande */
+    /* Contenedor QR: tamaño FIJO grande para que sea visible en cualquier zoom del TV */
     .qr-wrap {
       position: relative;
-      width: min(40vmin, 380px);
-      height: min(40vmin, 380px);
+      width: 420px;
+      height: 420px;
       background: #ffffff;
       border-radius: 18px;
       display: flex; align-items: center; justify-content: center;
@@ -91,6 +95,18 @@
     .recent-flash.show   { opacity:1; }
     .recent-flash.salida { background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.4); }
   </style>
+  <script>
+    // Auto-agrega ?v=FECHA a la URL para forzar recarga fresca en el TV.
+    // Si ya tiene el parámetro del día de hoy, no hace nada.
+    (function() {
+      var hoy = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      var params = new URLSearchParams(location.search);
+      if (params.get('v') !== hoy) {
+        params.set('v', hoy);
+        location.replace(location.pathname + '?' + params.toString());
+      }
+    })();
+  </script>
 </head>
 <body>
 
@@ -181,11 +197,10 @@ function getLoginUrl() {
 function dibujarQR() {
   var el = document.getElementById('qrContainer');
   if (!el) return;
-  el.innerHTML = ''; // limpiar el anterior
+  el.innerHTML = '';
 
-  // Leer el tamaño real del contenedor padre (qr-wrap) en el momento de dibujar
-  var wrap = el.parentElement;
-  var sz   = (wrap && wrap.offsetWidth > 40) ? (wrap.offsetWidth - 20) : 300;
+  // Tamaño fijo grande — el SVG se escala via CSS al 100% del contenedor
+  var sz = 400;
 
   try {
     new QRCode(el, {
@@ -283,6 +298,21 @@ window.addEventListener('load', function() {
   setInterval(tick, 1000);
   setInterval(actualizarReloj, 1000);
   suscribirRegistros();
+
+  // Auto-reload: cada 5 min verifica si el archivo cambió en el servidor.
+  // Si cambió → recarga automáticamente. El TV siempre tendrá la versión nueva.
+  var _lastEtag = '';
+  setInterval(function() {
+    fetch(location.href, { method: 'HEAD', cache: 'no-store' })
+      .then(function(r) {
+        var etag = r.headers.get('etag') || r.headers.get('last-modified') || '';
+        if (_lastEtag && etag && etag !== _lastEtag) {
+          location.reload(true);
+        }
+        if (etag) _lastEtag = etag;
+      })
+      .catch(function() {});
+  }, 5 * 60 * 1000);
 });
 </script>
 </body>
