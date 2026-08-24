@@ -404,7 +404,7 @@ function cancelarScanner() {
 }
 
 // ── Registrar asistencia ─────────────────────────────────────────
-async function registrar(metodo = 'cedula') {
+async function registrar(metodo = 'qr') {
   if (!State.trabajador) return toast('Ingresa tu número de cédula', 'warning');
 
   const t        = State.trabajador;
@@ -423,6 +423,7 @@ async function registrar(metodo = 'cedula') {
   const dup = (recientes || []).find(r => r.hora && r.hora.slice(0,5) === hora.slice(0,5));
   if (dup) {
     toast(`Ya tienes ${tipo} registrada a las ${fmtHora(hora)}`, 'warning');
+    resetearFormulario();
     return;
   }
 
@@ -438,21 +439,22 @@ async function registrar(metodo = 'cedula') {
     metodo,
   };
 
-  const btn = document.getElementById('btnRegistrar');
-  btn.disabled = true;
-  btn.textContent = 'Guardando...';
+  toast('Guardando...', 'info', 1500);
 
   const { error } = await sb.from('asistencia').insert([row]);
 
-  btn.disabled = false;
-  btn.innerHTML = '✅ Registrar asistencia';
-
-  if (error) { toast('Error al guardar: ' + error.message, 'error'); return; }
+  if (error) { toast('Error al guardar: ' + error.message, 'error'); resetearFormulario(); return; }
 
   const emoji = tipo === 'entrada' ? '🟢' : '🔴';
   toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada — ${t.nombre}`, 'success', 5000);
 
-  // Volver a pantalla de cédula limpia
+  // Mostrar recientes solo del trabajador que acaba de registrar
+  await cargarRecientes(t.cedula);
+  resetearFormulario();
+}
+
+// ── Resetear formulario al estado inicial ────────────────────────
+function resetearFormulario() {
   document.getElementById('cedulaInput').value = '';
   document.getElementById('trabajadorCard').className = 'trabajador-card';
   document.getElementById('cedulaSection').style.display  = '';
@@ -461,23 +463,23 @@ async function registrar(metodo = 'cedula') {
   document.getElementById('btnContinuar').disabled = true;
   State.trabajador = null;
   State.qrValidado = false;
-
-  // Actualizar lista recientes
-  await cargarRecientes();
   setTimeout(() => document.getElementById('cedulaInput').focus(), 300);
 }
 
-// ── Recientes del día ────────────────────────────────────────────
-async function cargarRecientes() {
+// ── Recientes: solo del trabajador que acaba de registrar ────────
+async function cargarRecientes(cedula) {
+  const wrap  = document.getElementById('recientesWrap');
+  const lista = document.getElementById('recientesList');
+  if (!cedula) { wrap.style.display = 'none'; return; }
+
   const { data } = await sb
     .from('asistencia')
-    .select('trabajador_nombre, tipo, hora, cedula')
+    .select('trabajador_nombre, tipo, hora')
+    .eq('cedula', cedula)
     .eq('fecha', today())
     .order('hora', { ascending: false })
     .limit(5);
 
-  const wrap  = document.getElementById('recientesWrap');
-  const lista = document.getElementById('recientesList');
   if (!data || !data.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = '';
   lista.innerHTML = data.map(r => `
@@ -486,6 +488,9 @@ async function cargarRecientes() {
       <span class="rec-tipo ${r.tipo}">${r.tipo}</span>
       <span class="rec-nombre">${r.trabajador_nombre}</span>
     </div>`).join('');
+
+  // Ocultar después de 8 segundos para que no quede visible al siguiente trabajador
+  setTimeout(() => { wrap.style.display = 'none'; }, 8000);
 }
 
 // ── Scanner QR con cámara ────────────────────────────────────────
@@ -548,8 +553,10 @@ function procesarQR(data) {
 
   if (!valido) {
     toast('Código QR inválido o expirado. Intenta de nuevo.', 'error', 5000);
-    // Volver a mostrar cédula para reintentar
-    cancelarScanner();
+    // Volver a mostrar cédula para reintentar sin cerrar doble
+    document.getElementById('cedulaSection').style.display  = '';
+    document.getElementById('trabajadorCard').style.display = '';
+    document.getElementById('btnContinuar').style.display   = '';
     return;
   }
 
@@ -601,7 +608,6 @@ window.addEventListener('load', async () => {
   const { data } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
   State.trabajadores = data || [];
 
-  await cargarRecientes();
   document.getElementById('cedulaInput').focus();
 });
 </script>
