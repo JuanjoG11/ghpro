@@ -146,32 +146,16 @@
       content: ''; flex: 1; height: 1px; background: var(--border);
     }
 
-    /* Botón QR scanner */
-    .btn-qr {
-      width: 100%; padding: 14px; border-radius: var(--radius-sm);
-      border: 2px solid var(--border); background: none;
-      color: var(--secondary); font-size: 15px; font-weight: 600; cursor: pointer;
-      transition: all var(--transition);
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+    /* Aviso QR inválido */
+    .qr-bloqueado {
+      width: 100%; max-width: 420px;
+      background: rgba(224,85,85,0.1); border: 1px solid rgba(224,85,85,0.4);
+      border-radius: var(--radius); padding: 32px 24px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
     }
-    .btn-qr:hover { border-color: var(--accent); color: var(--text); background: rgba(108,99,255,0.08); }
-
-    /* Visor cámara */
-    .scanner-wrap {
-      display: none; flex-direction: column; align-items: center; gap: 12px;
-      width: 100%;
-    }
-    .scanner-wrap.show { display: flex; }
-    #scannerVideo {
-      width: 100%; max-width: 300px; border-radius: 14px;
-      border: 2px solid var(--accent); aspect-ratio: 1;
-      object-fit: cover; background: #000;
-    }
-    .scanner-hint { font-size: 12px; color: var(--muted); text-align: center; }
-    .btn-cancel {
-      background: none; border: none; color: var(--muted); font-size: 13px;
-      cursor: pointer; text-decoration: underline; padding: 4px;
-    }
+    .qr-bloqueado .icon { font-size: 48px; }
+    .qr-bloqueado .titulo { font-size: 18px; font-weight: 800; color: var(--danger); }
+    .qr-bloqueado .desc { font-size: 14px; color: var(--muted); line-height: 1.5; }
 
     /* Toast */
     .toast-container {
@@ -257,18 +241,10 @@
       </div>
     </div>
 
-    <!-- Botón Continuar (visible cuando hay trabajador encontrado) -->
+    <!-- Botón Registrar -->
     <button class="btn-registrar" id="btnContinuar" onclick="continuar()" disabled>
-      📷 Continuar — Escanear QR
+      ✅ Registrar Asistencia
     </button>
-
-    <!-- Visor de cámara (jsQR) — se abre al pulsar Continuar -->
-    <div class="scanner-wrap" id="scannerWrap">
-      <video id="scannerVideo" playsinline muted></video>
-      <canvas id="scannerCanvas" style="display:none"></canvas>
-      <div class="scanner-hint">Apunta la cámara al código QR de la pantalla principal</div>
-      <button class="btn-cancel" onclick="cancelarScanner()">✕ Cancelar — volver a cédula</button>
-    </div>
 
     <!-- Historial reciente del día -->
     <div id="recientesWrap" style="display:none">
@@ -284,8 +260,6 @@
 
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<!-- jsQR para escanear QR con la cámara (local) -->
-<script src="jsqr.min.js"></script>
 
 <script>
 'use strict';
@@ -297,18 +271,15 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── Estado ───────────────────────────────────────────────────────
 const State = {
-  tipo:        'entrada',
-  trabajador:  null,
+  tipo:         'entrada',
+  trabajador:   null,
   trabajadores: [],
-  scannerStream: null,
-  scannerRAF:    null,
-  qrValidado:   false,
 };
 
 // ── Helpers ──────────────────────────────────────────────────────
-const today    = () => new Date().toISOString().split('T')[0];
+const today      = () => new Date().toISOString().split('T')[0];
 const horaActual = () => new Date().toTimeString().slice(0, 8);
-const fmtHora  = h => h ? h.slice(0, 5) : '—';
+const fmtHora    = h  => h ? h.slice(0, 5) : '—';
 
 const AVATAR_COLORS = ['#6c63ff','#ff6584','#43e97b','#f7971e','#1e90ff','#ff9f43'];
 const avatarColor   = s => AVATAR_COLORS[(s || '').charCodeAt(0) % AVATAR_COLORS.length];
@@ -353,10 +324,10 @@ async function onCedula(val) {
   const btn    = document.getElementById('btnContinuar');
 
   if (cedula.length < 4) {
-    card.className = 'trabajador-card';
+    card.className   = 'trabajador-card';
     State.trabajador = null;
-    btn.disabled = true;
-    btn.innerHTML = '📷 Continuar — Escanear QR';
+    btn.disabled     = true;
+    btn.innerHTML    = '✅ Registrar Asistencia';
     return;
   }
 
@@ -375,36 +346,32 @@ async function onCedula(val) {
       .eq('fecha', today())
       .order('hora', { ascending: false });
 
-    const registrosHoy = hoy || [];
+    const registrosHoy  = hoy || [];
     const ultimoEntrada = registrosHoy.find(r => r.tipo === 'entrada');
     const ultimaSalida  = registrosHoy.find(r => r.tipo === 'salida');
 
-    // Construir estado descriptivo
+    // Estado descriptivo
     let estadoTexto = [t.cargo, t.ciudad].filter(Boolean).join(' · ');
     let estadoExtra = '';
-
     if (registrosHoy.length > 0) {
       const partes = [];
       if (ultimoEntrada) partes.push(`🟢 Entrada: ${fmtHora(ultimoEntrada.hora)}`);
       if (ultimaSalida)  partes.push(`🔴 Salida: ${fmtHora(ultimaSalida.hora)}`);
       estadoExtra = partes.join('  ·  ');
     }
-
     document.getElementById('tSub').innerHTML = estadoTexto +
       (estadoExtra ? `<br><span style="font-size:11px;color:var(--accent3)">${estadoExtra}</span>` : '');
 
     // Sugerir tipo automáticamente
     if (ultimoEntrada && !ultimaSalida) {
-      // Ya tiene entrada, sugerir salida
       setTipo('salida');
-      btn.innerHTML = '📷 Continuar — Registrar Salida';
+      btn.innerHTML = '✅ Registrar Salida';
     } else if (ultimoEntrada && ultimaSalida) {
-      // Ya tiene ambos
       setTipo('entrada');
-      btn.innerHTML = '📷 Continuar — Nueva Entrada';
+      btn.innerHTML = '✅ Registrar Nueva Entrada';
     } else {
       setTipo('entrada');
-      btn.innerHTML = '📷 Continuar — Registrar Entrada';
+      btn.innerHTML = '✅ Registrar Entrada';
     }
 
     card.className = 'trabajador-card show';
@@ -417,32 +384,14 @@ async function onCedula(val) {
     document.getElementById('tAvatar').style.background = '#333';
     card.className = 'trabajador-card show not-found';
     btn.disabled   = true;
-    btn.innerHTML  = '📷 Continuar — Escanear QR';
+    btn.innerHTML  = '✅ Registrar Asistencia';
   }
 }
 
-// ── Continuar: oculta cédula, abre cámara ────────────────────────
+// ── Continuar: registrar directamente (QR ya validado al entrar) ──
 async function continuar() {
   if (!State.trabajador) return;
-  // Ocultar sección cédula y botón
-  document.getElementById('cedulaSection').style.display  = 'none';
-  document.getElementById('trabajadorCard').style.display = 'none';
-  document.getElementById('btnContinuar').style.display   = 'none';
-  // Abrir cámara
-  await abrirScanner();
-}
-
-// ── Cancelar scanner: vuelve a la pantalla de cédula ─────────────
-function cancelarScanner() {
-  cerrarScanner();
-  document.getElementById('cedulaSection').style.display  = '';
-  document.getElementById('trabajadorCard').style.display = '';
-  document.getElementById('btnContinuar').style.display   = '';
-  // Limpiar para reiniciar
-  document.getElementById('cedulaInput').value = '';
-  document.getElementById('trabajadorCard').className = 'trabajador-card';
-  document.getElementById('btnContinuar').disabled = true;
-  State.trabajador = null;
+  await registrar('qr');
 }
 
 // ── Registrar asistencia ─────────────────────────────────────────
@@ -453,6 +402,9 @@ async function registrar(metodo = 'qr') {
   const fechaHoy = today();
   const hora     = horaActual();
   const tipo     = State.tipo;
+
+  const btn = document.getElementById('btnContinuar');
+  btn.disabled = true;
 
   // Anti-duplicado: mismo tipo mismo minuto
   const { data: recientes } = await sb
@@ -473,8 +425,8 @@ async function registrar(metodo = 'qr') {
     trabajador_id:     t.id,
     trabajador_nombre: t.nombre,
     cedula:            t.cedula,
-    cargo:             t.cargo   || '',
-    ciudad:            t.ciudad  || '',
+    cargo:             t.cargo  || '',
+    ciudad:            t.ciudad || '',
     tipo,
     fecha:             fechaHoy,
     hora,
@@ -485,12 +437,11 @@ async function registrar(metodo = 'qr') {
 
   const { error } = await sb.from('asistencia').insert([row]);
 
-  if (error) { toast('Error al guardar: ' + error.message, 'error'); resetearFormulario(); return; }
+  if (error) { toast('Error al guardar: ' + error.message, 'error'); btn.disabled = false; return; }
 
   const emoji = tipo === 'entrada' ? '🟢' : '🔴';
   toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada — ${t.nombre}`, 'success', 5000);
 
-  // Mostrar recientes solo del trabajador que acaba de registrar
   await cargarRecientes(t.cedula);
   resetearFormulario();
 }
@@ -499,16 +450,14 @@ async function registrar(metodo = 'qr') {
 function resetearFormulario() {
   document.getElementById('cedulaInput').value = '';
   document.getElementById('trabajadorCard').className = 'trabajador-card';
-  document.getElementById('cedulaSection').style.display  = '';
-  document.getElementById('trabajadorCard').style.display = '';
-  document.getElementById('btnContinuar').style.display   = '';
-  document.getElementById('btnContinuar').disabled = true;
+  document.getElementById('btnContinuar').disabled    = true;
+  document.getElementById('btnContinuar').innerHTML   = '✅ Registrar Asistencia';
   State.trabajador = null;
-  State.qrValidado = false;
+  setTipo('entrada');
   setTimeout(() => document.getElementById('cedulaInput').focus(), 300);
 }
 
-// ── Recientes: solo del trabajador que acaba de registrar ────────
+// ── Recientes del trabajador que acaba de registrar ──────────────
 async function cargarRecientes(cedula) {
   const wrap  = document.getElementById('recientesWrap');
   const lista = document.getElementById('recientesList');
@@ -531,98 +480,21 @@ async function cargarRecientes(cedula) {
       <span class="rec-nombre">${r.trabajador_nombre}</span>
     </div>`).join('');
 
-  // Ocultar después de 8 segundos para que no quede visible al siguiente trabajador
+  // Ocultar después de 8 segundos
   setTimeout(() => { wrap.style.display = 'none'; }, 8000);
 }
 
-// ── Scanner QR con cámara ────────────────────────────────────────
-async function abrirScanner() {
-  const wrap  = document.getElementById('scannerWrap');
-  const video = document.getElementById('scannerVideo');
-  wrap.classList.add('show');
-
-  try {
-    State.scannerStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } },
-    });
-    video.srcObject = State.scannerStream;
-    await video.play();
-    escanearFrame();
-  } catch (e) {
-    toast('No se pudo acceder a la cámara: ' + e.message, 'error');
-    cerrarScanner();
-  }
-}
-
-function escanearFrame() {
-  const video  = document.getElementById('scannerVideo');
-  const canvas = document.getElementById('scannerCanvas');
-  if (!video || video.readyState < 2) { State.scannerRAF = requestAnimationFrame(escanearFrame); return; }
-
-  canvas.width  = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code      = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-
-  if (code) {
-    procesarQR(code.data);
-    return; // no seguir escaneando hasta procesar
-  }
-  State.scannerRAF = requestAnimationFrame(escanearFrame);
-}
-
-function procesarQR(data) {
-  cerrarScanner();
-
-  // El QR puede contener una URL o el token directamente
-  let token = data;
-  try {
-    const url   = new URL(data);
-    const param = url.searchParams.get('qr');
-    if (param) token = decodeURIComponent(param);
-  } catch (_) { /* no era URL, usar data como token */ }
-
-  // Validar ventana temporal (±1 intervalo de 30 s)
-  const ventanaActual = Math.floor(Date.now() / 30000);
-  let valido = false;
-  try {
-    const obj = JSON.parse(atob(token));
-    valido = obj.app === 'ghpro-asist' && Math.abs(obj.w - ventanaActual) <= 1;
-  } catch (_) { valido = false; }
-
-  if (!valido) {
-    toast('Código QR inválido o expirado. Intenta de nuevo.', 'error', 5000);
-    // Volver a mostrar cédula para reintentar sin cerrar doble
-    document.getElementById('cedulaSection').style.display  = '';
-    document.getElementById('trabajadorCard').style.display = '';
-    document.getElementById('btnContinuar').style.display   = '';
-    return;
-  }
-
-  // QR válido → registrar inmediatamente
-  registrar('qr');
-}
-
-function cerrarScanner() {
-  const wrap  = document.getElementById('scannerWrap');
-  const video = document.getElementById('scannerVideo');
-  cancelAnimationFrame(State.scannerRAF);
-  if (State.scannerStream) {
-    State.scannerStream.getTracks().forEach(t => t.stop());
-    State.scannerStream = null;
-  }
-  if (video) video.srcObject = null;
-  wrap.classList.remove('show');
-}
-
-// ── Leer ?qr= de URL (cuando el QR lleva directo a esta página) ──
+// ── Validar ?qr= al abrir la página ─────────────────────────────
+// Si no hay QR válido, bloquea el formulario y muestra un aviso
 function revisarQRenURL() {
   const params = new URLSearchParams(location.search);
   const qr     = params.get('qr');
-  if (!qr) return;
+
+  // Sin parámetro: acceso directo sin escanear QR → bloquear
+  if (!qr) {
+    mostrarBloqueo('Acceso no autorizado', 'Debes escanear el código QR de la pantalla principal para registrar tu asistencia.');
+    return;
+  }
 
   const ventanaActual = Math.floor(Date.now() / 30000);
   let valido = false;
@@ -631,14 +503,31 @@ function revisarQRenURL() {
     valido = obj.app === 'ghpro-asist' && Math.abs(obj.w - ventanaActual) <= 1;
   } catch (_) {}
 
-  if (valido) {
-    State.qrValidado = true;
-    toast('✅ QR reconocido — ingresa tu cédula para confirmar', 'info', 5000);
-  } else {
-    toast('El QR escaneado ya expiró. Pide uno nuevo en pantalla.', 'warning', 5000);
+  if (!valido) {
+    mostrarBloqueo('QR expirado', 'El código QR escaneado ya no es válido. Vuelve a escanear el código que aparece en la pantalla principal.');
+    return;
   }
-  // Limpiar URL sin recargar
+
+  // QR válido: limpiar URL y permitir el formulario
   history.replaceState({}, '', location.pathname);
+  toast('QR válido — ingresa tu cédula', 'info', 4000);
+}
+
+function mostrarBloqueo(titulo, desc) {
+  // Ocultar todo el formulario
+  document.querySelector('.card').style.display = 'none';
+  document.getElementById('horaDisplay').style.display  = 'none';
+  document.getElementById('fechaDisplay').style.display = 'none';
+
+  // Insertar bloque de aviso
+  const bloqueo = document.createElement('div');
+  bloqueo.className = 'qr-bloqueado';
+  bloqueo.innerHTML = `
+    <div class="icon">🔒</div>
+    <div class="titulo">${titulo}</div>
+    <div class="desc">${desc}</div>
+  `;
+  document.querySelector('.container').appendChild(bloqueo);
 }
 
 // ── Init ─────────────────────────────────────────────────────────
@@ -646,11 +535,15 @@ window.addEventListener('load', async () => {
   actualizarReloj();
   setInterval(actualizarReloj, 1000);
 
+  // Validar QR antes de mostrar el formulario
+  revisarQRenURL();
+
   // Cargar trabajadores desde Supabase
   const { data } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
   State.trabajadores = data || [];
 
-  document.getElementById('cedulaInput').focus();
+  const input = document.getElementById('cedulaInput');
+  if (input) input.focus();
 });
 </script>
 </body>
