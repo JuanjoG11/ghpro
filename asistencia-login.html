@@ -146,7 +146,7 @@
       content: ''; flex: 1; height: 1px; background: var(--border);
     }
 
-    /* Aviso QR inválido */
+    /* Aviso QR inválido / dispositivo bloqueado */
     .qr-bloqueado {
       width: 100%; max-width: 420px;
       background: rgba(224,85,85,0.1); border: 1px solid rgba(224,85,85,0.4);
@@ -156,6 +156,10 @@
     .qr-bloqueado .icon { font-size: 48px; }
     .qr-bloqueado .titulo { font-size: 18px; font-weight: 800; color: var(--danger); }
     .qr-bloqueado .desc { font-size: 14px; color: var(--muted); line-height: 1.5; }
+    .qr-bloqueado.device {
+      background: rgba(200,124,58,0.1); border-color: rgba(200,124,58,0.4);
+    }
+    .qr-bloqueado.device .titulo { color: var(--warning); }
 
     /* Toast */
     .toast-container {
@@ -388,7 +392,41 @@ async function onCedula(val) {
   }
 }
 
-// ── Continuar: registrar directamente (QR ya validado al entrar) ──
+// ── Device ID ────────────────────────────────────────────────────
+// UUID persistente en localStorage que identifica el dispositivo
+function getDeviceId() {
+  const KEY = 'ghpro_device_id';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    // Generar UUID v4 simple
+    id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
+// Verifica si este dispositivo ya registró hoy en Supabase
+async function dispositivoYaRegistroHoy() {
+  const { data } = await sb
+    .from('device_registros')
+    .select('id, cedula')
+    .eq('device_id', getDeviceId())
+    .eq('fecha', today())
+    .limit(1);
+  return data && data.length > 0 ? data[0] : null;
+}
+
+// Guarda el registro del dispositivo en Supabase
+async function guardarRegistroDispositivo(cedula) {
+  await sb.from('device_registros').insert([{
+    device_id: getDeviceId(),
+    fecha:     today(),
+    cedula,
+  }]);
+}
 async function continuar() {
   if (!State.trabajador) return;
   await registrar('qr');
@@ -438,6 +476,9 @@ async function registrar(metodo = 'qr') {
   const { error } = await sb.from('asistencia').insert([row]);
 
   if (error) { toast('Error al guardar: ' + error.message, 'error'); btn.disabled = false; return; }
+
+  // Guardar que este dispositivo ya registró hoy
+  await guardarRegistroDispositivo(t.cedula);
 
   const emoji = tipo === 'entrada' ? '🟢' : '🔴';
   toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada — ${t.nombre}`, 'success', 5000);
@@ -513,17 +554,19 @@ function revisarQRenURL() {
   toast('QR válido — ingresa tu cédula', 'info', 4000);
 }
 
-function mostrarBloqueo(titulo, desc) {
+function mostrarBloqueo(titulo, desc, tipo = '') {
   // Ocultar todo el formulario
   document.querySelector('.card').style.display = 'none';
   document.getElementById('horaDisplay').style.display  = 'none';
   document.getElementById('fechaDisplay').style.display = 'none';
 
+  const icono = tipo === 'device' ? '📵' : '🔒';
+
   // Insertar bloque de aviso
   const bloqueo = document.createElement('div');
-  bloqueo.className = 'qr-bloqueado';
+  bloqueo.className = 'qr-bloqueado' + (tipo ? ' ' + tipo : '');
   bloqueo.innerHTML = `
-    <div class="icon">🔒</div>
+    <div class="icon">${icono}</div>
     <div class="titulo">${titulo}</div>
     <div class="desc">${desc}</div>
   `;
@@ -537,6 +580,17 @@ window.addEventListener('load', async () => {
 
   // Validar QR antes de mostrar el formulario
   revisarQRenURL();
+
+  // Verificar si este dispositivo ya registró hoy
+  const yaRegistro = await dispositivoYaRegistroHoy();
+  if (yaRegistro) {
+    mostrarBloqueo(
+      'Ya registraste hoy',
+      `Este dispositivo ya marcó asistencia hoy${yaRegistro.cedula ? ' (cédula ' + yaRegistro.cedula + ')' : ''}. Solo se permite un registro por dispositivo por día.`,
+      'device'
+    );
+    return;
+  }
 
   // Cargar trabajadores desde Supabase
   const { data } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
