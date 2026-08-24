@@ -276,9 +276,10 @@ const Vehiculos = {
    ============================================================ */
 const Alertas = {
   async getAll() {
-    const [bpmList, vehList] = await Promise.all([
+    const [bpmList, vehList, incapList] = await Promise.all([
       BPM.getAll(),
       Vehiculos.getAll(),
+      Incapacidades.getAll(),
     ]);
     const alertas = [];
     const tipoLabel = { soat: 'SOAT', tecno: 'Tecnomecánica', licencia: 'Licencia' };
@@ -308,6 +309,23 @@ const Alertas = {
         vencimiento: v.vencimiento,
       });
     });
+
+    // Incapacidades pendientes de gestión (sin físico o sin historia clínica)
+    const STATUS_PENDIENTE = new Set(['ingresada', 'cobrada', 'en_tramite', 'radicada']);
+    incapList
+      .filter(i => STATUS_PENDIENTE.has(i.status) && (!i.tiene_fisico || !i.historia_clinica))
+      .forEach(i => {
+        const faltantes = [];
+        if (!i.tiene_fisico)     faltantes.push('sin físico');
+        if (!i.historia_clinica) faltantes.push('sin HC');
+        alertas.push({
+          tipo: '🏥 Incapacidad',
+          persona: i.trabajador_nombre,
+          desc: `${i.tipo || 'EG'} · ${faltantes.join(', ')} · Estado: ${i.status}`,
+          days: 0,           // siempre aparece en sección "pendientes"
+          vencimiento: i.fecha_inicio,
+        });
+      });
 
     return alertas.sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
   },
@@ -707,5 +725,171 @@ const Incapacidades = {
       if (!r.ultima_fecha || i.fecha_inicio > r.ultima_fecha) r.ultima_fecha = i.fecha_inicio;
     });
     return Object.values(map).sort((a, b) => b.total - a.total);
+  },
+};
+
+/* ============================================================
+   VACACIONES — capa de datos
+   ============================================================ */
+const Vacaciones = {
+
+  async getAll() {
+    const { data, error } = await sb
+      .from('vacaciones')
+      .select('*')
+      .order('fecha_inicio', { ascending: false });
+    if (sbErr(error, 'vacaciones.getAll')) return [];
+    return data;
+  },
+
+  async getByTrabajador(trabajadorId) {
+    const { data, error } = await sb
+      .from('vacaciones')
+      .select('*')
+      .eq('trabajador_id', trabajadorId)
+      .order('fecha_inicio', { ascending: false });
+    if (sbErr(error, 'vacaciones.getByTrabajador')) return [];
+    return data;
+  },
+
+  async insert(row) {
+    const { data, error } = await sb
+      .from('vacaciones')
+      .insert([row])
+      .select()
+      .single();
+    if (sbErr(error, 'vacaciones.insert')) return null;
+    return data;
+  },
+
+  async update(id, row) {
+    const { data, error } = await sb
+      .from('vacaciones')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+    if (sbErr(error, 'vacaciones.update')) return null;
+    return data;
+  },
+
+  async updateStatus(id, status) {
+    const { data, error } = await sb
+      .from('vacaciones')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+    if (sbErr(error, 'vacaciones.updateStatus')) return null;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await sb
+      .from('vacaciones')
+      .delete()
+      .eq('id', id);
+    return !sbErr(error, 'vacaciones.delete');
+  },
+
+  // Resumen agrupado por trabajador (calculado en cliente)
+  resumenPorTrabajador(lista, trabajadores = []) {
+    const map = {};
+    lista.forEach(v => {
+      const k = v.trabajador_id;
+      if (!map[k]) {
+        // Calcular días disponibles según fecha de ingreso (ley colombiana: 15 días hábiles/año ≈ 18 días calendario)
+        const t = trabajadores.find(w => w.id === k);
+        let diasDisponibles = null;
+        if (t?.fecha_ingreso) {
+          const añosServicio = (new Date() - new Date(t.fecha_ingreso)) / (365.25 * 86400000);
+          diasDisponibles = Math.floor(añosServicio * 18); // 18 días calendario por año
+        }
+        map[k] = {
+          trabajador_id:     k,
+          trabajador_nombre: v.trabajador_nombre,
+          total_solicitudes: 0,
+          dias_tomados:      0,
+          dias_aprobados:    0,
+          dias_disponibles:  diasDisponibles,
+          pendientes:        0,
+          ultima_fecha:      null,
+        };
+      }
+      const r = map[k];
+      r.total_solicitudes++;
+      r.dias_tomados   += (v.dias || 0);
+      if (v.status === 'aprobada')                    r.dias_aprobados += (v.dias || 0);
+      if (v.status === 'solicitada' || v.status === 'en_curso') r.pendientes++;
+      if (!r.ultima_fecha || v.fecha_fin > r.ultima_fecha) r.ultima_fecha = v.fecha_fin;
+    });
+    return Object.values(map).sort((a, b) =>
+      (a.trabajador_nombre || '').localeCompare(b.trabajador_nombre || '')
+    );
+  },
+};
+
+/* ============================================================
+   ASISTENCIA — capa de datos
+   ============================================================ */
+const Asistencia = {
+
+  async getAll() {
+    const { data, error } = await sb
+      .from('asistencia')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (sbErr(error, 'asistencia.getAll')) return [];
+    return data;
+  },
+
+  async getByFecha(fecha) {
+    const { data, error } = await sb
+      .from('asistencia')
+      .select('*')
+      .eq('fecha', fecha)
+      .order('hora', { ascending: false });
+    if (sbErr(error, 'asistencia.getByFecha')) return [];
+    return data;
+  },
+
+  async getByCedula(cedula, fecha) {
+    const { data, error } = await sb
+      .from('asistencia')
+      .select('*')
+      .eq('cedula', cedula)
+      .eq('fecha', fecha)
+      .order('hora', { ascending: false });
+    if (sbErr(error, 'asistencia.getByCedula')) return [];
+    return data;
+  },
+
+  async insert(row) {
+    const { data, error } = await sb
+      .from('asistencia')
+      .insert([row])
+      .select()
+      .single();
+    if (sbErr(error, 'asistencia.insert')) return null;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await sb
+      .from('asistencia')
+      .delete()
+      .eq('id', id);
+    return !sbErr(error, 'asistencia.delete');
+  },
+
+  async resumenHoy(fecha) {
+    const registros = await this.getByFecha(fecha);
+    const mapa = {};
+    registros.forEach(r => {
+      if (!mapa[r.cedula]) mapa[r.cedula] = { trabajador_nombre: r.trabajador_nombre, cedula: r.cedula, cargo: r.cargo, ciudad: r.ciudad, entradas: [], salidas: [] };
+      if (r.tipo === 'entrada') mapa[r.cedula].entradas.push(r.hora);
+      else                      mapa[r.cedula].salidas.push(r.hora);
+    });
+    return Object.values(mapa);
   },
 };

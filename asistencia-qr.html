@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GH Pro — Pantalla QR Asistencia</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a1a;
+      --card:    #12122a;
+      --border:  rgba(108,99,255,0.35);
+      --accent:  #6c63ff;
+      --accent3: #43e97b;
+      --text:    #f0f0ff;
+      --muted:   #7070a0;
+    }
+
+    html, body {
+      height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    /* Fondo animado */
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25;
+    }
+    .orb-1 { width: 500px; height: 500px; background: var(--accent);  top: -120px; left: -120px; animation: drift 14s ease-in-out infinite alternate; }
+    .orb-2 { width: 400px; height: 400px; background: #ff6584;        bottom: -100px; right: -100px; animation: drift 18s ease-in-out infinite alternate-reverse; }
+    .orb-3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 40%; animation: drift 10s ease-in-out infinite alternate; }
+    @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.08); } }
+
+    /* Layout principal */
+    .screen {
+      position: relative; z-index: 1;
+      height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 32px; padding: 32px;
+    }
+
+    /* Cabecera */
+    .header {
+      text-align: center;
+    }
+    .header-logo { font-size: 18px; font-weight: 700; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+    .header-title { font-size: clamp(24px, 3.5vw, 42px); font-weight: 800; }
+    .header-title span { color: var(--accent); }
+    .header-sub { font-size: clamp(13px, 1.6vw, 18px); color: var(--muted); margin-top: 6px; }
+
+    /* Tarjeta QR */
+    .qr-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 28px;
+      padding: clamp(24px, 4vw, 48px);
+      display: flex; flex-direction: column; align-items: center; gap: 24px;
+      box-shadow: 0 0 60px rgba(108,99,255,0.2), 0 0 0 1px rgba(108,99,255,0.1);
+      animation: cardPulse 4s ease-in-out infinite;
+    }
+    @keyframes cardPulse {
+      0%,100% { box-shadow: 0 0 60px rgba(108,99,255,0.2), 0 0 0 1px rgba(108,99,255,0.1); }
+      50%      { box-shadow: 0 0 90px rgba(108,99,255,0.35), 0 0 0 1px rgba(108,99,255,0.25); }
+    }
+
+    /* Anillo QR */
+    .qr-ring-wrap {
+      position: relative;
+      padding: 12px;
+      border-radius: 20px;
+      background: #fff;
+    }
+    .qr-ring-wrap::before {
+      content: '';
+      position: absolute; inset: -4px;
+      border-radius: 24px;
+      border: 3px solid var(--accent);
+      animation: ringPulse 2s ease-in-out infinite;
+    }
+    @keyframes ringPulse {
+      0%,100% { opacity: 1;   box-shadow: 0 0 0 0   rgba(108,99,255,0.5); }
+      50%      { opacity: 0.6; box-shadow: 0 0 0 10px rgba(108,99,255,0); }
+    }
+    #qrCanvas { display: block; border-radius: 10px; }
+
+    /* Countdown */
+    .countdown-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
+    }
+    .countdown-label {
+      font-size: clamp(12px, 1.4vw, 15px); color: var(--muted);
+      display: flex; justify-content: space-between; width: 100%;
+    }
+    .countdown-secs { color: var(--accent); font-weight: 700; }
+    .progress-bar {
+      width: 100%; height: 6px; background: rgba(255,255,255,0.08);
+      border-radius: 6px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 6px;
+      background: linear-gradient(90deg, var(--accent), var(--accent3));
+      transition: width 1s linear;
+    }
+
+    /* Instrucción */
+    .instruction {
+      text-align: center;
+      font-size: clamp(13px, 1.6vw, 18px);
+      color: var(--muted);
+      max-width: 420px;
+      line-height: 1.6;
+    }
+    .instruction strong { color: var(--text); }
+
+    /* Reloj */
+    .clock {
+      font-size: clamp(28px, 5vw, 64px);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 3px;
+      color: var(--text);
+    }
+    .clock-date {
+      font-size: clamp(12px, 1.4vw, 16px);
+      color: var(--muted);
+      text-align: center;
+      margin-top: -20px;
+    }
+
+    /* Registro reciente (flash) */
+    .recent-flash {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: rgba(67,233,123,0.15); border: 1px solid rgba(67,233,123,0.4);
+      border-radius: 14px; padding: 14px 28px;
+      display: flex; align-items: center; gap: 14px;
+      font-size: clamp(13px, 1.5vw, 17px); font-weight: 600;
+      opacity: 0; transition: opacity 0.4s ease;
+      pointer-events: none; z-index: 10; white-space: nowrap;
+    }
+    .recent-flash.show { opacity: 1; }
+    .recent-flash.salida { background: rgba(255,71,87,0.15); border-color: rgba(255,71,87,0.4); }
+  </style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<div class="screen">
+  <div class="header">
+    <div class="header-logo">🏢 GH Pro</div>
+    <div class="header-title">Registro de <span>Asistencia</span></div>
+    <div class="header-sub">Escanea el código con tu celular para marcar entrada o salida</div>
+  </div>
+
+  <div class="clock" id="clockDisplay">00:00:00</div>
+  <div class="clock-date" id="clockDate"></div>
+
+  <div class="qr-card">
+    <div class="qr-ring-wrap">
+      <canvas id="qrCanvas"></canvas>
+    </div>
+    <div class="countdown-wrap">
+      <div class="countdown-label">
+        <span>Código válido por</span>
+        <span class="countdown-secs"><span id="countSecs">30</span>s</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instruction">
+    <strong>¿Cómo registrar?</strong><br>
+    Abre el link de registro en tu celular o escanea este QR.<br>
+    Ingresa tu cédula y confirma tu asistencia.
+  </div>
+</div>
+
+<!-- Flash de último registro -->
+<div class="recent-flash" id="recentFlash">
+  <span id="recentIcon">🟢</span>
+  <span id="recentText">—</span>
+</div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- QR Code generator (local) -->
+<script src="qrcode.min.js"></script>
+<script>
+'use strict';
+
+// ── Supabase ────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── QR Token ────────────────────────────────────────────────────
+// Token = ventana de 30 s. La página de login valida la ventana actual ±1.
+function generarToken() {
+  const w = Math.floor(Date.now() / 30000);
+  return btoa(JSON.stringify({ app: 'ghpro-asist', w }));
+}
+
+// ── QR Canvas ───────────────────────────────────────────────────
+let secsLeft = 30;
+
+async function dibujarQR() {
+  const canvas = document.getElementById('qrCanvas');
+  const token  = generarToken();
+  // Codificamos el token como una URL que abre directamente la página de login
+  const url = `${location.origin}${location.pathname.replace('asistencia-qr.html','asistencia-login.html')}?qr=${encodeURIComponent(token)}`;
+  const size = Math.min(Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.28), 320);
+  try {
+    await QRCode.toCanvas(canvas, url, {
+      width: size, margin: 1,
+      color: { dark: '#0a0a1a', light: '#ffffff' },
+      errorCorrectionLevel: 'M',
+    });
+  } catch (e) { console.error('QR error', e); }
+}
+
+function tick() {
+  secsLeft--;
+  const fill = document.getElementById('progressFill');
+  const secs = document.getElementById('countSecs');
+  if (fill) fill.style.width = (secsLeft / 30 * 100) + '%';
+  if (secs) secs.textContent = secsLeft;
+
+  if (secsLeft <= 0) {
+    secsLeft = 30;
+    dibujarQR();
+  }
+}
+
+// ── Reloj ────────────────────────────────────────────────────────
+function actualizarReloj() {
+  const now  = new Date();
+  const hora = now.toTimeString().slice(0, 8);
+  const fecha = now.toLocaleDateString('es-CO', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+  const clockEl = document.getElementById('clockDisplay');
+  const dateEl  = document.getElementById('clockDate');
+  if (clockEl) clockEl.textContent = hora;
+  if (dateEl)  dateEl.textContent  = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+}
+
+// ── Flash de último registro ─────────────────────────────────────
+let flashTimeout = null;
+
+function mostrarFlash(nombre, tipo) {
+  const flash = document.getElementById('recentFlash');
+  const icon  = document.getElementById('recentIcon');
+  const text  = document.getElementById('recentText');
+  if (!flash) return;
+
+  flash.classList.remove('show', 'salida');
+  void flash.offsetWidth; // reflow para reiniciar animación
+
+  icon.textContent = tipo === 'entrada' ? '🟢' : '🔴';
+  text.textContent = `${tipo === 'entrada' ? 'Entrada' : 'Salida'}: ${nombre}`;
+  if (tipo === 'salida') flash.classList.add('salida');
+  flash.classList.add('show');
+
+  clearTimeout(flashTimeout);
+  flashTimeout = setTimeout(() => flash.classList.remove('show'), 5000);
+}
+
+// ── Suscripción realtime a nuevos registros ──────────────────────
+function suscribirRegistros() {
+  sb.channel('asistencia-realtime')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'asistencia' }, (payload) => {
+      const r = payload.new;
+      mostrarFlash(r.trabajador_nombre, r.tipo);
+      // Renovar QR inmediatamente cuando alguien registra (evita reuso)
+      secsLeft = 0;
+    })
+    .subscribe();
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  await dibujarQR();
+  document.getElementById('progressFill').style.width = '100%';
+
+  setInterval(tick, 1000);
+  setInterval(actualizarReloj, 1000);
+  actualizarReloj();
+
+  suscribirRegistros();
+});
+
+window.addEventListener('resize', () => dibujarQR());
+</script>
+</body>
+</html>

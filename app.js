@@ -62,6 +62,7 @@ const Cache = {
   entregas:     null,
   bpm:          null,
   vehiculos:    null,
+  vacaciones:   null,
   invalidate(key) { if (key) this[key] = null; else Object.keys(this).forEach(k => this[k] = null); },
 };
 
@@ -76,13 +77,16 @@ function navigate(pageId) {
   document.querySelectorAll(`[data-page="${pageId}"]`).forEach(n => n.classList.add('active'));
 
   const renders = {
-    dashboard:    renderDashboard,
-    trabajadores: renderTrabajadores,
-    dotacion:     renderDotacion,
-    entregas:     renderEntregas,
-    documentos:   renderBPM,
-    vehiculos:    renderVehiculos,
-    alertas:      renderAlertas,
+    dashboard:      renderDashboard,
+    trabajadores:   renderTrabajadores,
+    dotacion:       renderDotacion,
+    entregas:       renderEntregas,
+    documentos:     renderBPM,
+    vehiculos:      renderVehiculos,
+    incapacidades:  renderIncapacidades,
+    vacaciones:     renderVacaciones,
+    alertas:        renderAlertas,
+    asistencia:     renderAsistencia,
   };
   if (renders[pageId]) renders[pageId]();
   if (window.innerWidth <= 768) closeSidebar();
@@ -1084,11 +1088,21 @@ window.addEventListener('appinstalled', () => {
   deferredPrompt = null;
 });
 
+// Registrar SW solo bajo HTTPS real (no en localhost ni file://)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('[SW] Registrado:', reg.scope))
-      .catch(err => console.warn('[SW] Error:', err));
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isHttps     = location.protocol === 'https:';
+    if (!isLocalhost && isHttps) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('[SW] Registrado:', reg.scope))
+        .catch(err => console.warn('[SW] Error:', err));
+    } else {
+      // En desarrollo: desregistrar cualquier SW previo para evitar interferencias
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => { r.unregister(); console.log('[SW] Desregistrado para desarrollo'); });
+      });
+    }
   });
 }
 
@@ -1102,13 +1116,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Cargar dashboard inicial
   await renderDashboard();
 
+  // Calcular badge de incapacidades al arrancar
+  (async () => {
+    try {
+      const incap = await Incapacidades.getAll();
+      Cache.incapacidades = incap;
+      const pendientes = incap.filter(i => !i.tiene_fisico || !i.historia_clinica).length;
+      const badge = document.getElementById('incapBadge');
+      if (badge) { badge.textContent = pendientes; badge.style.display = pendientes > 0 ? '' : 'none'; }
+    } catch (_) { /* silencioso */ }
+  })();
+
+  // Calcular badge de vacaciones pendientes al arrancar
+  (async () => {
+    try {
+      const vac = await Vacaciones.getAll();
+      Cache.vacaciones = vac;
+      const pend = vac.filter(v => v.status === 'solicitada').length;
+      updateVacBadge(pend);
+    } catch (_) { /* silencioso */ }
+  })();
+
   // Refresh badge de alertas cada 5 minutos
   setInterval(async () => {
     Cache.invalidate('bpm');
     Cache.invalidate('vehiculos');
+    Cache.invalidate('incapacidades');
     const alertas = await Alertas.getAll();
     const count   = alertas.filter(a => a.days !== null && a.days <= 30).length;
     updateAlertBadge(count);
+    // Refrescar badge de incapacidades también
+    const incap = Cache.incapacidades || await Incapacidades.getAll();
+    Cache.incapacidades = incap;
+    const pend = incap.filter(i => !i.tiene_fisico || !i.historia_clinica).length;
+    const badge = document.getElementById('incapBadge');
+    if (badge) { badge.textContent = pend; badge.style.display = pend > 0 ? '' : 'none'; }
   }, 5 * 60 * 1000);
 });
 
@@ -1461,6 +1503,16 @@ window.navigate = function(pageId) {
     if (window.innerWidth <= 768) closeSidebar();
     return;
   }
+  if (pageId === 'vacaciones') {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const page = document.getElementById('page-vacaciones');
+    if (page) page.classList.add('active');
+    document.querySelectorAll('[data-page="vacaciones"]').forEach(n => n.classList.add('active'));
+    renderVacaciones();
+    if (window.innerWidth <= 768) closeSidebar();
+    return;
+  }
   _navigateOrig(pageId);
 };
 
@@ -1482,4 +1534,421 @@ async function exportarIncapacidades() {
     i.valor ?? '', i.tiene_fisico ? 'Sí' : 'No', i.historia_clinica ? 'Sí' : 'No', i.observaciones
   ]);
   downloadCSV('incapacidades', headers, rows);
+}
+
+// ═══════════════════════════════════════════
+// VACACIONES — constantes de presentación
+// ═══════════════════════════════════════════
+Cache.vacaciones = null;
+
+const VAC_STATUS = {
+  solicitada:  { label: 'Solicitada',    cls: 'badge-neutral',  icon: '📥' },
+  aprobada:    { label: 'Aprobada',      cls: 'badge-success',  icon: '✅' },
+  rechazada:   { label: 'Rechazada',     cls: 'badge-danger',   icon: '❌' },
+  en_curso:    { label: 'En curso',      cls: 'badge-info',     icon: '🏖️' },
+  finalizada:  { label: 'Finalizada',    cls: 'badge-neutral',  icon: '🏁' },
+};
+
+const VAC_TIPO = {
+  vacaciones:             { label: 'Vacaciones',          color: '#6c63ff' },
+  licencia_remunerada:    { label: 'Lic. Remunerada',     color: '#43e97b' },
+  licencia_no_remunerada: { label: 'Lic. No Remunerada',  color: '#f7971e' },
+  permiso:                { label: 'Permiso',              color: '#1e90ff' },
+  calamidad:              { label: 'Calamidad',            color: '#ff6584' },
+  otro:                   { label: 'Otro',                 color: '#a0a0c0' },
+};
+
+function statusBadgeVac(status) {
+  const s = VAC_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '•' };
+  return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
+}
+
+function tipoBadgeVac(tipo) {
+  const t = VAC_TIPO[tipo] || { label: tipo, color: 'var(--text-muted)' };
+  return `<span class="badge" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}44">${t.label}</span>`;
+}
+
+function updateVacBadge(count) {
+  const badge = document.getElementById('vacBadge');
+  if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
+}
+
+// ═══════════════════════════════════════════
+// VACACIONES — render principal
+// ═══════════════════════════════════════════
+async function renderVacaciones() {
+  showLoading(true);
+  try {
+    if (!Cache.vacaciones)   Cache.vacaciones   = await Vacaciones.getAll();
+    if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
+    poblarSelectTrabajadores('vacTrabajador');
+
+    const lista = Cache.vacaciones;
+
+    // ── Stats ───────────────────────────────
+    const totalDias    = lista.reduce((s, v) => s + (v.dias || 0), 0);
+    const pendientes   = lista.filter(v => v.status === 'solicitada').length;
+    const enCurso      = lista.filter(v => v.status === 'en_curso').length;
+    const aprobadas    = lista.filter(v => v.status === 'aprobada').length;
+
+    updateVacBadge(pendientes);
+
+    const statsEl = document.getElementById('vacStats');
+    if (statsEl) {
+      statsEl.innerHTML = [
+        { icon: '🏖️', value: lista.length,  label: 'Total solicitudes', color: 'var(--accent)' },
+        { icon: '📅', value: totalDias,     label: 'Días acumulados',    color: 'var(--info)' },
+        { icon: '📥', value: pendientes,    label: 'Solicitadas',        color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '🏁', value: aprobadas,     label: 'Aprobadas',          color: 'var(--success)' },
+        { icon: '⏳', value: enCurso,       label: 'En curso',           color: 'var(--info)' },
+      ].map(s => `
+        <div class="stat-card" style="--card-color:${s.color}">
+          <div class="stat-icon">${s.icon}</div>
+          <div class="stat-value">${s.value}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>`).join('');
+    }
+
+    // ── Tab: Listado con filtros ────────────
+    const q       = (document.getElementById('searchVac')?.value    || '').toLowerCase();
+    const fStatus = document.getElementById('filterVacStatus')?.value || '';
+    const fTipo   = document.getElementById('filterVacTipo')?.value   || '';
+
+    const filtered = lista.filter(v => {
+      const txt = [v.trabajador_nombre, v.aprobado_por, v.observaciones].join(' ').toLowerCase();
+      return (!q       || txt.includes(q))
+          && (!fStatus || v.status === fStatus)
+          && (!fTipo   || v.tipo   === fTipo);
+    });
+
+    _renderTablaVac('tablaVacaciones', 'emptyVacaciones', filtered, true);
+
+    // ── Tab: Pendientes ─────────────────────
+    const pend = lista.filter(v => v.status === 'solicitada' || v.status === 'en_curso');
+    _renderTablaVac('tablaVacPendientes', 'emptyVacPendientes', pend, false);
+
+    // ── Tab: Resumen por trabajador ─────────
+    const resumen = Vacaciones.resumenPorTrabajador(lista, Cache.trabajadores);
+    _renderResumenVac(resumen);
+
+  } finally { showLoading(false); }
+}
+
+function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
+  const tbody = document.getElementById(tbodyId);
+  const empty = document.getElementById(emptyId);
+  if (!tbody) return;
+  if (!data.length) { tbody.innerHTML = ''; if (empty) empty.style.display = ''; return; }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = data.map(v => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="background:${avatarColor(v.trabajador_nombre)};width:28px;height:28px;font-size:11px">
+            ${(v.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
+          </div>
+          <span style="font-weight:600">${v.trabajador_nombre}</span>
+        </div>
+      </td>
+      <td>${tipoBadgeVac(v.tipo)}</td>
+      <td>${fmtDate(v.fecha_inicio)}</td>
+      <td>${fmtDate(v.fecha_fin)}</td>
+      <td><strong>${v.dias ?? '—'}</strong></td>
+      <td>
+        <select class="form-control" style="padding:4px 8px;font-size:12px;width:auto"
+          onchange="cambiarStatusVac('${v.id}', this.value)">
+          ${Object.entries(VAC_STATUS).map(([k, s]) =>
+            `<option value="${k}" ${v.status === k ? 'selected' : ''}>${s.icon} ${s.label}</option>`
+          ).join('')}
+        </select>
+      </td>
+      ${showAprobador ? `<td style="font-size:12px;color:var(--text-secondary)">${v.aprobado_por || '—'}</td>` : ''}
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarVacacion('${v.id}')">✏️</button>
+          <button class="btn btn-danger   btn-sm btn-icon" title="Eliminar" onclick="eliminarVacacion('${v.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function _renderResumenVac(resumen) {
+  const tbody = document.getElementById('tablaVacResumen');
+  const empty = document.getElementById('emptyVacResumen');
+  if (!tbody) return;
+  if (!resumen.length) { tbody.innerHTML = ''; if (empty) empty.style.display = ''; return; }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = resumen.map(r => {
+    const disponibles = r.dias_disponibles !== null ? r.dias_disponibles : '—';
+    const saldo = r.dias_disponibles !== null ? r.dias_disponibles - r.dias_aprobados : null;
+    const saldoColor = saldo !== null ? (saldo < 0 ? 'var(--danger)' : saldo <= 5 ? 'var(--warning)' : 'var(--success)') : '';
+    return `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="background:${avatarColor(r.trabajador_nombre)};width:28px;height:28px;font-size:11px">
+            ${(r.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
+          </div>
+          <span style="font-weight:600">${r.trabajador_nombre}</span>
+        </div>
+      </td>
+      <td><strong>${r.dias_tomados}</strong></td>
+      <td>${r.dias_aprobados}</td>
+      <td>${disponibles}${saldo !== null ? ` <span style="font-size:11px;color:${saldoColor}">(saldo: ${saldo})</span>` : ''}</td>
+      <td>${r.pendientes > 0 ? `<span class="badge badge-warning">⏳ ${r.pendientes}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--text-secondary)">${fmtDate(r.ultima_fecha)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// VACACIONES — CRUD
+// ═══════════════════════════════════════════
+async function guardarVacacion() {
+  const id           = document.getElementById('vacId').value;
+  const trabajadorId = document.getElementById('vacTrabajador').value;
+  const fechaInicio  = document.getElementById('vacInicio').value;
+  const fechaFin     = document.getElementById('vacFin').value;
+
+  if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
+  if (!fechaInicio)  return toast('La fecha de inicio es obligatoria', 'error');
+  if (!fechaFin)     return toast('La fecha de fin es obligatoria', 'error');
+  if (fechaFin < fechaInicio) return toast('La fecha de fin no puede ser anterior al inicio', 'error');
+
+  const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
+
+  const row = {
+    trabajador_id:     trabajadorId,
+    trabajador_nombre: trabajador?.nombre || '',
+    fecha_inicio:      fechaInicio,
+    fecha_fin:         fechaFin,
+    tipo:              document.getElementById('vacTipo').value,
+    status:            document.getElementById('vacStatus').value,
+    aprobado_por:      document.getElementById('vacAprobadoPor').value.trim(),
+    observaciones:     document.getElementById('vacObs').value.trim(),
+  };
+
+  showLoading(true);
+  const result = id ? await Vacaciones.update(id, row) : await Vacaciones.insert(row);
+  showLoading(false);
+  if (!result) return;
+
+  Cache.invalidate('vacaciones');
+  closeModal('modalVacacion');
+  _resetVacForm();
+  await renderVacaciones();
+  toast(id ? 'Solicitud actualizada ✅' : 'Solicitud registrada ✅');
+}
+
+async function cambiarStatusVac(id, status) {
+  showLoading(true);
+  const result = await Vacaciones.updateStatus(id, status);
+  showLoading(false);
+  if (!result) return;
+  Cache.invalidate('vacaciones');
+  await renderVacaciones();
+  toast(`Estado actualizado: ${VAC_STATUS[status]?.label || status}`, 'info');
+}
+
+function editarVacacion(id) {
+  const v = (Cache.vacaciones || []).find(x => x.id === id);
+  if (!v) return;
+  document.getElementById('vacId').value          = v.id;
+  document.getElementById('vacTrabajador').value  = v.trabajador_id  || '';
+  document.getElementById('vacTipo').value        = v.tipo           || 'vacaciones';
+  document.getElementById('vacInicio').value      = v.fecha_inicio   ? v.fecha_inicio.split('T')[0] : '';
+  document.getElementById('vacFin').value         = v.fecha_fin      ? v.fecha_fin.split('T')[0]    : '';
+  document.getElementById('vacStatus').value      = v.status         || 'solicitada';
+  document.getElementById('vacAprobadoPor').value = v.aprobado_por   || '';
+  document.getElementById('vacObs').value         = v.observaciones  || '';
+  document.getElementById('modalVacTitle').textContent = '✏️ Editar Solicitud';
+  openModal('modalVacacion');
+}
+
+async function eliminarVacacion(id) {
+  if (!confirm('¿Eliminar esta solicitud de vacaciones?')) return;
+  showLoading(true);
+  const ok = await Vacaciones.delete(id);
+  showLoading(false);
+  if (!ok) return;
+  Cache.invalidate('vacaciones');
+  await renderVacaciones();
+  toast('Solicitud eliminada', 'warning');
+}
+
+function _resetVacForm() {
+  ['vacId', 'vacAprobadoPor', 'vacObs'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const sel  = document.getElementById('vacTrabajador'); if (sel)  sel.value  = '';
+  const tipo = document.getElementById('vacTipo');       if (tipo) tipo.value = 'vacaciones';
+  const stat = document.getElementById('vacStatus');     if (stat) stat.value = 'solicitada';
+  const ini  = document.getElementById('vacInicio');     if (ini)  ini.value  = '';
+  const fin  = document.getElementById('vacFin');        if (fin)  fin.value  = '';
+  document.getElementById('modalVacTitle').textContent = '🏖️ Nueva Solicitud';
+}
+
+// Abrir modal pre-cargado
+const _openModalOrig = openModal;
+window.openModal = function(id) {
+  if (id === 'modalVacacion' && !document.getElementById('vacId').value) {
+    _resetVacForm();
+    poblarSelectTrabajadores('vacTrabajador');
+  }
+  _openModalOrig(id);
+};
+
+// ═══════════════════════════════════════════
+// VACACIONES — exportar CSV
+// ═══════════════════════════════════════════
+async function exportarVacaciones() {
+  if (!Cache.vacaciones) Cache.vacaciones = await Vacaciones.getAll();
+  const data = Cache.vacaciones;
+  if (!data.length) return toast('No hay datos para exportar', 'warning');
+  const headers = ['Trabajador', 'Tipo', 'Fecha Inicio', 'Fecha Fin', 'Días', 'Estado', 'Aprobado por', 'Observaciones'];
+  const rows = data.map(v => [
+    v.trabajador_nombre,
+    VAC_TIPO[v.tipo]?.label || v.tipo,
+    v.fecha_inicio, v.fecha_fin,
+    v.dias ?? '',
+    VAC_STATUS[v.status]?.label || v.status,
+    v.aprobado_por || '',
+    v.observaciones || '',
+  ]);
+  downloadCSV('vacaciones', headers, rows);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// ASISTENCIA — historial (app principal)
+// El QR rotativo vive en asistencia-qr.html
+// El login de trabajador vive en asistencia-login.html
+// ═══════════════════════════════════════════════════════════════
+
+Cache.asistencia = null;
+
+// ── Helpers ────────────────────────────────────────────────────
+function horaActual() {
+  const n = new Date();
+  return n.toTimeString().slice(0, 8); // HH:MM:SS
+}
+
+function fmtHora(h) {
+  if (!h) return '—';
+  return h.slice(0, 5); // HH:MM
+}
+
+// ── Stats del día ──────────────────────────────────────────────
+async function _actualizarStatsHoy() {
+  const fecha = document.getElementById('asistFiltroFecha')?.value || today();
+  const registros = await Asistencia.getByFecha(fecha);
+
+  const entradas = registros.filter(r => r.tipo === 'entrada').length;
+  const salidas  = registros.filter(r => r.tipo === 'salida').length;
+  const unicos   = new Set(registros.map(r => r.cedula)).size;
+  const porQR    = registros.filter(r => r.metodo === 'qr').length;
+
+  const statsEl = document.getElementById('asistStats');
+  if (!statsEl) return;
+  statsEl.innerHTML = [
+    { icon: '🟢', value: entradas, label: 'Entradas',       color: 'var(--accent3)' },
+    { icon: '🔴', value: salidas,  label: 'Salidas',         color: 'var(--danger)'  },
+    { icon: '👤', value: unicos,   label: 'Trabajadores',    color: 'var(--accent)'  },
+    { icon: '📲', value: porQR,    label: 'Vía QR',          color: 'var(--accent4)' },
+  ].map(s => `
+    <div class="stat-card" style="--card-color:${s.color}">
+      <div class="stat-icon">${s.icon}</div>
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>`).join('');
+}
+
+// ── Render tabla ───────────────────────────────────────────────
+function _rowAsistHTML(r) {
+  const metodoIcon = r.metodo === 'qr' ? '📲' : '🪪';
+  return `<tr>
+    <td><strong>${fmtHora(r.hora)}</strong></td>
+    <td><span class="asist-log-tipo ${r.tipo}">${r.tipo}</span></td>
+    <td>${r.trabajador_nombre || '—'}</td>
+    <td style="font-variant-numeric:tabular-nums">${r.cedula || '—'}</td>
+    <td>${r.cargo   || '—'}</td>
+    <td>${r.ciudad  || '—'}</td>
+    <td>${metodoIcon} ${r.metodo}</td>
+    <td><button class="btn btn-danger btn-sm btn-icon"
+      onclick="eliminarRegistroAsist('${r.id}')">🗑️</button></td>
+  </tr>`;
+}
+
+async function renderTablaAsistencia() {
+  const fecha  = document.getElementById('asistFiltroFecha')?.value || today();
+  const q      = (document.getElementById('asistSearch')?.value     || '').toLowerCase();
+  const fTipo  = document.getElementById('asistFiltroTipo')?.value  || '';
+  const tbody  = document.getElementById('asistTbody');
+  const empty  = document.getElementById('asistLogEmpty');
+  if (!tbody) return;
+
+  const todos = await Asistencia.getByFecha(fecha);
+
+  const filtrados = todos.filter(r => {
+    const txt = [(r.trabajador_nombre || ''), (r.cedula || '')].join(' ').toLowerCase();
+    return (!q     || txt.includes(q))
+        && (!fTipo || r.tipo === fTipo);
+  });
+
+  if (!filtrados.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = filtrados.map(_rowAsistHTML).join('');
+}
+
+// ── Eliminar registro ──────────────────────────────────────────
+async function eliminarRegistroAsist(id) {
+  if (!confirm('¿Eliminar este registro de asistencia?')) return;
+  showLoading(true);
+  const ok = await Asistencia.delete(id);
+  showLoading(false);
+  if (!ok) return;
+  Cache.asistencia = null;
+  await renderTablaAsistencia();
+  await _actualizarStatsHoy();
+  toast('Registro eliminado', 'warning');
+}
+
+// ── Render principal ───────────────────────────────────────────
+async function renderAsistencia() {
+  showLoading(true);
+  try {
+    const fechaInput = document.getElementById('asistFiltroFecha');
+    if (fechaInput && !fechaInput.value) fechaInput.value = today();
+
+    const subtitleEl = document.getElementById('asistFecha');
+    if (subtitleEl) {
+      subtitleEl.textContent = new Date().toLocaleDateString('es-CO', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      });
+    }
+
+    await _actualizarStatsHoy();
+    await renderTablaAsistencia();
+  } finally { showLoading(false); }
+}
+
+// ── Exportar CSV ───────────────────────────────────────────────
+async function exportarAsistencia() {
+  showLoading(true);
+  const todos = await Asistencia.getAll();
+  showLoading(false);
+  if (!todos.length) return toast('No hay registros para exportar', 'warning');
+  const headers = ['Fecha', 'Hora', 'Tipo', 'Trabajador', 'Cédula', 'Cargo', 'Ciudad', 'Método'];
+  const rows = todos.map(r => [
+    r.fecha, fmtHora(r.hora), r.tipo,
+    r.trabajador_nombre, r.cedula,
+    r.cargo || '', r.ciudad || '', r.metodo,
+  ]);
+  downloadCSV('asistencia', headers, rows);
 }

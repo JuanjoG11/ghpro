@@ -1,14 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#6c63ff" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="GH Pro" />
   <meta name="description" content="Sistema integral de gestión humana" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>Gestión Humana Pro</title>
   <style>
@@ -478,6 +480,13 @@
         <span class="nav-icon">🏥</span> Incapacidades
         <span class="nav-badge warning" id="incapBadge" style="display:none">0</span>
       </div>
+      <div class="nav-item" data-page="vacaciones">
+        <span class="nav-icon">🏖️</span> Vacaciones
+        <span class="nav-badge warning" id="vacBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-page="asistencia">
+        <span class="nav-icon">🕐</span> Asistencia
+      </div>
     </div>
 
     <div class="nav-section">
@@ -651,7 +660,7 @@
             <select class="filter-select" id="filterBPMEstado" onchange="renderBPM()">
               <option value="">Todos los estados</option>
               <option value="vigente">Vigente</option>
-              <option value="por_vencer">Por vencer</option>
+              <option value="proximo">Por vencer</option>
               <option value="vencido">Vencido</option>
             </select>
           </div>
@@ -875,6 +884,137 @@
                 </thead>
                 <tbody id="tablaIncapPorTrabajador"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VACACIONES ===== -->
+    <div class="page" id="page-vacaciones">
+      <div class="page-header">
+        <div class="page-title">🏖️ <span>Vacaciones y Ausencias</span></div>
+        <div class="page-subtitle">Control de vacaciones, licencias y permisos del personal</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalVacacion')">➕ Nueva solicitud</button>
+          <button class="btn btn-secondary" onclick="exportarVacaciones()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="vacStats"></div>
+
+      <!-- Tabs -->
+      <div class="tabs" id="vacTabs" style="margin-bottom:16px">
+        <button class="tab-btn active" data-tab="tab-vac-listado">📋 Listado</button>
+        <button class="tab-btn" data-tab="tab-vac-pendientes">⏳ Pendientes</button>
+        <button class="tab-btn" data-tab="tab-vac-resumen">👥 Por trabajador</button>
+      </div>
+
+      <!-- Tab: Listado -->
+      <div class="tab-content active" id="tab-vac-listado">
+        <div class="card">
+          <div class="card-body">
+            <div class="search-bar">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchVac"
+                  placeholder="Buscar por nombre..." oninput="renderVacaciones()">
+              </div>
+              <select class="filter-select" id="filterVacStatus" onchange="renderVacaciones()">
+                <option value="">Todos los estados</option>
+                <option value="solicitada">Solicitada</option>
+                <option value="aprobada">Aprobada</option>
+                <option value="rechazada">Rechazada</option>
+                <option value="en_curso">En curso</option>
+                <option value="finalizada">Finalizada</option>
+              </select>
+              <select class="filter-select" id="filterVacTipo" onchange="renderVacaciones()">
+                <option value="">Todos los tipos</option>
+                <option value="vacaciones">Vacaciones</option>
+                <option value="licencia_remunerada">Lic. Remunerada</option>
+                <option value="licencia_no_remunerada">Lic. No Remunerada</option>
+                <option value="permiso">Permiso</option>
+                <option value="calamidad">Calamidad</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Tipo</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Días</th>
+                    <th>Estado</th>
+                    <th>Aprobado por</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaVacaciones"></tbody>
+              </table>
+            </div>
+            <div id="emptyVacaciones" class="empty-state" style="display:none">
+              <div class="empty-state-icon">🏖️</div>
+              <div class="empty-state-text">No hay solicitudes registradas</div>
+              <div class="empty-state-sub">Haz clic en "Nueva solicitud" para empezar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Pendientes -->
+      <div class="tab-content" id="tab-vac-pendientes">
+        <div class="card">
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Tipo</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Días</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaVacPendientes"></tbody>
+              </table>
+            </div>
+            <div id="emptyVacPendientes" class="empty-state" style="display:none">
+              <div class="empty-state-icon">✅</div>
+              <div class="empty-state-text">Sin solicitudes pendientes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Resumen por trabajador -->
+      <div class="tab-content" id="tab-vac-resumen">
+        <div class="card">
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Días tomados</th>
+                    <th>Días aprobados</th>
+                    <th>Días disponibles est.</th>
+                    <th>Pendientes</th>
+                    <th>Última fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaVacResumen"></tbody>
+              </table>
+            </div>
+            <div id="emptyVacResumen" class="empty-state" style="display:none">
+              <div class="empty-state-icon">👥</div>
+              <div class="empty-state-text">Sin datos de vacaciones</div>
             </div>
           </div>
         </div>
@@ -1166,10 +1306,204 @@
   </div>
 </div>
 
-<!-- Supabase SDK (CDN, ESM-compatible UMD build) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<!-- Data layer + App logic -->
+<!-- Modal Vacacion -->
+<div class="modal-overlay" id="modalVacacion">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="modalVacTitle">🏖️ Nueva Solicitud</div>
+      <button class="modal-close" onclick="closeModal('modalVacacion')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="vacId">
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Trabajador *</label>
+          <select class="form-control" id="vacTrabajador" required></select>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Tipo *</label>
+          <select class="form-control" id="vacTipo">
+            <option value="vacaciones">Vacaciones</option>
+            <option value="licencia_remunerada">Licencia Remunerada</option>
+            <option value="licencia_no_remunerada">Licencia No Remunerada</option>
+            <option value="permiso">Permiso</option>
+            <option value="calamidad">Calamidad</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Fecha inicio *</label>
+          <input type="date" class="form-control" id="vacInicio" required>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Fecha fin *</label>
+          <input type="date" class="form-control" id="vacFin" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Estado</label>
+          <select class="form-control" id="vacStatus">
+            <option value="solicitada">Solicitada</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="rechazada">Rechazada</option>
+            <option value="en_curso">En curso</option>
+            <option value="finalizada">Finalizada</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Aprobado por</label>
+          <input type="text" class="form-control" id="vacAprobadoPor" placeholder="Nombre del aprobador">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observaciones</label>
+        <textarea class="form-control" id="vacObs" rows="2" placeholder="Notas adicionales..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalVacacion')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarVacacion()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ASISTENCIA ===== -->
+<style>
+  .asist-links {
+    display: flex; gap: 14px; margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .asist-link-card {
+    flex: 1; min-width: 220px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 20px;
+    display: flex; align-items: center; gap: 16px;
+    text-decoration: none; color: var(--text-primary);
+    transition: all var(--transition); cursor: pointer;
+  }
+  .asist-link-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+  }
+  .asist-link-icon {
+    font-size: 36px; flex-shrink: 0;
+  }
+  .asist-link-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .asist-link-sub   { font-size: 12px; color: var(--text-muted); }
+
+  .asist-log-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    flex-wrap: wrap;
+  }
+  .asist-log-item:last-child { border-bottom: none; }
+  .asist-log-hora {
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    min-width: 48px; font-variant-numeric: tabular-nums;
+  }
+  .asist-log-tipo {
+    font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 600;
+  }
+  .asist-log-tipo.entrada { background: rgba(67,233,123,0.15); color: var(--accent3); }
+  .asist-log-tipo.salida  { background: rgba(255,71,87,0.15);  color: var(--danger); }
+  .asist-log-nombre { font-size: 13px; color: var(--text-primary); flex: 1; min-width: 120px; }
+  .asist-log-metodo { font-size: 11px; color: var(--text-muted); }
+  @media (max-width: 600px) {
+    .asist-log-item { gap: 8px; padding: 10px 12px; }
+    .asist-log-nombre { min-width: 100%; order: 3; }
+  }
+</style>
+
+<div class="page" id="page-asistencia">
+  <div class="page-header">
+    <div class="page-title">🕐 <span>Asistencia</span></div>
+    <div class="page-subtitle" id="asistFecha">Historial de registros</div>
+    <div class="page-actions">
+      <button class="btn btn-secondary" onclick="exportarAsistencia()">📥 Exportar CSV</button>
+    </div>
+  </div>
+
+  <!-- Links a páginas externas -->
+  <div class="asist-links">
+    <a class="asist-link-card" href="asistencia-qr.html" target="_blank">
+      <div class="asist-link-icon">📺</div>
+      <div>
+        <div class="asist-link-title">Pantalla QR</div>
+        <div class="asist-link-sub">Abrir en el monitor o TV de la entrada</div>
+      </div>
+    </a>
+    <a class="asist-link-card" href="asistencia-login.html" target="_blank">
+      <div class="asist-link-icon">📱</div>
+      <div>
+        <div class="asist-link-title">Registro Trabajador</div>
+        <div class="asist-link-sub">Ingresar cédula o escanear QR desde el celular</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Stats del día -->
+  <div class="stats-grid" id="asistStats" style="margin-bottom:24px"></div>
+
+  <!-- Historial -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📋 Historial de asistencia</span>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="date" id="asistFiltroFecha" onchange="renderTablaAsistencia();_actualizarStatsHoy();"
+          style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text-primary);padding:6px 10px;font-size:13px">
+        <div class="search-input-wrap" style="min-width:200px">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="asistSearch"
+            placeholder="Buscar nombre o cédula..."
+            oninput="renderTablaAsistencia()">
+        </div>
+        <select id="asistFiltroTipo" onchange="renderTablaAsistencia()"
+          style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
+                 color:var(--text-primary);padding:6px 10px;font-size:13px">
+          <option value="">Todos</option>
+          <option value="entrada">Entradas</option>
+          <option value="salida">Salidas</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Tipo</th>
+              <th>Trabajador</th>
+              <th>Cédula</th>
+              <th>Cargo</th>
+              <th>Ciudad</th>
+              <th>Método</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="asistTbody"></tbody>
+        </table>
+      </div>
+      <div id="asistLogEmpty" class="empty-state" style="display:none">
+        <div class="empty-state-icon">🕐</div>
+        <div class="empty-state-text">Sin registros para esta fecha</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- /page-asistencia -->
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase.js"></script>
 <script src="app.js"></script>
+
 </body>
 </html>

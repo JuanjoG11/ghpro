@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#6c63ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>GH Pro — Registro Asistencia</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a1a;
+      --card:     #12122a;
+      --border:   rgba(255,255,255,0.10);
+      --glow:     rgba(108,99,255,0.50);
+      --accent:   #6c63ff;
+      --accent3:  #43e97b;
+      --danger:   #ff4757;
+      --warning:  #ffa502;
+      --text:     #f0f0ff;
+      --muted:    #606080;
+      --secondary:#a0a0c0;
+      --radius:   16px;
+      --radius-sm:10px;
+      --transition: 0.2s ease;
+    }
+
+    html, body {
+      min-height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* Fondo */
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.18; }
+    .orb-1 { width: 400px; height: 400px; background: var(--accent); top: -100px; left: -100px; }
+    .orb-2 { width: 300px; height: 300px; background: #ff6584; bottom: -80px; right: -80px; }
+
+    /* Layout */
+    .container {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: 32px 16px env(safe-area-inset-bottom, 16px);
+      gap: 0;
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 28px; }
+    .header-logo { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+    .header-title { font-size: 26px; font-weight: 800; }
+    .header-title span { color: var(--accent); }
+
+    /* Hora */
+    .hora-display {
+      font-size: 48px; font-weight: 800; letter-spacing: 2px;
+      font-variant-numeric: tabular-nums; margin-bottom: 4px;
+    }
+    .fecha-display { font-size: 13px; color: var(--muted); margin-bottom: 28px; text-align: center; }
+
+    /* Card principal */
+    .card {
+      width: 100%; max-width: 420px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    /* Toggle tipo */
+    .tipo-toggle {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .tipo-btn {
+      padding: 12px; border-radius: var(--radius-sm);
+      border: 2px solid var(--border);
+      background: none; color: var(--muted);
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .tipo-btn.active-entrada {
+      border-color: var(--accent3); background: rgba(67,233,123,0.12); color: var(--accent3);
+    }
+    .tipo-btn.active-salida {
+      border-color: var(--danger); background: rgba(255,71,87,0.12); color: var(--danger);
+    }
+
+    /* Cédula input */
+    .cedula-label { font-size: 11px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: 1px; }
+    .cedula-input {
+      width: 100%; font-size: 28px; text-align: center; letter-spacing: 6px;
+      padding: 16px 12px; border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.06); border: 2px solid var(--border);
+      color: var(--text); transition: all var(--transition);
+      -webkit-appearance: none;
+    }
+    .cedula-input:focus {
+      outline: none; border-color: var(--glow);
+      box-shadow: 0 0 0 4px rgba(108,99,255,0.15);
+      background: rgba(255,255,255,0.09);
+    }
+    .cedula-input::placeholder { color: var(--muted); letter-spacing: 2px; font-size: 18px; }
+
+    /* Tarjeta trabajador encontrado */
+    .trabajador-card {
+      display: none; align-items: center; gap: 14px;
+      background: rgba(67,233,123,0.08); border: 1px solid rgba(67,233,123,0.3);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+      animation: fadeSlide 0.25s ease;
+    }
+    .trabajador-card.show { display: flex; }
+    .trabajador-card.not-found {
+      background: rgba(255,71,87,0.08); border-color: rgba(255,71,87,0.3);
+    }
+    @keyframes fadeSlide { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .t-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; flex-shrink: 0; color: #fff;
+    }
+    .t-nombre { font-weight: 700; font-size: 15px; }
+    .t-sub    { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* Botón principal */
+    .btn-registrar {
+      width: 100%; padding: 17px; border-radius: var(--radius-sm);
+      border: none; cursor: pointer; font-size: 17px; font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), #9c63ff);
+      color: #fff; box-shadow: 0 4px 20px rgba(108,99,255,0.35);
+      transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-registrar:hover  { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(108,99,255,0.5); }
+    .btn-registrar:active { transform: translateY(0); }
+    .btn-registrar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Separador */
+    .separator {
+      display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px;
+    }
+    .separator::before, .separator::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Botón QR scanner */
+    .btn-qr {
+      width: 100%; padding: 14px; border-radius: var(--radius-sm);
+      border: 2px solid var(--border); background: none;
+      color: var(--secondary); font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-qr:hover { border-color: var(--accent); color: var(--text); background: rgba(108,99,255,0.08); }
+
+    /* Visor cámara */
+    .scanner-wrap {
+      display: none; flex-direction: column; align-items: center; gap: 12px;
+      width: 100%;
+    }
+    .scanner-wrap.show { display: flex; }
+    #scannerVideo {
+      width: 100%; max-width: 300px; border-radius: 14px;
+      border: 2px solid var(--accent); aspect-ratio: 1;
+      object-fit: cover; background: #000;
+    }
+    .scanner-hint { font-size: 12px; color: var(--muted); text-align: center; }
+    .btn-cancel {
+      background: none; border: none; color: var(--muted); font-size: 13px;
+      cursor: pointer; text-decoration: underline; padding: 4px;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1a1a35; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 13px 20px; min-width: 260px; max-width: 340px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      animation: toastIn 0.3s ease; font-size: 14px;
+      pointer-events: all;
+    }
+    .toast.success { border-left: 3px solid var(--accent3); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast.info    { border-left: 3px solid var(--accent); }
+    @keyframes toastIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Historial reciente */
+    .recientes-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .reciente-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px;
+    }
+    .reciente-item:last-child { border-bottom: none; }
+    .rec-tipo {
+      font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 700; flex-shrink: 0;
+    }
+    .rec-tipo.entrada { background: rgba(67,233,123,0.15); color: var(--accent3); }
+    .rec-tipo.salida  { background: rgba(255,71,87,0.15);  color: var(--danger); }
+    .rec-hora { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 40px; }
+    .rec-nombre { flex: 1; color: var(--text); }
+  </style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-logo">🏢 GH Pro</div>
+    <div class="header-title">Marcar <span>Asistencia</span></div>
+  </div>
+
+  <div class="hora-display" id="horaDisplay">00:00</div>
+  <div class="fecha-display" id="fechaDisplay"></div>
+
+  <div class="card">
+
+    <!-- Toggle Entrada / Salida -->
+    <div class="tipo-toggle">
+      <button class="tipo-btn active-entrada" id="btnEntrada" onclick="setTipo('entrada')">🟢 Entrada</button>
+      <button class="tipo-btn"               id="btnSalida"  onclick="setTipo('salida')">🔴 Salida</button>
+    </div>
+
+    <!-- Input cédula -->
+    <div style="display:flex;flex-direction:column;gap:6px" id="cedulaSection">
+      <label class="cedula-label" for="cedulaInput">Número de cédula</label>
+      <input
+        type="tel" id="cedulaInput"
+        class="cedula-input"
+        placeholder="Ej: 1088253407"
+        maxlength="12" autocomplete="off" inputmode="numeric"
+        oninput="onCedula(this.value)"
+        onkeydown="if(event.key==='Enter') continuar()"
+      />
+    </div>
+
+    <!-- Tarjeta trabajador -->
+    <div class="trabajador-card" id="trabajadorCard">
+      <div class="t-avatar" id="tAvatar"></div>
+      <div>
+        <div class="t-nombre" id="tNombre"></div>
+        <div class="t-sub"    id="tSub"></div>
+      </div>
+    </div>
+
+    <!-- Botón Continuar (visible cuando hay trabajador encontrado) -->
+    <button class="btn-registrar" id="btnContinuar" onclick="continuar()" disabled>
+      📷 Continuar — Escanear QR
+    </button>
+
+    <!-- Visor de cámara (jsQR) — se abre al pulsar Continuar -->
+    <div class="scanner-wrap" id="scannerWrap">
+      <video id="scannerVideo" playsinline muted></video>
+      <canvas id="scannerCanvas" style="display:none"></canvas>
+      <div class="scanner-hint">Apunta la cámara al código QR de la pantalla principal</div>
+      <button class="btn-cancel" onclick="cancelarScanner()">✕ Cancelar — volver a cédula</button>
+    </div>
+
+    <!-- Historial reciente del día -->
+    <div id="recientesWrap" style="display:none">
+      <div class="recientes-title" style="margin-bottom:10px">Últimos registros de hoy</div>
+      <div id="recientesList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- jsQR para escanear QR con la cámara (local) -->
+<script src="jsqr.min.js"></script>
+
+<script>
+'use strict';
+
+// ── Supabase ─────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── Estado ───────────────────────────────────────────────────────
+const State = {
+  tipo:        'entrada',
+  trabajador:  null,
+  trabajadores: [],
+  scannerStream: null,
+  scannerRAF:    null,
+  qrValidado:   false,
+};
+
+// ── Helpers ──────────────────────────────────────────────────────
+const today    = () => new Date().toISOString().split('T')[0];
+const horaActual = () => new Date().toTimeString().slice(0, 8);
+const fmtHora  = h => h ? h.slice(0, 5) : '—';
+
+const AVATAR_COLORS = ['#6c63ff','#ff6584','#43e97b','#f7971e','#1e90ff','#ff9f43'];
+const avatarColor   = s => AVATAR_COLORS[(s || '').charCodeAt(0) % AVATAR_COLORS.length];
+
+function toast(msg, type = 'success', ms = 3500) {
+  const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => {
+    el.style.transition = '0.3s'; el.style.opacity = '0'; el.style.transform = 'translateY(16px)';
+    setTimeout(() => el.remove(), 320);
+  }, ms);
+}
+
+// ── Reloj ────────────────────────────────────────────────────────
+function actualizarReloj() {
+  const now = new Date();
+  const h   = document.getElementById('horaDisplay');
+  const f   = document.getElementById('fechaDisplay');
+  if (h) h.textContent = now.toTimeString().slice(0, 5);
+  if (f) {
+    const s = now.toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    f.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  }
+}
+
+// ── Toggle entrada/salida ────────────────────────────────────────
+function setTipo(tipo) {
+  State.tipo = tipo;
+  const be = document.getElementById('btnEntrada');
+  const bs = document.getElementById('btnSalida');
+  be.className = 'tipo-btn' + (tipo === 'entrada' ? ' active-entrada' : '');
+  bs.className = 'tipo-btn' + (tipo === 'salida'  ? ' active-salida'  : '');
+}
+
+// ── Búsqueda cédula en tiempo real ───────────────────────────────
+function onCedula(val) {
+  const cedula = val.trim();
+  const card   = document.getElementById('trabajadorCard');
+  const btn    = document.getElementById('btnContinuar');
+
+  if (cedula.length < 4) {
+    card.className = 'trabajador-card';
+    State.trabajador = null;
+    btn.disabled = true;
+    return;
+  }
+
+  const t = State.trabajadores.find(w => w.cedula === cedula);
+  if (t) {
+    State.trabajador = t;
+    document.getElementById('tAvatar').style.background = avatarColor(t.nombre);
+    document.getElementById('tAvatar').textContent      = t.nombre.charAt(0).toUpperCase();
+    document.getElementById('tNombre').textContent      = t.nombre;
+    document.getElementById('tSub').textContent         = [t.cargo, t.ciudad].filter(Boolean).join(' · ');
+    card.className = 'trabajador-card show';
+    btn.disabled   = false;
+  } else {
+    State.trabajador = null;
+    document.getElementById('tNombre').textContent = `Cédula ${cedula} no registrada`;
+    document.getElementById('tSub').textContent    = 'Verifica el número ingresado';
+    document.getElementById('tAvatar').textContent = '❓';
+    document.getElementById('tAvatar').style.background = '#333';
+    card.className = 'trabajador-card show not-found';
+    btn.disabled   = true;
+  }
+}
+
+// ── Continuar: oculta cédula, abre cámara ────────────────────────
+async function continuar() {
+  if (!State.trabajador) return;
+  // Ocultar sección cédula y botón
+  document.getElementById('cedulaSection').style.display  = 'none';
+  document.getElementById('trabajadorCard').style.display = 'none';
+  document.getElementById('btnContinuar').style.display   = 'none';
+  // Abrir cámara
+  await abrirScanner();
+}
+
+// ── Cancelar scanner: vuelve a la pantalla de cédula ─────────────
+function cancelarScanner() {
+  cerrarScanner();
+  document.getElementById('cedulaSection').style.display  = '';
+  document.getElementById('trabajadorCard').style.display = '';
+  document.getElementById('btnContinuar').style.display   = '';
+  // Limpiar para reiniciar
+  document.getElementById('cedulaInput').value = '';
+  document.getElementById('trabajadorCard').className = 'trabajador-card';
+  document.getElementById('btnContinuar').disabled = true;
+  State.trabajador = null;
+}
+
+// ── Registrar asistencia ─────────────────────────────────────────
+async function registrar(metodo = 'cedula') {
+  if (!State.trabajador) return toast('Ingresa tu número de cédula', 'warning');
+
+  const t        = State.trabajador;
+  const fechaHoy = today();
+  const hora     = horaActual();
+  const tipo     = State.tipo;
+
+  // Anti-duplicado: mismo tipo mismo minuto
+  const { data: recientes } = await sb
+    .from('asistencia')
+    .select('id, hora, tipo')
+    .eq('cedula', t.cedula)
+    .eq('fecha', fechaHoy)
+    .eq('tipo', tipo);
+
+  const dup = (recientes || []).find(r => r.hora && r.hora.slice(0,5) === hora.slice(0,5));
+  if (dup) {
+    toast(`Ya tienes ${tipo} registrada a las ${fmtHora(hora)}`, 'warning');
+    return;
+  }
+
+  const row = {
+    trabajador_id:     t.id,
+    trabajador_nombre: t.nombre,
+    cedula:            t.cedula,
+    cargo:             t.cargo   || '',
+    ciudad:            t.ciudad  || '',
+    tipo,
+    fecha:             fechaHoy,
+    hora,
+    metodo,
+  };
+
+  const btn = document.getElementById('btnRegistrar');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  const { error } = await sb.from('asistencia').insert([row]);
+
+  btn.disabled = false;
+  btn.innerHTML = '✅ Registrar asistencia';
+
+  if (error) { toast('Error al guardar: ' + error.message, 'error'); return; }
+
+  const emoji = tipo === 'entrada' ? '🟢' : '🔴';
+  toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada — ${t.nombre}`, 'success', 5000);
+
+  // Volver a pantalla de cédula limpia
+  document.getElementById('cedulaInput').value = '';
+  document.getElementById('trabajadorCard').className = 'trabajador-card';
+  document.getElementById('cedulaSection').style.display  = '';
+  document.getElementById('trabajadorCard').style.display = '';
+  document.getElementById('btnContinuar').style.display   = '';
+  document.getElementById('btnContinuar').disabled = true;
+  State.trabajador = null;
+  State.qrValidado = false;
+
+  // Actualizar lista recientes
+  await cargarRecientes();
+  setTimeout(() => document.getElementById('cedulaInput').focus(), 300);
+}
+
+// ── Recientes del día ────────────────────────────────────────────
+async function cargarRecientes() {
+  const { data } = await sb
+    .from('asistencia')
+    .select('trabajador_nombre, tipo, hora, cedula')
+    .eq('fecha', today())
+    .order('hora', { ascending: false })
+    .limit(5);
+
+  const wrap  = document.getElementById('recientesWrap');
+  const lista = document.getElementById('recientesList');
+  if (!data || !data.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  lista.innerHTML = data.map(r => `
+    <div class="reciente-item">
+      <span class="rec-hora">${fmtHora(r.hora)}</span>
+      <span class="rec-tipo ${r.tipo}">${r.tipo}</span>
+      <span class="rec-nombre">${r.trabajador_nombre}</span>
+    </div>`).join('');
+}
+
+// ── Scanner QR con cámara ────────────────────────────────────────
+async function abrirScanner() {
+  const wrap  = document.getElementById('scannerWrap');
+  const video = document.getElementById('scannerVideo');
+  wrap.classList.add('show');
+
+  try {
+    State.scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } },
+    });
+    video.srcObject = State.scannerStream;
+    await video.play();
+    escanearFrame();
+  } catch (e) {
+    toast('No se pudo acceder a la cámara: ' + e.message, 'error');
+    cerrarScanner();
+  }
+}
+
+function escanearFrame() {
+  const video  = document.getElementById('scannerVideo');
+  const canvas = document.getElementById('scannerCanvas');
+  if (!video || video.readyState < 2) { State.scannerRAF = requestAnimationFrame(escanearFrame); return; }
+
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code      = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+
+  if (code) {
+    procesarQR(code.data);
+    return; // no seguir escaneando hasta procesar
+  }
+  State.scannerRAF = requestAnimationFrame(escanearFrame);
+}
+
+function procesarQR(data) {
+  cerrarScanner();
+
+  // El QR puede contener una URL o el token directamente
+  let token = data;
+  try {
+    const url   = new URL(data);
+    const param = url.searchParams.get('qr');
+    if (param) token = decodeURIComponent(param);
+  } catch (_) { /* no era URL, usar data como token */ }
+
+  // Validar ventana temporal (±1 intervalo de 30 s)
+  const ventanaActual = Math.floor(Date.now() / 30000);
+  let valido = false;
+  try {
+    const obj = JSON.parse(atob(token));
+    valido = obj.app === 'ghpro-asist' && Math.abs(obj.w - ventanaActual) <= 1;
+  } catch (_) { valido = false; }
+
+  if (!valido) {
+    toast('Código QR inválido o expirado. Intenta de nuevo.', 'error', 5000);
+    // Volver a mostrar cédula para reintentar
+    cancelarScanner();
+    return;
+  }
+
+  // QR válido → registrar inmediatamente
+  registrar('qr');
+}
+
+function cerrarScanner() {
+  const wrap  = document.getElementById('scannerWrap');
+  const video = document.getElementById('scannerVideo');
+  cancelAnimationFrame(State.scannerRAF);
+  if (State.scannerStream) {
+    State.scannerStream.getTracks().forEach(t => t.stop());
+    State.scannerStream = null;
+  }
+  if (video) video.srcObject = null;
+  wrap.classList.remove('show');
+}
+
+// ── Leer ?qr= de URL (cuando el QR lleva directo a esta página) ──
+function revisarQRenURL() {
+  const params = new URLSearchParams(location.search);
+  const qr     = params.get('qr');
+  if (!qr) return;
+
+  const ventanaActual = Math.floor(Date.now() / 30000);
+  let valido = false;
+  try {
+    const obj = JSON.parse(atob(decodeURIComponent(qr)));
+    valido = obj.app === 'ghpro-asist' && Math.abs(obj.w - ventanaActual) <= 1;
+  } catch (_) {}
+
+  if (valido) {
+    State.qrValidado = true;
+    toast('✅ QR reconocido — ingresa tu cédula para confirmar', 'info', 5000);
+  } else {
+    toast('El QR escaneado ya expiró. Pide uno nuevo en pantalla.', 'warning', 5000);
+  }
+  // Limpiar URL sin recargar
+  history.replaceState({}, '', location.pathname);
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  actualizarReloj();
+  setInterval(actualizarReloj, 1000);
+
+  // Cargar trabajadores desde Supabase
+  const { data } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
+  State.trabajadores = data || [];
+
+  await cargarRecientes();
+  document.getElementById('cedulaInput').focus();
+});
+</script>
+</body>
+</html>
