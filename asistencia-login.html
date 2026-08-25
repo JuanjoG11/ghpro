@@ -393,12 +393,13 @@ async function onCedula(val) {
 }
 
 // ── Device ID ────────────────────────────────────────────────────
-// UUID persistente en localStorage que identifica el dispositivo
+// UUID persistente en localStorage que identifica el dispositivo.
+// Se guarda también en cada registro de asistencia para validación
+// estricta desde la base de datos (no depende solo del localStorage).
 function getDeviceId() {
   const KEY = 'ghpro_device_id';
   let id = localStorage.getItem(KEY);
   if (!id) {
-    // Generar UUID v4 simple
     id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
       const r = Math.random() * 16 | 0;
       return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
@@ -408,25 +409,23 @@ function getDeviceId() {
   return id;
 }
 
-// Verifica si este dispositivo ya registró hoy en Supabase
-async function dispositivoYaRegistroHoy() {
-  const { data } = await sb
-    .from('device_registros')
-    .select('id, cedula')
+// Consulta cuántos registros hizo este dispositivo hoy en asistencia.
+// Retorna: { count: número, tipos: ['entrada','salida'...] }
+async function verificarDispositivoHoy() {
+  const { data, error } = await sb
+    .from('asistencia')
+    .select('tipo')
     .eq('device_id', getDeviceId())
-    .eq('fecha', today())
-    .limit(1);
-  return data && data.length > 0 ? data[0] : null;
+    .eq('fecha', today());
+
+  if (error || !data) return { count: 0, tipos: [] };
+  return {
+    count: data.length,
+    tipos: data.map(r => r.tipo),
+  };
 }
 
-// Guarda el registro del dispositivo en Supabase
-async function guardarRegistroDispositivo(cedula) {
-  await sb.from('device_registros').insert([{
-    device_id: getDeviceId(),
-    fecha:     today(),
-    cedula,
-  }]);
-}
+// ── Continuar: registrar directamente (QR ya validado al entrar) ──
 async function continuar() {
   if (!State.trabajador) return;
   await registrar('qr');
@@ -443,6 +442,23 @@ async function registrar(metodo = 'qr') {
 
   const btn = document.getElementById('btnContinuar');
   btn.disabled = true;
+
+  // ── Verificación estricta del dispositivo (segunda línea de defensa) ──
+  const device = await verificarDispositivoHoy();
+  if (device.count >= 2) {
+    mostrarBloqueo(
+      'Límite alcanzado',
+      'Este dispositivo ya registró entrada y salida hoy. No se permiten más registros.',
+      'device'
+    );
+    return;
+  }
+  // No se puede registrar el mismo tipo dos veces desde el mismo dispositivo
+  if (device.tipos.includes(tipo)) {
+    toast(`Este dispositivo ya registró una ${tipo} hoy.`, 'warning', 5000);
+    btn.disabled = false;
+    return;
+  }
 
   // Anti-duplicado: mismo tipo mismo minuto
   const { data: recientes } = await sb
@@ -469,6 +485,7 @@ async function registrar(metodo = 'qr') {
     fecha:             fechaHoy,
     hora,
     metodo,
+    device_id:         getDeviceId(),  // guardado para validación estricta
   };
 
   toast('Guardando...', 'info', 1500);
@@ -476,9 +493,6 @@ async function registrar(metodo = 'qr') {
   const { error } = await sb.from('asistencia').insert([row]);
 
   if (error) { toast('Error al guardar: ' + error.message, 'error'); btn.disabled = false; return; }
-
-  // Guardar que este dispositivo ya registró hoy
-  await guardarRegistroDispositivo(t.cedula);
 
   const emoji = tipo === 'entrada' ? '🟢' : '🔴';
   toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada — ${t.nombre}`, 'success', 5000);
@@ -581,12 +595,12 @@ window.addEventListener('load', async () => {
   // Validar QR antes de mostrar el formulario
   revisarQRenURL();
 
-  // Verificar si este dispositivo ya registró hoy
-  const yaRegistro = await dispositivoYaRegistroHoy();
-  if (yaRegistro) {
+  // Verificar si este dispositivo ya alcanzó el límite de hoy (2 registros)
+  const device = await verificarDispositivoHoy();
+  if (device.count >= 2) {
     mostrarBloqueo(
-      'Ya registraste hoy',
-      `Este dispositivo ya marcó asistencia hoy${yaRegistro.cedula ? ' (cédula ' + yaRegistro.cedula + ')' : ''}. Solo se permite un registro por dispositivo por día.`,
+      'Límite alcanzado',
+      'Este dispositivo ya registró entrada y salida hoy. No se permiten más registros.',
       'device'
     );
     return;
