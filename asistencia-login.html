@@ -312,13 +312,210 @@ function actualizarReloj() {
   }
 }
 
-// ── Toggle entrada/salida ────────────────────────────────────────
-function setTipo(tipo) {
+// ── Hash Rápido (cyrb53) para huella digital ──────────────────────
+function cyrb53(str, seed = 0) {
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0, ch; i < str.length; i++) {
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+// ── Huella digital del dispositivo/navegador (Anti-trampas) ───────
+// Permite reconocer el mismo teléfono físico incluso si abren pestaña privada
+function getDeviceFingerprint() {
+  try {
+    const parts = [
+      navigator.userAgent || '',
+      navigator.language || '',
+      screen.width + 'x' + screen.height + 'x' + (screen.colorDepth || 24),
+      window.devicePixelRatio || 1,
+      navigator.hardwareConcurrency || 'na',
+      navigator.maxTouchPoints || 0,
+      Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+    ];
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 150; canvas.height = 30;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#f60';
+        ctx.fillRect(10, 5, 60, 20);
+        ctx.fillStyle = '#069';
+        ctx.fillText('GH-PRO-FP', 12, 10);
+        parts.push(canvas.toDataURL());
+      }
+    } catch (_) {}
+    return cyrb53(parts.join('|||'));
+  } catch (_) {
+    return 'fp_' + Math.random().toString(36).slice(2, 10);
+  }
+}
+
+// ── Almacenamiento persistente multi-capa ─────────────────────────
+function getStoredDeviceId() {
+  const KEY = 'ghpro_device_id';
+  let id = null;
+  try { id = localStorage.getItem(KEY); } catch (_) {}
+  if (!id) {
+    const match = document.cookie.match(new RegExp('(^|;\\s*)' + KEY + '=([^;]+)'));
+    if (match) id = decodeURIComponent(match[2]);
+  }
+  if (!id) {
+    try { id = sessionStorage.getItem(KEY); } catch (_) {}
+  }
+  return id;
+}
+
+function persistDeviceId(id) {
+  const KEY = 'ghpro_device_id';
+  try { localStorage.setItem(KEY, id); } catch (_) {}
+  try { sessionStorage.setItem(KEY, id); } catch (_) {}
+  try {
+    document.cookie = `${KEY}=${encodeURIComponent(id)}; max-age=31536000; path=/; SameSite=Lax`;
+  } catch (_) {}
+}
+
+// ── Identificador de dispositivo unificado ─────────────────────────
+async function getDeviceId() {
+  let stored = getStoredDeviceId();
+  const fp = getDeviceFingerprint();
+
+  if (stored) {
+    persistDeviceId(stored);
+    return stored;
+  }
+
+  // Si es una pestaña de incógnito o borraron caché, recuperar si hoy ya hay registro con este fingerprint
+  try {
+    const { data } = await sb
+      .from('asistencia')
+      .select('device_id')
+      .eq('fecha', today())
+      .like('device_id', `fp_${fp}_%`)
+      .limit(1);
+
+    if (data && data.length > 0 && data[0].device_id) {
+      const recoveredId = data[0].device_id;
+      persistDeviceId(recoveredId);
+      return recoveredId;
+    }
+  } catch (_) {}
+
+  const randomPart = 'xxxxxxxxxxxx'.replace(/[x]/g, () => (Math.random() * 16 | 0).toString(16));
+  const newId = `fp_${fp}_${randomPart}`;
+  persistDeviceId(newId);
+  return newId;
+}
+
+// ── Consulta de registros del dispositivo hoy ─────────────────────
+// Retorna { count, tipos, tieneEntrada, tieneSalida, registros }
+async function verificarDispositivoHoy() {
+  const deviceId = await getDeviceId();
+  const fp = getDeviceFingerprint();
+
+  const { data, error } = await sb
+    .from('asistencia')
+    .select('id, tipo, hora, trabajador_nombre, cedula, device_id')
+    .eq('fecha', today())
+    .or(`device_id.eq.${deviceId},device_id.like.fp_${fp}_%`);
+
+  if (error || !data) return { count: 0, tipos: [], tieneEntrada: false, tieneSalida: false, registros: [] };
+
+  return {
+    count: data.length,
+    tipos: data.map(r => r.tipo),
+    tieneEntrada: data.some(r => r.tipo === 'entrada'),
+    tieneSalida: data.some(r => r.tipo === 'salida'),
+    registros: data,
+  };
+}
+
+// ── Toggle tipo (Entrada / Salida) ───────────────────────────────
+async function setTipo(tipo) {
   State.tipo = tipo;
   const be = document.getElementById('btnEntrada');
   const bs = document.getElementById('btnSalida');
-  be.className = 'tipo-btn' + (tipo === 'entrada' ? ' active-entrada' : '');
-  bs.className = 'tipo-btn' + (tipo === 'salida'  ? ' active-salida'  : '');
+  if (be) be.className = 'tipo-btn' + (tipo === 'entrada' ? ' active-entrada' : '');
+  if (bs) bs.className = 'tipo-btn' + (tipo === 'salida'  ? ' active-salida'  : '');
+
+  // Validar si el dispositivo ya utilizó este tipo hoy
+  if (State.trabajador) {
+    await actualizarBotonPorEstado();
+  }
+}
+
+// ── Actualiza el botón y estado según el trabajador y el dispositivo ──
+async function actualizarBotonPorEstado() {
+  const btn = document.getElementById('btnContinuar');
+  const t   = State.trabajador;
+  if (!t) {
+    btn.disabled  = true;
+    btn.innerHTML = '✅ Registrar Asistencia';
+    return;
+  }
+
+  const device = await verificarDispositivoHoy();
+
+  // 1. Si el dispositivo ya llegó al límite absoluto de 2 registros
+  if (device.count >= 2) {
+    btn.disabled  = true;
+    btn.innerHTML = '📵 Límite de dispositivo alcanzado';
+    return;
+  }
+
+  // 2. Si el dispositivo ya registró el tipo seleccionado
+  if (State.tipo === 'entrada' && device.tieneEntrada) {
+    btn.disabled  = true;
+    btn.innerHTML = '⚠️ Este celular ya marcó Entrada hoy';
+    return;
+  }
+  if (State.tipo === 'salida' && device.tieneSalida) {
+    btn.disabled  = true;
+    btn.innerHTML = '⚠️ Este celular ya marcó Salida hoy';
+    return;
+  }
+
+  // 3. Consultar estado del trabajador
+  const { data: hoy } = await sb
+    .from('asistencia')
+    .select('tipo, hora')
+    .eq('cedula', t.cedula)
+    .eq('fecha', today())
+    .order('hora', { ascending: false });
+
+  const registrosHoy  = hoy || [];
+  const tieneEntrada  = registrosHoy.some(r => r.tipo === 'entrada');
+  const tieneSalida   = registrosHoy.some(r => r.tipo === 'salida');
+
+  if (tieneEntrada && tieneSalida) {
+    btn.disabled  = true;
+    btn.innerHTML = '🔒 Jornada completada hoy';
+    return;
+  }
+
+  if (State.tipo === 'entrada' && tieneEntrada) {
+    btn.disabled  = true;
+    btn.innerHTML = '⚠️ Trabajador ya registró Entrada';
+    return;
+  }
+
+  if (State.tipo === 'salida' && tieneSalida) {
+    btn.disabled  = true;
+    btn.innerHTML = '⚠️ Trabajador ya registró Salida';
+    return;
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = State.tipo === 'entrada' ? '🟢 Registrar Entrada' : '🔴 Registrar Salida';
 }
 
 // ── Búsqueda cédula en tiempo real ───────────────────────────────
@@ -366,20 +563,18 @@ async function onCedula(val) {
     document.getElementById('tSub').innerHTML = estadoTexto +
       (estadoExtra ? `<br><span style="font-size:11px;color:var(--accent3)">${estadoExtra}</span>` : '');
 
-    // Sugerir tipo automáticamente
+    // Sugerir tipo automáticamente según lo que falta
+    const device = await verificarDispositivoHoy();
     if (ultimoEntrada && !ultimaSalida) {
       setTipo('salida');
-      btn.innerHTML = '✅ Registrar Salida';
-    } else if (ultimoEntrada && ultimaSalida) {
+    } else if (!ultimoEntrada) {
       setTipo('entrada');
-      btn.innerHTML = '✅ Registrar Nueva Entrada';
     } else {
       setTipo('entrada');
-      btn.innerHTML = '✅ Registrar Entrada';
     }
 
     card.className = 'trabajador-card show';
-    btn.disabled   = false;
+    await actualizarBotonPorEstado();
   } else {
     State.trabajador = null;
     document.getElementById('tNombre').textContent = `Cédula ${cedula} no registrada`;
@@ -392,40 +587,7 @@ async function onCedula(val) {
   }
 }
 
-// ── Device ID ────────────────────────────────────────────────────
-// UUID persistente en localStorage que identifica el dispositivo.
-// Se guarda también en cada registro de asistencia para validación
-// estricta desde la base de datos (no depende solo del localStorage).
-function getDeviceId() {
-  const KEY = 'ghpro_device_id';
-  let id = localStorage.getItem(KEY);
-  if (!id) {
-    id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0;
-      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-    });
-    localStorage.setItem(KEY, id);
-  }
-  return id;
-}
-
-// Consulta cuántos registros hizo este dispositivo hoy en asistencia.
-// Retorna: { count: número, tipos: ['entrada','salida'...] }
-async function verificarDispositivoHoy() {
-  const { data, error } = await sb
-    .from('asistencia')
-    .select('tipo')
-    .eq('device_id', getDeviceId())
-    .eq('fecha', today());
-
-  if (error || !data) return { count: 0, tipos: [] };
-  return {
-    count: data.length,
-    tipos: data.map(r => r.tipo),
-  };
-}
-
-// ── Continuar: registrar directamente (QR ya validado al entrar) ──
+// ── Continuar: registrar directamente ─────────────────────────────
 async function continuar() {
   if (!State.trabajador) return;
   await registrar('qr');
@@ -443,38 +605,49 @@ async function registrar(metodo = 'qr') {
   const btn = document.getElementById('btnContinuar');
   btn.disabled = true;
 
-  // ── Verificación estricta del dispositivo (segunda línea de defensa) ──
+  // ── Verificación estricta del dispositivo (Anti-trampas) ────────
   const device = await verificarDispositivoHoy();
+
+  // Regla 1: Máximo 2 registros totales por día por dispositivo
   if (device.count >= 2) {
     mostrarBloqueo(
-      'Límite alcanzado',
-      'Este dispositivo ya registró entrada y salida hoy. No se permiten más registros.',
+      'Límite de dispositivo alcanzado',
+      'Este dispositivo ya completó sus 2 registros diarios (entrada y salida). No se permiten más registros desde este teléfono.',
       'device'
     );
     return;
   }
-  // No se puede registrar el mismo tipo dos veces desde el mismo dispositivo
-  if (device.tipos.includes(tipo)) {
-    toast(`Este dispositivo ya registró una ${tipo} hoy.`, 'warning', 5000);
-    btn.disabled = false;
+
+  // Regla 2: Solo 1 entrada por día por dispositivo
+  if (tipo === 'entrada' && device.tieneEntrada) {
+    toast('⛔ Este dispositivo ya registró una Entrada hoy. No se permite marcar entrada para otro trabajador.', 'error', 6000);
+    await actualizarBotonPorEstado();
     return;
   }
 
-  // Anti-duplicado: mismo tipo mismo minuto
-  const { data: recientes } = await sb
+  // Regla 3: Solo 1 salida por día por dispositivo
+  if (tipo === 'salida' && device.tieneSalida) {
+    toast('⛔ Este dispositivo ya registró una Salida hoy.', 'error', 6000);
+    await actualizarBotonPorEstado();
+    return;
+  }
+
+  // Regla 4: Verificación del trabajador en la base de datos
+  const { data: trabajadorHoy } = await sb
     .from('asistencia')
     .select('id, hora, tipo')
     .eq('cedula', t.cedula)
     .eq('fecha', fechaHoy)
     .eq('tipo', tipo);
 
-  const dup = (recientes || []).find(r => r.hora && r.hora.slice(0,5) === hora.slice(0,5));
-  if (dup) {
-    toast(`Ya tienes ${tipo} registrada a las ${fmtHora(hora)}`, 'warning');
-    resetearFormulario();
+  if (trabajadorHoy && trabajadorHoy.length > 0) {
+    const yaHora = fmtHora(trabajadorHoy[0].hora);
+    toast(`⚠️ Esta cédula ya tiene una ${tipo} registrada hoy a las ${yaHora}.`, 'warning', 5000);
+    await actualizarBotonPorEstado();
     return;
   }
 
+  const deviceId = await getDeviceId();
   const row = {
     trabajador_id:     t.id,
     trabajador_nombre: t.nombre,
@@ -485,19 +658,36 @@ async function registrar(metodo = 'qr') {
     fecha:             fechaHoy,
     hora,
     metodo,
-    device_id:         getDeviceId(),  // guardado para validación estricta
+    device_id:         deviceId,
   };
 
-  toast('Guardando...', 'info', 1500);
+  toast('Guardando registro...', 'info', 1500);
 
   const { error } = await sb.from('asistencia').insert([row]);
 
-  if (error) { toast('Error al guardar: ' + error.message, 'error'); btn.disabled = false; return; }
+  if (error) {
+    toast('Error al guardar: ' + error.message, 'error');
+    btn.disabled = false;
+    return;
+  }
 
   const emoji = tipo === 'entrada' ? '🟢' : '🔴';
-  toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada — ${t.nombre}`, 'success', 5000);
+  toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada correctamente — ${t.nombre}`, 'success', 5000);
 
   await cargarRecientes(t.cedula);
+
+  // Si este registro completó los 2 permitidos para este dispositivo (ej. completó salida)
+  if (device.count + 1 >= 2) {
+    setTimeout(() => {
+      mostrarBloqueo(
+        'Jornada registrada',
+        `¡Has completado tus 2 registros de hoy (Entrada y Salida)! Este dispositivo queda bloqueado hasta el próximo día.`,
+        'device'
+      );
+    }, 2500);
+    return;
+  }
+
   resetearFormulario();
 }
 
@@ -516,7 +706,7 @@ function resetearFormulario() {
 async function cargarRecientes(cedula) {
   const wrap  = document.getElementById('recientesWrap');
   const lista = document.getElementById('recientesList');
-  if (!cedula) { wrap.style.display = 'none'; return; }
+  if (!cedula) { if (wrap) wrap.style.display = 'none'; return; }
 
   const { data } = await sb
     .from('asistencia')
@@ -526,26 +716,25 @@ async function cargarRecientes(cedula) {
     .order('hora', { ascending: false })
     .limit(5);
 
-  if (!data || !data.length) { wrap.style.display = 'none'; return; }
-  wrap.style.display = '';
-  lista.innerHTML = data.map(r => `
-    <div class="reciente-item">
-      <span class="rec-hora">${fmtHora(r.hora)}</span>
-      <span class="rec-tipo ${r.tipo}">${r.tipo}</span>
-      <span class="rec-nombre">${r.trabajador_nombre}</span>
-    </div>`).join('');
+  if (!data || !data.length) { if (wrap) wrap.style.display = 'none'; return; }
+  if (wrap) wrap.style.display = '';
+  if (lista) {
+    lista.innerHTML = data.map(r => `
+      <div class="reciente-item">
+        <span class="rec-hora">${fmtHora(r.hora)}</span>
+        <span class="rec-tipo ${r.tipo}">${r.tipo}</span>
+        <span class="rec-nombre">${r.trabajador_nombre}</span>
+      </div>`).join('');
+  }
 
-  // Ocultar después de 8 segundos
-  setTimeout(() => { wrap.style.display = 'none'; }, 8000);
+  setTimeout(() => { if (wrap) wrap.style.display = 'none'; }, 8000);
 }
 
 // ── Validar ?qr= al abrir la página ─────────────────────────────
-// Si no hay QR válido, bloquea el formulario y muestra un aviso
 function revisarQRenURL() {
   const params = new URLSearchParams(location.search);
   const qr     = params.get('qr');
 
-  // Sin parámetro: acceso directo sin escanear QR → bloquear
   if (!qr) {
     mostrarBloqueo('Acceso no autorizado', 'Debes escanear el código QR de la pantalla principal para registrar tu asistencia.');
     return;
@@ -563,20 +752,24 @@ function revisarQRenURL() {
     return;
   }
 
-  // QR válido: limpiar URL y permitir el formulario
   history.replaceState({}, '', location.pathname);
   toast('QR válido — ingresa tu cédula', 'info', 4000);
 }
 
 function mostrarBloqueo(titulo, desc, tipo = '') {
-  // Ocultar todo el formulario
-  document.querySelector('.card').style.display = 'none';
-  document.getElementById('horaDisplay').style.display  = 'none';
-  document.getElementById('fechaDisplay').style.display = 'none';
+  const card = document.querySelector('.card');
+  const hora = document.getElementById('horaDisplay');
+  const fecha = document.getElementById('fechaDisplay');
+  if (card) card.style.display = 'none';
+  if (hora) hora.style.display  = 'none';
+  if (fecha) fecha.style.display = 'none';
 
   const icono = tipo === 'device' ? '📵' : '🔒';
 
-  // Insertar bloque de aviso
+  // Remover bloque previo si existe
+  const previo = document.querySelector('.qr-bloqueado');
+  if (previo) previo.remove();
+
   const bloqueo = document.createElement('div');
   bloqueo.className = 'qr-bloqueado' + (tipo ? ' ' + tipo : '');
   bloqueo.innerHTML = `
@@ -592,21 +785,21 @@ window.addEventListener('load', async () => {
   actualizarReloj();
   setInterval(actualizarReloj, 1000);
 
-  // Validar QR antes de mostrar el formulario
+  // 1. Validar QR antes de mostrar el formulario
   revisarQRenURL();
 
-  // Verificar si este dispositivo ya alcanzó el límite de hoy (2 registros)
+  // 2. Verificar si este dispositivo ya alcanzó el límite de hoy (2 registros)
   const device = await verificarDispositivoHoy();
   if (device.count >= 2) {
     mostrarBloqueo(
-      'Límite alcanzado',
-      'Este dispositivo ya registró entrada y salida hoy. No se permiten más registros.',
+      'Límite de dispositivo alcanzado',
+      'Este dispositivo ya completó sus 2 registros diarios (entrada y salida). No se permiten más registros desde este teléfono hoy.',
       'device'
     );
     return;
   }
 
-  // Cargar trabajadores desde Supabase
+  // 3. Cargar trabajadores desde Supabase
   const { data } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
   State.trabajadores = data || [];
 
