@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -483,6 +483,10 @@
       <div class="nav-item" data-page="vacaciones">
         <span class="nav-icon">🏖️</span> Vacaciones
         <span class="nav-badge warning" id="vacBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-page="examenes">
+        <span class="nav-icon">🩺</span> Exámenes Médicos
+        <span class="nav-badge warning" id="examBadge" style="display:none">0</span>
       </div>
       <div class="nav-item" data-page="asistencia">
         <span class="nav-icon">🕐</span> Asistencia
@@ -1122,10 +1126,184 @@
       </div>
     </div>
   </div>
-</div>
-
-
 </div><!-- /page-asistencia -->
+
+    <!-- ===== EXAMENES MEDICOS ===== -->
+    <div class="page" id="page-examenes">
+      <div class="page-header">
+        <div class="page-title">🩺 <span>Exámenes Médicos Ocupacionales</span></div>
+        <div class="page-subtitle">Control de ingresos, periódicos, egresos, restricciones y salud laboral</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="openModal('modalExamenMedico')">➕ Nuevo Examen</button>
+          <button class="btn btn-secondary" onclick="exportarExamenes()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="examStats"></div>
+
+      <!-- Tabs -->
+      <div class="tabs" id="examTabs" style="margin-bottom:16px">
+        <button class="tab-btn active" data-tab="tab-exam-listado">📋 Listado</button>
+        <button class="tab-btn" data-tab="tab-exam-vencimientos">⏳ Vencimientos / Periódicos</button>
+        <button class="tab-btn" data-tab="tab-exam-restricciones">⚠️ Con Restricciones</button>
+        <button class="tab-btn" data-tab="tab-exam-trabajadores">👥 Por Trabajador</button>
+      </div>
+
+      <!-- Tab 1: Listado General -->
+      <div class="tab-content active" id="tab-exam-listado">
+        <div class="card">
+          <div class="card-body">
+            <div class="search-bar">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchExam"
+                  placeholder="Buscar por trabajador, IPS, énfasis..." oninput="renderExamenes()">
+              </div>
+              <select class="filter-select" id="filterExamTipo" onchange="renderExamenes()">
+                <option value="">Todos los tipos</option>
+                <option value="ingreso">Ingreso (Pre-empleo)</option>
+                <option value="periodico">Periódico (Control)</option>
+                <option value="egreso">Egreso (Retiro)</option>
+                <option value="post_incapacidad">Post-incapacidad / Reintegro</option>
+                <option value="reubicacion">Reubicación</option>
+                <option value="otro">Otro</option>
+              </select>
+              <select class="filter-select" id="filterExamConcepto" onchange="renderExamenes()">
+                <option value="">Todos los conceptos</option>
+                <option value="apto">Apto</option>
+                <option value="apto_con_restricciones">Apto con restricciones</option>
+                <option value="no_apto">No apto</option>
+                <option value="aplazado">Aplazado</option>
+              </select>
+              <select class="filter-select" id="filterExamFisico" onchange="renderExamenes()">
+                <option value="">Doc. Físico</option>
+                <option value="si">Con físico</option>
+                <option value="no">Sin físico</option>
+              </select>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Tipo</th>
+                    <th>Fecha Examen</th>
+                    <th>Vencimiento</th>
+                    <th>IPS / Entidad</th>
+                    <th>Énfasis</th>
+                    <th>Concepto</th>
+                    <th>Restricciones</th>
+                    <th>Físico</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaExamenes"></tbody>
+              </table>
+            </div>
+            <div id="emptyExamenes" class="empty-state" style="display:none">
+              <div class="empty-state-icon">🩺</div>
+              <div class="empty-state-text">No hay exámenes médicos registrados</div>
+              <div class="empty-state-sub">Haz clic en "Nuevo Examen" para registrar el primero</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Vencimientos / Periódicos -->
+      <div class="tab-content" id="tab-exam-vencimientos">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⏳ Exámenes Periódicos y Control de Vigencia</span>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Tipo</th>
+                    <th>Último Examen</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Estado / Días</th>
+                    <th>IPS / Entidad</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaExamVencimientos"></tbody>
+              </table>
+            </div>
+            <div id="emptyExamVencimientos" class="empty-state" style="display:none">
+              <div class="empty-state-icon">✅</div>
+              <div class="empty-state-text">Sin exámenes vencidos o próximos a vencer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Con Restricciones -->
+      <div class="tab-content" id="tab-exam-restricciones">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚠️ Seguimiento a Trabajadores con Restricciones / Recomendaciones</span>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Fecha Examen</th>
+                    <th>Énfasis</th>
+                    <th>Concepto</th>
+                    <th>Restricciones y Recomendaciones</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaExamRestricciones"></tbody>
+              </table>
+            </div>
+            <div id="emptyExamRestricciones" class="empty-state" style="display:none">
+              <div class="empty-state-icon">✅</div>
+              <div class="empty-state-text">No hay trabajadores con restricciones registradas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Por Trabajador -->
+      <div class="tab-content" id="tab-exam-trabajadores">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">👥 Historial Ocupacional por Trabajador</span>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Total Exámenes</th>
+                    <th>Aptos</th>
+                    <th>Con Restricciones</th>
+                    <th>No Aptos</th>
+                    <th>Sin Físico</th>
+                    <th>Último Examen</th>
+                    <th>Próximo Vencimiento</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaExamPorTrabajador"></tbody>
+              </table>
+            </div>
+            <div id="emptyExamTrabajador" class="empty-state" style="display:none">
+              <div class="empty-state-icon">👥</div>
+              <div class="empty-state-text">Sin registros de exámenes por trabajador</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /page-examenes -->
+
   </main><!-- /main-content -->
 </div><!-- /app-shell -->
 
@@ -1442,9 +1620,105 @@
         <textarea class="form-control" id="vacObs" rows="2" placeholder="Notas adicionales..."></textarea>
       </div>
     </div>
+<!-- Modal Examen Medico -->
+<div class="modal-overlay" id="modalExamenMedico">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title" id="modalExamTitle">🩺 Nuevo Examen Médico</div>
+      <button class="modal-close" onclick="closeModal('modalExamenMedico')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="exId">
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Trabajador *</label>
+          <select class="form-control" id="exTrabajador" required></select>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Tipo de Examen *</label>
+          <select class="form-control" id="exTipo" onchange="autoCalcularVencimientoExamen()">
+            <option value="periodico">Periódico (Control anual)</option>
+            <option value="ingreso">Ingreso (Pre-empleo)</option>
+            <option value="egreso">Egreso (Retiro)</option>
+            <option value="post_incapacidad">Post-incapacidad / Reintegro</option>
+            <option value="reubicacion">Reubicación laboral</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Fecha del Examen *</label>
+          <input type="date" class="form-control" id="exFecha" required onchange="autoCalcularVencimientoExamen()">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Fecha Vencimiento / Próx. Control</label>
+          <input type="date" class="form-control" id="exVencimiento">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">IPS / Centro Médico</label>
+          <input type="text" class="form-control" id="exEntidad" placeholder="Ej: Cruz Roja, Colmédica, Sura...">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Concepto Médico *</label>
+          <select class="form-control" id="exConcepto">
+            <option value="apto">🟢 Apto</option>
+            <option value="apto_con_restricciones">🟡 Apto con restricciones</option>
+            <option value="no_apto">🔴 No apto</option>
+            <option value="aplazado">⚪ Aplazado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Énfasis / Pruebas</label>
+          <input type="text" class="form-control" id="exEnfasis" list="enfasisDatalist" placeholder="Ej: Osteomuscular, Visiometría, Alturas...">
+          <datalist id="enfasisDatalist">
+            <option value="General"></option>
+            <option value="Osteomuscular"></option>
+            <option value="Visiometría"></option>
+            <option value="Audiometría"></option>
+            <option value="Manipulación de alimentos"></option>
+            <option value="Trabajo en alturas"></option>
+            <option value="Cardiovascular"></option>
+            <option value="Espirometría"></option>
+            <option value="Psicosensométrico"></option>
+          </datalist>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Costo ($)</label>
+          <input type="number" class="form-control" id="exCosto" placeholder="0" min="0" step="500">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Restricciones / Recomendaciones médicas</label>
+        <textarea class="form-control" id="exRestricciones" rows="2" placeholder="Describir restricciones, pausas activas, uso de EPP especial o recomendaciones..."></textarea>
+      </div>
+
+      <div class="form-row" style="align-items:center">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Concepto Físico</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <input type="checkbox" id="exFisico" style="width:20px;height:20px;cursor:pointer;accent-color:var(--accent)">
+            <span id="exFisicoLabel" style="font-size:13px;color:var(--text-secondary)">Documento físico recibido</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Observaciones</label>
+        <textarea class="form-control" id="exObs" rows="2" placeholder="Notas adicionales sobre el examen o seguimiento..."></textarea>
+      </div>
+    </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modalVacacion')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarVacacion()">💾 Guardar</button>
+      <button class="btn btn-secondary" onclick="closeModal('modalExamenMedico')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarExamenMedico()">💾 Guardar</button>
     </div>
   </div>
 </div>

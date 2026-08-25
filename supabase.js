@@ -272,14 +272,15 @@ const Vehiculos = {
 };
 
 /* ============================================================
-   ALERTAS (computed from bpm + vehiculos)
+   ALERTAS (computed from bpm + vehiculos + examenes + incapacidades)
    ============================================================ */
 const Alertas = {
   async getAll() {
-    const [bpmList, vehList, incapList] = await Promise.all([
+    const [bpmList, vehList, incapList, examList] = await Promise.all([
       BPM.getAll(),
       Vehiculos.getAll(),
       Incapacidades.getAll(),
+      ExamenesMedicos.getAll(),
     ]);
     const alertas = [];
     const tipoLabel = { soat: 'SOAT', tecno: 'Tecnomecánica', licencia: 'Licencia' };
@@ -326,6 +327,35 @@ const Alertas = {
           vencimiento: i.fecha_inicio,
         });
       });
+
+    // Exámenes médicos ocupacionales (por vencer o sin concepto físico)
+    examList.forEach(e => {
+      if (e.fecha_vencimiento) {
+        const days = daysUntil(e.fecha_vencimiento);
+        if (days !== null && days <= 30) {
+          const tipoNom = {
+            ingreso: 'Ingreso', periodico: 'Periódico', egreso: 'Egreso',
+            post_incapacidad: 'Reintegro', reubicacion: 'Reubicación', otro: 'Médico'
+          }[e.tipo_examen] || 'Médico';
+          alertas.push({
+            tipo: '🩺 Examen Médico',
+            persona: e.trabajador_nombre,
+            desc: `Examen ${tipoNom} · ${e.concepto.replace(/_/g, ' ')}`,
+            days,
+            vencimiento: e.fecha_vencimiento,
+          });
+        }
+      }
+      if (!e.tiene_concepto_fisico) {
+        alertas.push({
+          tipo: '🩺 Examen Médico',
+          persona: e.trabajador_nombre,
+          desc: `${e.tipo_examen} · Sin concepto físico recibido`,
+          days: 0,
+          vencimiento: e.fecha_examen,
+        });
+      }
+    });
 
     return alertas.sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
   },
@@ -893,3 +923,100 @@ const Asistencia = {
     return Object.values(mapa);
   },
 };
+
+/* ============================================================
+   EXAMENES MEDICOS OCUPACIONALES — capa de datos
+   ============================================================ */
+const ExamenesMedicos = {
+
+  async getAll() {
+    const { data, error } = await sb
+      .from('examenes_medicos')
+      .select('*')
+      .order('fecha_examen', { ascending: false });
+    if (sbErr(error, 'examenes_medicos.getAll')) return [];
+    return data || [];
+  },
+
+  async getByTrabajador(trabajadorId) {
+    const { data, error } = await sb
+      .from('examenes_medicos')
+      .select('*')
+      .eq('trabajador_id', trabajadorId)
+      .order('fecha_examen', { ascending: false });
+    if (sbErr(error, 'examenes_medicos.getByTrabajador')) return [];
+    return data || [];
+  },
+
+  async insert(row) {
+    const { data, error } = await sb
+      .from('examenes_medicos')
+      .insert([row])
+      .select()
+      .single();
+    if (sbErr(error, 'examenes_medicos.insert')) return null;
+    return data;
+  },
+
+  async update(id, row) {
+    const { data, error } = await sb
+      .from('examenes_medicos')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+    if (sbErr(error, 'examenes_medicos.update')) return null;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await sb
+      .from('examenes_medicos')
+      .delete()
+      .eq('id', id);
+    return !sbErr(error, 'examenes_medicos.delete');
+  },
+
+  // Resumen agrupado por trabajador (calculado en cliente)
+  resumenPorTrabajador(lista) {
+    const map = {};
+    lista.forEach(e => {
+      const k = e.trabajador_id;
+      if (!map[k]) {
+        map[k] = {
+          trabajador_id:     k,
+          trabajador_nombre: e.trabajador_nombre,
+          total_examenes:    0,
+          aptos:             0,
+          con_restricciones: 0,
+          no_aptos:          0,
+          aplazados:         0,
+          sin_fisico:        0,
+          ultimo_examen:     null,
+          proximo_venc:      null,
+          ultimo_concepto:   null,
+        };
+      }
+      const r = map[k];
+      r.total_examenes++;
+      if (e.concepto === 'apto')                  r.aptos++;
+      if (e.concepto === 'apto_con_restricciones') r.con_restricciones++;
+      if (e.concepto === 'no_apto')               r.no_aptos++;
+      if (e.concepto === 'aplazado')              r.aplazados++;
+      if (!e.tiene_concepto_fisico)               r.sin_fisico++;
+
+      if (!r.ultimo_examen || e.fecha_examen > r.ultimo_examen) {
+        r.ultimo_examen   = e.fecha_examen;
+        r.ultimo_concepto = e.concepto;
+      }
+      if (e.fecha_vencimiento && (!r.proximo_venc || e.fecha_vencimiento > r.proximo_venc)) {
+        r.proximo_venc = e.fecha_vencimiento;
+      }
+    });
+
+    return Object.values(map).sort((a, b) =>
+      (a.trabajador_nombre || '').localeCompare(b.trabajador_nombre || '')
+    );
+  },
+};
+

@@ -63,6 +63,7 @@ const Cache = {
   bpm:          null,
   vehiculos:    null,
   vacaciones:   null,
+  examenes:     null,
   invalidate(key) { if (key) this[key] = null; else Object.keys(this).forEach(k => this[k] = null); },
 };
 
@@ -85,6 +86,7 @@ function navigate(pageId) {
     vehiculos:      renderVehiculos,
     incapacidades:  renderIncapacidades,
     vacaciones:     renderVacaciones,
+    examenes:       renderExamenes,
     alertas:        renderAlertas,
     asistencia:     renderAsistencia,
   };
@@ -102,8 +104,16 @@ function openModal(id) {
     poblarSelectTrabajadores('eTrabajador');
     poblarSelectDotacion('eArticulo');
   }
-  if (id === 'modalBPM')      poblarSelectTrabajadores('bTrabajador');
-  if (id === 'modalVehiculo') { poblarSelectTrabajadores('vConductor'); toggleVehiculoFields(); }
+  if (id === 'modalBPM')          poblarSelectTrabajadores('bTrabajador');
+  if (id === 'modalVehiculo')     { poblarSelectTrabajadores('vConductor'); toggleVehiculoFields(); }
+  if (id === 'modalIncapacidad')  { poblarSelectTrabajadores('iTrabajador'); }
+  if (id === 'modalVacacion')     { poblarSelectTrabajadores('vacTrabajador'); }
+  if (id === 'modalExamenMedico') {
+    poblarSelectTrabajadores('exTrabajador');
+    if (!document.getElementById('exId').value) {
+      resetExamenForm();
+    }
+  }
   if (id === 'modalTrabajador' && !document.getElementById('tId').value) resetTrabajadorForm();
   document.getElementById(id).classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1952,3 +1962,426 @@ async function exportarAsistencia() {
   ]);
   downloadCSV('asistencia', headers, rows);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// EXAMENES MEDICOS OCUPACIONALES — LÓGICA Y RENDER
+// ═══════════════════════════════════════════════════════════════
+
+const EXAM_TIPOS = {
+  ingreso:          { label: 'Ingreso',           badge: 'badge-info',    icon: '📥' },
+  periodico:        { label: 'Periódico',         badge: 'badge-primary', icon: '🔄' },
+  egreso:           { label: 'Egreso',            badge: 'badge-neutral', icon: '📤' },
+  post_incapacidad: { label: 'Reintegro / Post',  badge: 'badge-warning', icon: '🏥' },
+  reubicacion:      { label: 'Reubicación',       badge: 'badge-warning', icon: '🔀' },
+  otro:             { label: 'Otro',              badge: 'badge-neutral', icon: '📄' },
+};
+
+const EXAM_CONCEPTOS = {
+  apto:                  { label: 'Apto',                   badge: 'badge-success', icon: '🟢' },
+  apto_con_restricciones:{ label: 'Apto con restricciones', badge: 'badge-warning', icon: '🟡' },
+  no_apto:               { label: 'No apto',                badge: 'badge-danger',  icon: '🔴' },
+  aplazado:              { label: 'Aplazado',               badge: 'badge-neutral', icon: '⚪' },
+};
+
+function tipoBadgeExamen(tipo) {
+  const t = EXAM_TIPOS[tipo] || { label: tipo, badge: 'badge-neutral', icon: '📄' };
+  return `<span class="badge ${t.badge}">${t.icon} ${t.label}</span>`;
+}
+
+function conceptoBadgeExamen(concepto) {
+  const c = EXAM_CONCEPTOS[concepto] || { label: concepto, badge: 'badge-neutral', icon: '⚪' };
+  return `<span class="badge ${c.badge}">${c.icon} ${c.label}</span>`;
+}
+
+function autoCalcularVencimientoExamen() {
+  const tipo  = document.getElementById('exTipo')?.value;
+  const fecha = document.getElementById('exFecha')?.value;
+  const venc  = document.getElementById('exVencimiento');
+  if (!venc) return;
+
+  if (tipo === 'periodico' && fecha && !venc.value) {
+    const d = new Date(fecha + 'T12:00:00');
+    d.setFullYear(d.getFullYear() + 1);
+    venc.value = d.toISOString().split('T')[0];
+  }
+}
+
+// ── Render Principal de Exámenes ─────────────────────────────────
+async function renderExamenes() {
+  showLoading(true);
+  try {
+    if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
+    const lista = await ExamenesMedicos.getAll();
+    Cache.examenes = lista;
+
+    // Actualizar badge en sidebar
+    _actualizarBadgeExamenes(lista);
+
+    // Actualizar stats cards
+    _actualizarStatsExamenes(lista);
+
+    // Filtros
+    const q          = (document.getElementById('searchExam')?.value || '').toLowerCase();
+    const fTipo      = document.getElementById('filterExamTipo')?.value || '';
+    const fConcepto  = document.getElementById('filterExamConcepto')?.value || '';
+    const fFisico    = document.getElementById('filterExamFisico')?.value || '';
+
+    const filtered = lista.filter(e => {
+      const txt = [e.trabajador_nombre, e.entidad, e.enfasis, e.restricciones, e.observaciones].filter(Boolean).join(' ').toLowerCase();
+      return (!q         || txt.includes(q))
+          && (!fTipo     || e.tipo_examen === fTipo)
+          && (!fConcepto || e.concepto === fConcepto)
+          && (!fFisico   || (fFisico === 'si' ? e.tiene_concepto_fisico : !e.tiene_concepto_fisico));
+    });
+
+    _renderTablaExamenes(filtered);
+    _renderVencimientosExamenes(lista);
+    _renderRestriccionesExamenes(lista);
+    _renderResumenTrabajadoresExamenes(lista);
+
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ── Badge de alerta en sidebar ──────────────────────────────────
+function _actualizarBadgeExamenes(lista) {
+  const badge = document.getElementById('examBadge');
+  if (!badge) return;
+  const porVencer = lista.filter(e => {
+    if (!e.fecha_vencimiento) return false;
+    const d = daysUntil(e.fecha_vencimiento);
+    return d !== null && d <= 30;
+  }).length;
+
+  if (porVencer > 0) {
+    badge.textContent = porVencer;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── Stats Cards ──────────────────────────────────────────────────
+function _actualizarStatsExamenes(lista) {
+  const total          = lista.length;
+  const aptos          = lista.filter(e => e.concepto === 'apto').length;
+  const restricciones  = lista.filter(e => e.concepto === 'apto_con_restricciones' || e.concepto === 'no_apto').length;
+  const vencidosOVencer= lista.filter(e => {
+    if (!e.fecha_vencimiento) return false;
+    const d = daysUntil(e.fecha_vencimiento);
+    return d !== null && d <= 30;
+  }).length;
+
+  const el = document.getElementById('examStats');
+  if (!el) return;
+
+  el.innerHTML = [
+    { icon: '🩺', value: total,           label: 'Total Exámenes',        color: 'var(--accent)' },
+    { icon: '🟢', value: aptos,           label: 'Aptos',                 color: 'var(--success)' },
+    { icon: '⚠️', value: restricciones,   label: 'Con Restricciones / No', color: 'var(--warning)' },
+    { icon: '⏳', value: vencidosOVencer, label: 'Por Vencer / Vencidos', color: vencidosOVencer > 0 ? 'var(--danger)' : 'var(--success)' },
+  ].map(s => `
+    <div class="stat-card" style="--card-color:${s.color}">
+      <div class="stat-icon">${s.icon}</div>
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>`).join('');
+}
+
+// ── Tab 1: Tabla de Listado ──────────────────────────────────────
+function _renderTablaExamenes(filtered) {
+  const tbody = document.getElementById('tablaExamenes');
+  const empty = document.getElementById('emptyExamenes');
+  if (!tbody) return;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(e => {
+    const days = daysUntil(e.fecha_vencimiento);
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
+              ${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+            </div>
+            <span style="font-weight:600;font-size:13px">${e.trabajador_nombre}</span>
+          </div>
+        </td>
+        <td>${tipoBadgeExamen(e.tipo_examen)}</td>
+        <td>${fmtDate(e.fecha_examen)}</td>
+        <td>
+          ${e.fecha_vencimiento ? `
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:12px;font-weight:600">${fmtDate(e.fecha_vencimiento)}</span>
+              <span>${diasBadge(days)}</span>
+            </div>` : '<span style="color:var(--text-muted)">—</span>'}
+        </td>
+        <td><span style="font-size:12px">${e.entidad || '—'}</span></td>
+        <td><span style="font-size:12px;color:var(--text-secondary)">${e.enfasis || 'General'}</span></td>
+        <td>${conceptoBadgeExamen(e.concepto)}</td>
+        <td>
+          <div style="max-width:180px;font-size:12px;color:var(--text-secondary);line-height:1.3">
+            ${e.restricciones || '<span style="color:var(--text-muted)">Ninguna</span>'}
+          </div>
+        </td>
+        <td style="text-align:center">${iconCheck(e.tiene_concepto_fisico, 'Sí', 'No')}</td>
+        <td>
+          <div class="td-actions">
+            <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="eliminarExamenMedico('${e.id}')">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ── Tab 2: Vencimientos y Periódicos ─────────────────────────────
+function _renderVencimientosExamenes(lista) {
+  const tbody = document.getElementById('tablaExamVencimientos');
+  const empty = document.getElementById('emptyExamVencimientos');
+  if (!tbody) return;
+
+  const conVencimiento = lista
+    .filter(e => e.fecha_vencimiento)
+    .sort((a, b) => new Date(a.fecha_vencimiento) - new Date(b.fecha_vencimiento));
+
+  if (!conVencimiento.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = conVencimiento.map(e => {
+    const days = daysUntil(e.fecha_vencimiento);
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
+              ${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+            </div>
+            <span style="font-weight:600">${e.trabajador_nombre}</span>
+          </div>
+        </td>
+        <td>${tipoBadgeExamen(e.tipo_examen)}</td>
+        <td>${fmtDate(e.fecha_examen)}</td>
+        <td><strong>${fmtDate(e.fecha_vencimiento)}</strong></td>
+        <td>${estadoBadge(days)} ${diasBadge(days)}</td>
+        <td>${e.entidad || '—'}</td>
+        <td>
+          <div class="td-actions">
+            <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">✏️</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ── Tab 3: Con Restricciones ─────────────────────────────────────
+function _renderRestriccionesExamenes(lista) {
+  const tbody = document.getElementById('tablaExamRestricciones');
+  const empty = document.getElementById('emptyExamRestricciones');
+  if (!tbody) return;
+
+  const conRestricciones = lista.filter(e =>
+    e.concepto === 'apto_con_restricciones' || e.concepto === 'no_apto' || (e.restricciones && e.restricciones.trim())
+  );
+
+  if (!conRestricciones.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = conRestricciones.map(e => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
+            ${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+          </div>
+          <span style="font-weight:600">${e.trabajador_nombre}</span>
+        </div>
+      </td>
+      <td>${fmtDate(e.fecha_examen)}</td>
+      <td><span style="font-size:12px;color:var(--text-secondary)">${e.enfasis || 'General'}</span></td>
+      <td>${conceptoBadgeExamen(e.concepto)}</td>
+      <td>
+        <div style="background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:8px;border-left:3px solid var(--warning);font-size:13px;line-height:1.4">
+          ${e.restricciones || 'Sin detalle de restricciones'}
+        </div>
+      </td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">✏️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ── Tab 4: Resumen por Trabajador ────────────────────────────────
+function _renderResumenTrabajadoresExamenes(lista) {
+  const tbody = document.getElementById('tablaExamPorTrabajador');
+  const empty = document.getElementById('emptyExamTrabajador');
+  if (!tbody) return;
+
+  const resumen = ExamenesMedicos.resumenPorTrabajador(lista);
+  if (!resumen.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = resumen.map(r => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="background:${avatarColor(r.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
+            ${(r.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+          </div>
+          <span style="font-weight:600">${r.trabajador_nombre}</span>
+        </div>
+      </td>
+      <td><strong>${r.total_examenes}</strong></td>
+      <td><span class="badge badge-success">${r.aptos}</span></td>
+      <td>${r.con_restricciones > 0 ? `<span class="badge badge-warning">${r.con_restricciones}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
+      <td>${r.no_aptos > 0 ? `<span class="badge badge-danger">${r.no_aptos}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
+      <td>${r.sin_fisico > 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
+      <td>${fmtDate(r.ultimo_examen)} ${r.ultimo_concepto ? conceptoBadgeExamen(r.ultimo_concepto) : ''}</td>
+      <td>${r.proximo_venc ? `<strong>${fmtDate(r.proximo_venc)}</strong> ${diasBadge(daysUntil(r.proximo_venc))}` : '<span style="color:var(--text-muted)">—</span>'}</td>
+    </tr>`).join('');
+}
+
+// ── Guardar / Editar Examen ──────────────────────────────────────
+async function guardarExamenMedico() {
+  const id           = document.getElementById('exId').value;
+  const trabajadorId = document.getElementById('exTrabajador').value;
+  const fechaExamen  = document.getElementById('exFecha').value;
+
+  if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
+  if (!fechaExamen)  return toast('La fecha del examen es obligatoria', 'error');
+
+  const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
+  const costo      = parseFloat(document.getElementById('exCosto').value) || null;
+
+  const row = {
+    trabajador_id:         trabajadorId,
+    trabajador_nombre:     trabajador?.nombre || '',
+    tipo_examen:           document.getElementById('exTipo').value,
+    fecha_examen:          fechaExamen,
+    fecha_vencimiento:     document.getElementById('exVencimiento').value || null,
+    entidad:               document.getElementById('exEntidad').value.trim(),
+    concepto:              document.getElementById('exConcepto').value,
+    enfasis:               document.getElementById('exEnfasis').value.trim(),
+    restricciones:         document.getElementById('exRestricciones').value.trim(),
+    tiene_concepto_fisico: document.getElementById('exFisico').checked,
+    costo,
+    observaciones:         document.getElementById('exObs').value.trim(),
+  };
+
+  showLoading(true);
+  const result = id
+    ? await ExamenesMedicos.update(id, row)
+    : await ExamenesMedicos.insert(row);
+  showLoading(false);
+
+  if (!result) return;
+
+  Cache.examenes = null;
+  closeModal('modalExamenMedico');
+  toast(id ? 'Examen médico actualizado' : 'Examen médico registrado con éxito');
+  await renderExamenes();
+}
+
+function editarExamenMedico(id) {
+  const exam = (Cache.examenes || []).find(e => e.id === id);
+  if (!exam) return;
+
+  poblarSelectTrabajadores('exTrabajador');
+
+  document.getElementById('modalExamTitle').textContent  = '✏️ Editar Examen Médico';
+  document.getElementById('exId').value                  = exam.id;
+  document.getElementById('exTrabajador').value          = exam.trabajador_id || '';
+  document.getElementById('exTipo').value                = exam.tipo_examen || 'periodico';
+  document.getElementById('exFecha').value               = exam.fecha_examen || '';
+  document.getElementById('exVencimiento').value         = exam.fecha_vencimiento || '';
+  document.getElementById('exEntidad').value             = exam.entidad || '';
+  document.getElementById('exConcepto').value            = exam.concepto || 'apto';
+  document.getElementById('exEnfasis').value             = exam.enfasis || '';
+  document.getElementById('exRestricciones').value       = exam.restricciones || '';
+  document.getElementById('exCosto').value               = exam.costo || '';
+  document.getElementById('exFisico').checked            = !!exam.tiene_concepto_fisico;
+  document.getElementById('exObs').value                 = exam.observaciones || '';
+
+  openModal('modalExamenMedico');
+}
+
+async function eliminarExamenMedico(id) {
+  if (!confirm('¿Eliminar este examen médico? Esta acción no se puede deshacer.')) return;
+  showLoading(true);
+  const ok = await ExamenesMedicos.delete(id);
+  showLoading(false);
+  if (!ok) return;
+
+  Cache.examenes = null;
+  toast('Examen médico eliminado', 'warning');
+  await renderExamenes();
+}
+
+function resetExamenForm() {
+  document.getElementById('modalExamTitle').textContent = '🩺 Nuevo Examen Médico';
+  document.getElementById('exId').value                 = '';
+  const selT = document.getElementById('exTrabajador'); if (selT) selT.value = '';
+  document.getElementById('exTipo').value               = 'periodico';
+  document.getElementById('exFecha').value              = today();
+  document.getElementById('exVencimiento').value        = '';
+  document.getElementById('exEntidad').value            = '';
+  document.getElementById('exConcepto').value           = 'apto';
+  document.getElementById('exEnfasis').value            = '';
+  document.getElementById('exRestricciones').value      = '';
+  document.getElementById('exCosto').value              = '';
+  document.getElementById('exFisico').checked           = false;
+  document.getElementById('exObs').value                = '';
+  autoCalcularVencimientoExamen();
+}
+
+// ── Exportar CSV de Exámenes ─────────────────────────────────────
+async function exportarExamenes() {
+  showLoading(true);
+  const lista = await ExamenesMedicos.getAll();
+  showLoading(false);
+  if (!lista.length) return toast('No hay exámenes médicos para exportar', 'warning');
+
+  const headers = [
+    'Trabajador', 'Tipo de Examen', 'Fecha Examen', 'Vencimiento',
+    'IPS / Entidad', 'Énfasis', 'Concepto', 'Restricciones',
+    'Concepto Físico', 'Costo', 'Observaciones'
+  ];
+
+  const rows = lista.map(e => [
+    e.trabajador_nombre,
+    EXAM_TIPOS[e.tipo_examen]?.label || e.tipo_examen,
+    fmtDate(e.fecha_examen),
+    fmtDate(e.fecha_vencimiento),
+    e.entidad || '',
+    e.enfasis || '',
+    EXAM_CONCEPTOS[e.concepto]?.label || e.concepto,
+    e.restricciones || '',
+    e.tiene_concepto_fisico ? 'Sí' : 'No',
+    e.costo != null ? e.costo : '',
+    e.observaciones || '',
+  ]);
+
+  downloadCSV('examenes_medicos', headers, rows);
+}
+
