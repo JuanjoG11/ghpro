@@ -1045,3 +1045,103 @@ const ExamenesMedicos = {
   },
 };
 
+
+/* ============================================================
+   DOTACION PRENDAS — capa de datos
+   Tabla: dotacion_prendas
+   Tipos: camisa · pantalon · chaqueta · calzado
+   ============================================================ */
+const DotacionPrendas = {
+
+  /* ── Metadatos: tallas y referencias por tipo ── */
+  TALLAS: {
+    camisa:   { hombre: ['S','M','L','XL','XXL'], mujer: ['S','M','L','XL','XXL'] },
+    chaqueta: { hombre: ['S','M','L','XL','XXL'], mujer: ['S','M','L','XL','XXL'] },
+    pantalon: {
+      hombre: ['28','30','32','34','36','38'],
+      mujer:  ['6','8','10','12','14','16','18'],
+    },
+    calzado: {
+      hombre: ['35','36','37','38','39','40','41','42','43','44','45'],
+      mujer:  ['35','36','37','38','39','40','41','42','43','44','45'],
+    },
+  },
+
+  REFERENCIAS: {
+    camisa: [
+      'Oxford ROSADA (Alpina + Tiendas y Marcas)',
+      'Oxford AZUL (Flesichmann + Tiendas y Marcas)',
+      'Oxford GRIS (ZENÚ + Tiendas y Marcas)',
+      'Polo GRIS (Tiendas y Marcas)',
+    ],
+    pantalon: ['Jean Indigo Azul', 'Pantalon Térmico', 'Jean Elástico'],
+    chaqueta: ['Chaqueta Cuarto Frío'],
+    calzado:  ['Bota de Seguridad con Puntera'],
+  },
+
+  TIPO_LABEL: {
+    camisa:   { label: 'Camisas',   icon: '👕' },
+    pantalon: { label: 'Pantalones', icon: '👖' },
+    chaqueta: { label: 'Chaquetas', icon: '🧥' },
+    calzado:  { label: 'Calzado',   icon: '🥾' },
+  },
+
+  /* ── CRUD ── */
+  async getAll() {
+    const { data, error } = await sb
+      .from('dotacion_prendas')
+      .select('*')
+      .order('tipo').order('referencia').order('genero').order('talla');
+    if (sbErr(error, 'dotacion_prendas.getAll')) return [];
+    return data || [];
+  },
+
+  async updateStock(id, nuevoStock) {
+    const { data, error } = await sb
+      .from('dotacion_prendas')
+      .update({ stock: Math.max(0, nuevoStock) })
+      .eq('id', id)
+      .select().single();
+    if (sbErr(error, 'dotacion_prendas.updateStock')) return null;
+    return data;
+  },
+
+  async ajustarStock(id, delta) {
+    const { data: cur, error: re } = await sb
+      .from('dotacion_prendas').select('stock').eq('id', id).single();
+    if (sbErr(re, 'dotacion_prendas.ajustarStock')) return null;
+    return await this.updateStock(id, (cur.stock || 0) + delta);
+  },
+
+  async updateObs(id, obs) {
+    const { data, error } = await sb
+      .from('dotacion_prendas')
+      .update({ obs })
+      .eq('id', id)
+      .select().single();
+    if (sbErr(error, 'dotacion_prendas.updateObs')) return null;
+    return data;
+  },
+
+  /* ── Helpers de agrupación (cliente) ── */
+
+  // { referencia → { hombre: { talla: row }, mujer: { talla: row } } }
+  agrupar(lista) {
+    const map = {};
+    lista.forEach(row => {
+      if (!map[row.referencia]) map[row.referencia] = { hombre: {}, mujer: {} };
+      map[row.referencia][row.genero][row.talla] = row;
+    });
+    return map;
+  },
+
+  stockBajo(lista) {
+    return lista.filter(r => r.stock <= r.stock_min);
+  },
+
+  totalPorReferencia(lista) {
+    const map = {};
+    lista.forEach(r => { map[r.referencia] = (map[r.referencia] || 0) + r.stock; });
+    return map;
+  },
+};

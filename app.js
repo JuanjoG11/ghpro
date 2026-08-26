@@ -89,6 +89,7 @@ function navigate(pageId) {
     examenes:       renderExamenes,
     alertas:        renderAlertas,
     asistencia:     renderAsistencia,
+    prendas:        renderDotacionPrendas,
   };
   if (renders[pageId]) renders[pageId]();
   if (window.innerWidth <= 768) closeSidebar();
@@ -102,7 +103,15 @@ function openModal(id) {
     const f = document.getElementById('eFecha');
     if (f && !f.value) f.value = today();
     poblarSelectTrabajadores('eTrabajador');
-    poblarSelectDotacion('eArticulo');
+    // Cargar prendas si no están en cache, luego poblar el select
+    if (!Cache.prendas) {
+      DotacionPrendas.getAll().then(data => {
+        Cache.prendas = data;
+        poblarSelectDotacion('eArticulo');
+      });
+    } else {
+      poblarSelectDotacion('eArticulo');
+    }
   }
   if (id === 'modalBPM')          poblarSelectTrabajadores('bTrabajador');
   if (id === 'modalVehiculo')     { poblarSelectTrabajadores('vConductor'); toggleVehiculoFields(); }
@@ -154,14 +163,24 @@ function closeSidebar() {
   document.getElementById('mobileOverlay').classList.remove('show');
 }
 
-document.getElementById('hamburgerBtn')?.addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('mobileOverlay').classList.toggle('show');
-});
-document.getElementById('mobileOverlay')?.addEventListener('click', closeSidebar);
-document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-  item.addEventListener('click', () => navigate(item.dataset.page));
-});
+function _initSidebarAndNav() {
+  const hamburger = document.getElementById('hamburgerBtn');
+  const overlay   = document.getElementById('mobileOverlay');
+
+  if (hamburger) {
+    hamburger.addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('mobileOverlay').classList.toggle('show');
+    });
+  }
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+    item.addEventListener('click', () => navigate(item.dataset.page));
+  });
+}
 
 // Tabs vehiculos
 document.addEventListener('click', (e) => {
@@ -522,7 +541,7 @@ async function renderEntregas() {
   try {
     if (!Cache.entregas)     Cache.entregas     = await Entregas.getAll();
     if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
-    if (!Cache.dotacion)     Cache.dotacion     = await Dotacion.getAll();
+    if (!Cache.prendas)      Cache.prendas      = await DotacionPrendas.getAll();
 
     poblarSelectTrabajadores('eTrabajador');
     poblarSelectTrabajadores('filterEntregaTrabajador', true);
@@ -562,23 +581,25 @@ async function renderEntregas() {
 }
 
 async function guardarEntrega() {
-  const trabajadorId = document.getElementById('eTrabajador').value;
-  const articuloId   = document.getElementById('eArticulo').value;
-  const cantidad     = parseInt(document.getElementById('eCantidad').value) || 0;
-  const fecha        = document.getElementById('eFecha').value;
+  const trabajadorId  = document.getElementById('eTrabajador').value;
+  const articuloVal   = document.getElementById('eArticulo').value;  // "tipo|referencia"
+  const cantidad      = parseInt(document.getElementById('eCantidad').value) || 0;
+  const fecha         = document.getElementById('eFecha').value;
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
-  if (!articuloId)   return toast('Selecciona un artículo', 'error');
+  if (!articuloVal)  return toast('Selecciona un artículo', 'error');
   if (cantidad < 1)  return toast('La cantidad debe ser mayor a 0', 'error');
   if (!fecha)        return toast('La fecha es obligatoria', 'error');
 
+  const [tipoPrend, ...refParts] = articuloVal.split('|');
+  const refPrend = refParts.join('|');  // por si la referencia contiene '|'
+
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
-  const articulo   = (Cache.dotacion     || []).find(d => d.id === articuloId);
 
   const row = {
     trabajador_id:     trabajadorId,
     trabajador_nombre: trabajador?.nombre || '',
-    articulo_id:       articuloId,
-    articulo_nombre:   articulo?.nombre   || '',
+    articulo_id:       articuloVal,          // guardamos "tipo|referencia" como id lógico
+    articulo_nombre:   `${refPrend} (${tipoPrend})`,
     cantidad, fecha,
     talla:         document.getElementById('eTalla').value.trim(),
     entregado_por: document.getElementById('eEntregadoPor').value.trim(),
@@ -591,7 +612,7 @@ async function guardarEntrega() {
   if (!result) return;
 
   Cache.invalidate('entregas');
-  Cache.invalidate('dotacion'); // stock changed via trigger
+  Cache.prendas = null; // stock puede haber cambiado
   closeModal('modalEntrega');
   resetEntregaForm();
   await renderEntregas();
@@ -605,7 +626,7 @@ async function eliminarEntrega(id) {
   showLoading(false);
   if (!ok) return;
   Cache.invalidate('entregas');
-  Cache.invalidate('dotacion');
+  Cache.prendas = null;
   await renderEntregas();
   toast('Entrega eliminada', 'warning');
 }
@@ -649,10 +670,38 @@ function poblarSelectTrabajadores(selId, keepFirst = false) {
 function poblarSelectDotacion(selId) {
   const sel = document.getElementById(selId);
   if (!sel) return;
-  const val  = sel.value;
-  const list = Cache.dotacion || [];
+  const val   = sel.value;
+  const lista = Cache.prendas || [];
+
   sel.innerHTML = '<option value="">Seleccionar artículo...</option>';
-  list.forEach(d => sel.appendChild(new Option(`${d.nombre} (stock: ${d.stock})`, d.id)));
+
+  // Agrupar por tipo para mostrar optgroups
+  const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado'];
+  const meta  = DotacionPrendas.TIPO_LABEL;
+
+  tipos.forEach(tipo => {
+    const items = lista.filter(r => r.tipo === tipo);
+    if (!items.length) return;
+
+    const grupo = document.createElement('optgroup');
+    grupo.label = `${meta[tipo].icon} ${meta[tipo].label}`;
+
+    // Agrupar por referencia y mostrar stock total
+    const refs = {};
+    items.forEach(r => {
+      if (!refs[r.referencia]) refs[r.referencia] = { stock: 0, id: r.id, tipo: r.tipo, referencia: r.referencia };
+      refs[r.referencia].stock += r.stock;
+    });
+
+    Object.values(refs).forEach(r => {
+      // Usamos "tipo|referencia" como valor para identificar el artículo
+      const opt = new Option(`${r.referencia} (stock: ${r.stock})`, `${r.tipo}|${r.referencia}`);
+      grupo.appendChild(opt);
+    });
+
+    sel.appendChild(grupo);
+  });
+
   sel.value = val;
 }
 
@@ -1120,6 +1169,9 @@ if ('serviceWorker' in navigator) {
 // INIT
 // ═══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+  // Inicializar sidebar mobile y nav items
+  _initSidebarAndNav();
+
   // Seed si las tablas están vacías (primera vez)
   await checkAndSeed();
 
@@ -1162,6 +1214,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const badge = document.getElementById('incapBadge');
     if (badge) { badge.textContent = pend; badge.style.display = pend > 0 ? '' : 'none'; }
   }, 5 * 60 * 1000);
+
+  // Badge inicial de prendas con stock bajo
+  (async () => {
+    try {
+      const prendas = await DotacionPrendas.getAll();
+      Cache.prendas = prendas;
+      const bajo   = DotacionPrendas.stockBajo(prendas).length;
+      const badge  = document.getElementById('prendasBadge');
+      if (badge) { badge.textContent = bajo; badge.style.display = bajo > 0 ? '' : 'none'; }
+    } catch (_) { /* silencioso */ }
+  })();
 });
 
 // ═══════════════════════════════════════════
@@ -2385,3 +2448,217 @@ async function exportarExamenes() {
   downloadCSV('examenes_medicos', headers, rows);
 }
 
+
+
+// ═══════════════════════════════════════════════════════════════
+// DOTACIÓN DE PRENDAS — Camisas · Pantalones · Chaquetas · Calzado
+// ═══════════════════════════════════════════════════════════════
+
+Cache.prendas = null;
+
+// ── Render principal ───────────────────────────────────────────
+async function renderDotacionPrendas() {
+  showLoading(true);
+  try {
+    if (!Cache.prendas) Cache.prendas = await DotacionPrendas.getAll();
+    const lista = Cache.prendas;
+
+    _renderPrendasStats(lista);
+
+    // Renderizar cada tipo en su tab
+    ['camisa', 'pantalon', 'chaqueta', 'calzado'].forEach(tipo => {
+      const subtipo = lista.filter(r => r.tipo === tipo);
+      _renderPrendasTabla(tipo, subtipo);
+    });
+
+  } finally { showLoading(false); }
+}
+
+// ── Stats cards ────────────────────────────────────────────────
+function _renderPrendasStats(lista) {
+  const el = document.getElementById('prendasStats');
+  if (!el) return;
+
+  const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado'];
+  const stockBajo = DotacionPrendas.stockBajo(lista).length;
+
+  el.innerHTML = tipos.map(tipo => {
+    const sub   = lista.filter(r => r.tipo === tipo);
+    const total = sub.reduce((s, r) => s + r.stock, 0);
+    const meta  = DotacionPrendas.TIPO_LABEL[tipo];
+    return `
+      <div class="stat-card" style="--card-color:var(--accent)">
+        <div class="stat-icon">${meta.icon}</div>
+        <div class="stat-value">${total}</div>
+        <div class="stat-label">${meta.label}</div>
+      </div>`;
+  }).join('') + `
+    <div class="stat-card" style="--card-color:${stockBajo > 0 ? 'var(--warning)' : 'var(--success)'}">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-value">${stockBajo}</div>
+      <div class="stat-label">Stock Bajo</div>
+    </div>`;
+}
+
+// ── Tabla tipo matriz: refs × tallas, separada por género ──────
+function _renderPrendasTabla(tipo, lista) {
+  const contenedor = document.getElementById(`prendas-grid-${tipo}`);
+  const empty      = document.getElementById(`prendas-empty-${tipo}`);
+  if (!contenedor) return;
+
+  if (!lista.length) {
+    contenedor.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  const tallasDef  = DotacionPrendas.TALLAS[tipo];
+  const agrupado   = DotacionPrendas.agrupar(lista);
+  const referencias = [...new Set(lista.map(r => r.referencia))];
+
+  // Para pantalones los géneros tienen tallas distintas → tabla separada por género
+  const generarTablaGenero = (genero, tallas, refs) => {
+    const colorHeader = genero === 'hombre'
+      ? 'background:linear-gradient(135deg,rgba(58,130,200,0.25),rgba(58,130,200,0.1))'
+      : 'background:linear-gradient(135deg,rgba(200,58,150,0.25),rgba(200,58,150,0.1))';
+    const iconoGenero = genero === 'hombre' ? '👨' : '👩';
+
+    return `
+      <div class="prenda-tabla-wrap">
+        <div class="prenda-tabla-header" style="${colorHeader}">
+          ${iconoGenero} ${genero === 'hombre' ? 'HOMBRE' : 'MUJER'}
+        </div>
+        <div style="overflow-x:auto">
+          <table class="prenda-tabla">
+            <thead>
+              <tr>
+                <th style="text-align:left;min-width:180px">Referencia</th>
+                ${tallas.map(t => `<th>${t}</th>`).join('')}
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${refs.map(ref => {
+                const celdas = tallas.map(talla => {
+                  const row = agrupado[ref]?.[genero]?.[talla];
+                  if (!row) return `<td class="prenda-cell">—</td>`;
+                  const bajo  = row.stock <= row.stock_min;
+                  const cls   = bajo ? 'prenda-cell bajo' : 'prenda-cell';
+                  return `<td class="${cls}">
+                    <span class="prenda-stock" id="ps-${row.id}">${row.stock}</span>
+                    <div class="prenda-btns">
+                      <button onclick="prendasAjustar('${row.id}',1)"  title="+ stock">＋</button>
+                      <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">－</button>
+                      <button onclick="prendasEditar('${row.id}')"    title="Editar">✏️</button>
+                    </div>
+                  </td>`;
+                }).join('');
+                const totalRef = tallas.reduce((s, talla) => {
+                  return s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0);
+                }, 0);
+                return `<tr>
+                  <td class="prenda-ref-cell" title="${ref}">${ref}</td>
+                  ${celdas}
+                  <td class="prenda-total-cell"><strong>${totalRef}</strong></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  };
+
+  let html = '';
+  if (tipo === 'pantalon') {
+    // Pantalones: géneros con tallas distintas → dos tablas separadas
+    html  = generarTablaGenero('hombre', tallasDef.hombre, referencias);
+    html += generarTablaGenero('mujer',  tallasDef.mujer,  referencias);
+  } else {
+    // Camisas, chaquetas, calzado: mismas tallas → una tabla con sección por género
+    html  = generarTablaGenero('hombre', tallasDef.hombre, referencias);
+    html += generarTablaGenero('mujer',  tallasDef.mujer,  referencias);
+  }
+
+  contenedor.innerHTML = html;
+}
+
+// ── Ajuste rápido de stock (+ / −) ────────────────────────────
+async function prendasAjustar(id, delta) {
+  showLoading(true);
+  const result = await DotacionPrendas.ajustarStock(id, delta);
+  showLoading(false);
+  if (!result) return;
+
+  // Actualizar cache local
+  if (Cache.prendas) {
+    const idx = Cache.prendas.findIndex(r => r.id === id);
+    if (idx > -1) Cache.prendas[idx] = result;
+  }
+
+  // Actualizar solo la celda sin re-renderizar todo
+  const span = document.getElementById(`ps-${id}`);
+  if (span) {
+    span.textContent = result.stock;
+    const cell = span.closest('td');
+    if (cell) {
+      cell.classList.toggle('bajo', result.stock <= result.stock_min);
+    }
+  }
+
+  // Actualizar stats
+  _renderPrendasStats(Cache.prendas || []);
+}
+
+// ── Modal de edición de observaciones / stock_min ──────────────
+function prendasEditar(id) {
+  const row = (Cache.prendas || []).find(r => r.id === id);
+  if (!row) return;
+
+  document.getElementById('peId').value       = row.id;
+  document.getElementById('peInfo').textContent =
+    `${DotacionPrendas.TIPO_LABEL[row.tipo]?.icon || ''} ${row.referencia} · ${row.genero === 'hombre' ? '👨 Hombre' : '👩 Mujer'} · Talla ${row.talla}`;
+  document.getElementById('peStock').value    = row.stock;
+  document.getElementById('peStockMin').value = row.stock_min;
+  document.getElementById('peObs').value      = row.obs || '';
+
+  document.getElementById('modalPrendaEdit').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+async function prendasGuardarEdicion() {
+  const id       = document.getElementById('peId').value;
+  const stock    = parseInt(document.getElementById('peStock').value)    || 0;
+  const stockMin = parseInt(document.getElementById('peStockMin').value) || 2;
+  const obs      = document.getElementById('peObs').value.trim();
+
+  showLoading(true);
+  const result = await DotacionPrendas.updateStock(id, stock);
+  // También actualizar stock_min y obs
+  if (result) {
+    await sb.from('dotacion_prendas').update({ stock_min: stockMin, obs }).eq('id', id);
+  }
+  showLoading(false);
+  if (!result) return;
+
+  Cache.prendas = null; // Forzar recarga completa
+  document.getElementById('modalPrendaEdit').classList.remove('open');
+  document.body.style.overflow = '';
+  await renderDotacionPrendas();
+  toast('Stock actualizado ✅');
+}
+
+// ── Exportar CSV ───────────────────────────────────────────────
+async function exportarPrendas() {
+  if (!Cache.prendas) Cache.prendas = await DotacionPrendas.getAll();
+  const data = Cache.prendas;
+  if (!data.length) return toast('No hay datos para exportar', 'warning');
+
+  const headers = ['Tipo', 'Referencia', 'Género', 'Talla', 'Stock', 'Stock Mínimo', 'Observaciones'];
+  const rows = data.map(r => [
+    DotacionPrendas.TIPO_LABEL[r.tipo]?.label || r.tipo,
+    r.referencia, r.genero, r.talla,
+    r.stock, r.stock_min, r.obs || '',
+  ]);
+  downloadCSV('dotacion_prendas', headers, rows);
+}

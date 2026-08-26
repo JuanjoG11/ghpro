@@ -292,7 +292,8 @@
     input:focus, select:focus, textarea:focus { outline: none; border-color: var(--border-glow); box-shadow: 0 0 0 3px rgba(58,130,200,0.12); background: rgba(255,255,255,0.06); }
     input::placeholder, textarea::placeholder { color: var(--text-muted); }
     textarea { resize: vertical; min-height: 80px; }
-    select option { background: #12122a; }
+    select option { background: #12122a; color: var(--text-primary); }
+    select optgroup { background: #0c1220; color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
 
     /* ===== ALERT CARDS ===== */
     .alert-item {
@@ -452,30 +453,6 @@
       <div class="nav-item" data-page="trabajadores">
         <span class="nav-icon">👥</span> Trabajadores
       </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label">Inventario</div>
-      <div class="nav-item" data-page="dotacion">
-        <span class="nav-icon">👕</span> Inventario Dotación
-      </div>
-      <div class="nav-item" data-page="entregas">
-        <span class="nav-icon">📦</span> Entregas
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label">Documentos</div>
-      <div class="nav-item" data-page="documentos">
-        <span class="nav-icon">📋</span> BPM / Carnet
-      </div>
-      <div class="nav-item" data-page="vehiculos">
-        <span class="nav-icon">🚗</span> Vehículos
-      </div>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label">Personal</div>
       <div class="nav-item" data-page="incapacidades">
         <span class="nav-icon">🏥</span> Incapacidades
         <span class="nav-badge warning" id="incapBadge" style="display:none">0</span>
@@ -490,6 +467,27 @@
       </div>
       <div class="nav-item" data-page="asistencia">
         <span class="nav-icon">🕐</span> Asistencia
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Documentos</div>
+      <div class="nav-item" data-page="documentos">
+        <span class="nav-icon">📋</span> BPM / Carnet
+      </div>
+      <div class="nav-item" data-page="vehiculos">
+        <span class="nav-icon">🚗</span> Vehículos
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Dotación</div>
+      <div class="nav-item" data-page="prendas">
+        <span class="nav-icon">👔</span> Dotación Prendas
+        <span class="nav-badge warning" id="prendasBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-page="entregas">
+        <span class="nav-icon">📦</span> Entregas
       </div>
     </div>
 
@@ -1304,6 +1302,70 @@
       </div>
     </div><!-- /page-examenes -->
 
+    <!-- ══════════════════════════════════════════════════════════
+         PÁGINA: DOTACIÓN DE PRENDAS
+    ══════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-prendas">
+      <div class="page-header">
+        <div>
+          <div class="page-title">👔 Dotación de Prendas</div>
+          <div class="page-subtitle">Inventario de camisas, pantalones, chaquetas y calzado por talla y género</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="exportarPrendas()">📥 Exportar CSV</button>
+          <button class="btn btn-secondary" onclick="Cache.prendas=null;renderDotacionPrendas()">🔄 Actualizar</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="prendasStats"></div>
+
+      <!-- Tabs por tipo de prenda -->
+      <div class="tabs" style="margin-top:24px">
+        <button class="tab-btn active" data-tab="tab-prendas-camisa">👕 Camisas</button>
+        <button class="tab-btn" data-tab="tab-prendas-pantalon">👖 Pantalones</button>
+        <button class="tab-btn" data-tab="tab-prendas-chaqueta">🧥 Chaquetas</button>
+        <button class="tab-btn" data-tab="tab-prendas-calzado">🥾 Calzado</button>
+      </div>
+
+      <!-- Tab: Camisas -->
+      <div class="tab-content active" id="tab-prendas-camisa">
+        <div id="prendas-grid-camisa"></div>
+        <div class="empty-state" id="prendas-empty-camisa" style="display:none">
+          <div class="empty-state-icon">👕</div>
+          <div class="empty-state-text">Sin datos de camisas</div>
+        </div>
+      </div>
+
+      <!-- Tab: Pantalones -->
+      <div class="tab-content" id="tab-prendas-pantalon">
+        <div id="prendas-grid-pantalon"></div>
+        <div class="empty-state" id="prendas-empty-pantalon" style="display:none">
+          <div class="empty-state-icon">👖</div>
+          <div class="empty-state-text">Sin datos de pantalones</div>
+        </div>
+      </div>
+
+      <!-- Tab: Chaquetas -->
+      <div class="tab-content" id="tab-prendas-chaqueta">
+        <div id="prendas-grid-chaqueta"></div>
+        <div class="empty-state" id="prendas-empty-chaqueta" style="display:none">
+          <div class="empty-state-icon">🧥</div>
+          <div class="empty-state-text">Sin datos de chaquetas</div>
+        </div>
+      </div>
+
+      <!-- Tab: Calzado -->
+      <div class="tab-content" id="tab-prendas-calzado">
+        <div id="prendas-grid-calzado"></div>
+        <div class="empty-state" id="prendas-empty-calzado" style="display:none">
+          <div class="empty-state-icon">🥾</div>
+          <div class="empty-state-text">Sin datos de calzado</div>
+        </div>
+      </div>
+
+    </div><!-- /page-prendas -->
+
   </main><!-- /main-content -->
 </div><!-- /app-shell -->
 
@@ -1778,6 +1840,130 @@
   }
 </style>
 
+
+<!-- Modal: Editar celda de prenda -->
+<div class="modal-overlay" id="modalPrendaEdit">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Editar Stock</div>
+      <button class="modal-close" onclick="document.getElementById('modalPrendaEdit').classList.remove('open');document.body.style.overflow=''">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="peId">
+      <div id="peInfo" style="font-size:13px;color:var(--text-secondary);margin-bottom:18px;padding:10px 14px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border)"></div>
+      <div class="form-group">
+        <label class="form-label">Stock actual</label>
+        <input type="number" id="peStock" class="form-control" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stock mínimo</label>
+        <input type="number" id="peStockMin" class="form-control" min="0" placeholder="2">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observaciones</label>
+        <input type="text" id="peObs" class="form-control" placeholder="Notas opcionales...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('modalPrendaEdit').classList.remove('open');document.body.style.overflow=''">Cancelar</button>
+      <button class="btn btn-primary" onclick="prendasGuardarEdicion()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Estilos exclusivos del módulo de prendas -->
+<style>
+  /* Contenedor de cada tabla género */
+  .prenda-tabla-wrap {
+    margin-bottom: 28px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .prenda-tabla-header {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+  }
+  .prenda-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .prenda-tabla thead th {
+    background: rgba(255,255,255,0.04);
+    padding: 9px 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .prenda-tabla thead th:first-child { text-align: left; }
+  .prenda-ref-cell {
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .prenda-cell {
+    text-align: center;
+    padding: 6px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-left: 1px solid rgba(255,255,255,0.03);
+    min-width: 60px;
+    position: relative;
+  }
+  .prenda-cell.bajo { background: rgba(200,124,58,0.10); }
+  .prenda-stock {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+  .prenda-cell.bajo .prenda-stock { color: var(--warning); }
+  .prenda-btns {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 4px;
+  }
+  .prenda-btns button {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 1px 5px;
+    line-height: 1.4;
+    transition: background 0.15s;
+  }
+  .prenda-btns button:hover { background: rgba(255,255,255,0.13); color: var(--text-primary); }
+  .prenda-total-cell {
+    text-align: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    font-size: 13px;
+  }
+  /* Responsive: scroll horizontal en móvil */
+  @media (max-width: 768px) {
+    .prenda-ref-cell { max-width: 120px; font-size: 11px; padding: 7px 8px; }
+    .prenda-cell { min-width: 48px; }
+    .prenda-stock { font-size: 13px; }
+    .prenda-btns button { font-size: 11px; padding: 1px 4px; }
+  }
+</style>
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
