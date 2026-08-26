@@ -280,6 +280,25 @@ const State = {
   trabajadores: [],
 };
 
+// ── Cache en memoria (reduce queries a Supabase) ─────────────────
+// Guarda resultados por máximo TTL milisegundos, luego vuelve a consultar
+const QueryCache = {
+  _store: {},
+  get(key) {
+    const entry = this._store[key];
+    if (!entry) return null;
+    if (Date.now() - entry.ts > entry.ttl) { delete this._store[key]; return null; }
+    return entry.value;
+  },
+  set(key, value, ttl = 8000) {
+    this._store[key] = { value, ts: Date.now(), ttl };
+  },
+  invalidate(key) {
+    if (key) delete this._store[key];
+    else this._store = {};
+  },
+};
+
 // ── Helpers ──────────────────────────────────────────────────────
 const today      = () => new Date().toISOString().split('T')[0];
 const horaActual = () => new Date().toTimeString().slice(0, 8);
@@ -417,10 +436,15 @@ async function getDeviceId() {
 }
 
 // ── Consulta de registros del dispositivo hoy ─────────────────────
-// Retorna { count, tipos, tieneEntrada, tieneSalida, registros }
+// Retorna { count, tipos, tieneEntrada, tieneSalida, registros, offline }
+// IMPORTANTE: si hay error de red retorna offline:true para bloquear el registro
 async function verificarDispositivoHoy() {
   const deviceId = await getDeviceId();
   const fp = getDeviceFingerprint();
+  const cacheKey = `device_${today()}`;
+
+  const cached = QueryCache.get(cacheKey);
+  if (cached) return cached;
 
   const { data, error } = await sb
     .from('asistencia')
@@ -428,15 +452,24 @@ async function verificarDispositivoHoy() {
     .eq('fecha', today())
     .or(`device_id.eq.${deviceId},device_id.like.fp_${fp}_%`);
 
-  if (error || !data) return { count: 0, tipos: [], tieneEntrada: false, tieneSalida: false, registros: [] };
+  // Si hay error de red o Supabase no responde, NO permitir registro
+  // Retornar offline:true para que el llamador lo maneje
+  if (error || data === null) {
+    return { count: 0, tipos: [], tieneEntrada: false, tieneSalida: false, registros: [], offline: true };
+  }
 
-  return {
+  const result = {
     count: data.length,
     tipos: data.map(r => r.tipo),
     tieneEntrada: data.some(r => r.tipo === 'entrada'),
     tieneSalida: data.some(r => r.tipo === 'salida'),
     registros: data,
+    offline: false,
   };
+
+  // Cachear 8 segundos — suficiente para evitar queries duplicadas en el mismo flujo
+  QueryCache.set(cacheKey, result, 8000);
+  return result;
 }
 
 // ── Toggle tipo (Entrada / Salida) ───────────────────────────────
@@ -465,6 +498,13 @@ async function actualizarBotonPorEstado() {
 
   const device = await verificarDispositivoHoy();
 
+  // 0. Sin conexión: no se puede verificar nada, bloquear por seguridad
+  if (device.offline) {
+    btn.disabled  = true;
+    btn.innerHTML = '📡 Sin conexión — reintenta';
+    return;
+  }
+
   // 1. Si el dispositivo ya llegó al límite absoluto de 2 registros
   if (device.count >= 2) {
     btn.disabled  = true;
@@ -484,15 +524,20 @@ async function actualizarBotonPorEstado() {
     return;
   }
 
-  // 3. Consultar estado del trabajador
-  const { data: hoy } = await sb
-    .from('asistencia')
-    .select('tipo, hora')
-    .eq('cedula', t.cedula)
-    .eq('fecha', today())
-    .order('hora', { ascending: false });
-
-  const registrosHoy  = hoy || [];
+  // 3. Consultar estado del trabajador (con cache 10s)
+  const cacheKeyBtn = `cedula_${t.cedula}_${today()}`;
+  let registrosHoyBtn = QueryCache.get(cacheKeyBtn);
+  if (!registrosHoyBtn) {
+    const { data: hoy } = await sb
+      .from('asistencia')
+      .select('tipo, hora')
+      .eq('cedula', t.cedula)
+      .eq('fecha', today())
+      .order('hora', { ascending: false });
+    registrosHoyBtn = hoy || [];
+    QueryCache.set(cacheKeyBtn, registrosHoyBtn, 10000);
+  }
+  const registrosHoy  = registrosHoyBtn;
   const tieneEntrada  = registrosHoy.some(r => r.tipo === 'entrada');
   const tieneSalida   = registrosHoy.some(r => r.tipo === 'salida');
 
@@ -539,15 +584,19 @@ async function onCedula(val) {
     document.getElementById('tAvatar').textContent      = t.nombre.charAt(0).toUpperCase();
     document.getElementById('tNombre').textContent      = t.nombre;
 
-    // Consultar registros de hoy para este trabajador
-    const { data: hoy } = await sb
-      .from('asistencia')
-      .select('tipo, hora')
-      .eq('cedula', cedula)
-      .eq('fecha', today())
-      .order('hora', { ascending: false });
-
-    const registrosHoy  = hoy || [];
+    // Consultar registros de hoy para este trabajador (con cache 10s)
+    const cacheKeyCedula = `cedula_${cedula}_${today()}`;
+    let registrosHoy = QueryCache.get(cacheKeyCedula);
+    if (!registrosHoy) {
+      const { data: hoy } = await sb
+        .from('asistencia')
+        .select('tipo, hora')
+        .eq('cedula', cedula)
+        .eq('fecha', today())
+        .order('hora', { ascending: false });
+      registrosHoy = hoy || [];
+      QueryCache.set(cacheKeyCedula, registrosHoy, 10000);
+    }
     const ultimoEntrada = registrosHoy.find(r => r.tipo === 'entrada');
     const ultimaSalida  = registrosHoy.find(r => r.tipo === 'salida');
 
@@ -608,6 +657,14 @@ async function registrar(metodo = 'qr') {
   // ── Verificación estricta del dispositivo (Anti-trampas) ────────
   const device = await verificarDispositivoHoy();
 
+  // Regla 0: Sin conexión — no permitir registro (evita bypass por red caída)
+  if (device.offline) {
+    toast('📡 Sin conexión a internet. Verifica tu señal e intenta de nuevo.', 'error', 6000);
+    btn.disabled = false;
+    await actualizarBotonPorEstado();
+    return;
+  }
+
   // Regla 1: Máximo 2 registros totales por día por dispositivo
   if (device.count >= 2) {
     mostrarBloqueo(
@@ -666,10 +723,20 @@ async function registrar(metodo = 'qr') {
   const { error } = await sb.from('asistencia').insert([row]);
 
   if (error) {
-    toast('Error al guardar: ' + error.message, 'error');
+    // Error 23505 = duplicate key: la constraint de la DB detectó un duplicado
+    // (dos taps simultáneos, etc.). Tratarlo como si ya estuviera registrado.
+    if (error.code === '23505') {
+      toast(`⚠️ Esta ${tipo} ya fue registrada hoy para esta cédula.`, 'warning', 5000);
+    } else {
+      toast('❌ Error al guardar: ' + error.message, 'error', 6000);
+    }
     btn.disabled = false;
+    await actualizarBotonPorEstado();
     return;
   }
+
+  // Invalidar cache para que los datos se refresquen en el próximo uso
+  QueryCache.invalidate();
 
   const emoji = tipo === 'entrada' ? '🟢' : '🔴';
   toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada correctamente — ${t.nombre}`, 'success', 5000);
@@ -790,7 +857,11 @@ window.addEventListener('load', async () => {
 
   // 2. Verificar si este dispositivo ya alcanzó el límite de hoy (2 registros)
   const device = await verificarDispositivoHoy();
-  if (device.count >= 2) {
+  if (device.offline) {
+    // Red caída al arrancar — mostrar aviso pero dejar cargar el formulario
+    // El bloqueo real ocurrirá al intentar registrar
+    toast('⚠️ Sin conexión al servidor. Verifica tu señal antes de registrar.', 'warning', 8000);
+  } else if (device.count >= 2) {
     mostrarBloqueo(
       'Límite de dispositivo alcanzado',
       'Este dispositivo ya completó sus 2 registros diarios (entrada y salida). No se permiten más registros desde este teléfono hoy.',
@@ -800,8 +871,12 @@ window.addEventListener('load', async () => {
   }
 
   // 3. Cargar trabajadores desde Supabase
-  const { data } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
-  State.trabajadores = data || [];
+  const { data, error: errTrab } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
+  if (errTrab || !data) {
+    toast('❌ Error al cargar la lista de trabajadores. Verifica tu conexión y recarga la página.', 'error', 0);
+    return;
+  }
+  State.trabajadores = data;
 
   const input = document.getElementById('cedulaInput');
   if (input) input.focus();

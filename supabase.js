@@ -639,33 +639,58 @@ async function seedDotacion() {
 }
 
 /* ============================================================
-   UTILIDAD DE RESET — llamar desde consola del navegador:
-   await window.resetAndReseed()
+   UTILIDAD DE RESET — solo accesible con clave de administrador
+   Para usar: desde la consola del navegador en la app principal,
+   ejecutar: await ghproAdminReset('CLAVE_ADMIN')
    ============================================================ */
-window.resetAndReseed = async function() {
-  if (!confirm('⚠️ Esto borrará TODOS los trabajadores y dotación y los recargará desde cero. ¿Continuar?')) return;
-  showLoading(true);
-  try {
-    // Borrar en orden (FK constraints)
-    await sb.from('entregas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await sb.from('bpm').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await sb.from('vehiculos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await sb.from('dotacion').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await sb.from('trabajadores').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    console.log('[Reset] Tablas vaciadas');
-    await seedTrabajadores();
-    await seedDotacion();
-    // Invalidar cache y refrescar
-    if (typeof Cache !== 'undefined') Cache.invalidate();
-    if (typeof renderDashboard === 'function') await renderDashboard();
-    toast('Base de datos recargada con datos correctos ✅', 'success', 5000);
-  } catch(e) {
-    console.error('[Reset] Error:', e);
-    toast('Error al resetear: ' + e.message, 'error');
-  } finally {
-    showLoading(false);
+(function() {
+  // Hash simple de la clave para no guardarla en texto plano
+  // Clave actual: GHpro2024admin! — cambiar el hash si cambias la clave
+  const ADMIN_HASH = '4059cefc'; // cyrb53('GHpro2024admin!')
+
+  function hashClave(str) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0, ch; i < str.length; i++) {
+      ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+    h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return ((4294967296 * (2097151 & h2) + (h1 >>> 0)) >>> 0).toString(16);
   }
-};
+
+  window.ghproAdminReset = async function(clave) {
+    if (!clave || hashClave(clave) !== ADMIN_HASH) {
+      console.error('[GHPro] Clave incorrecta. Acceso denegado.');
+      return;
+    }
+    if (!confirm('⚠️ Esto borrará TODOS los trabajadores y dotación y los recargará desde cero. ¿Continuar?')) return;
+    showLoading(true);
+    try {
+      // Borrar en orden (FK constraints)
+      await sb.from('entregas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await sb.from('bpm').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await sb.from('vehiculos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await sb.from('dotacion').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await sb.from('trabajadores').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      console.log('[Reset] Tablas vaciadas');
+      await seedTrabajadores();
+      await seedDotacion();
+      // Invalidar cache y refrescar
+      if (typeof Cache !== 'undefined') Cache.invalidate();
+      if (typeof renderDashboard === 'function') await renderDashboard();
+      toast('Base de datos recargada con datos correctos ✅', 'success', 5000);
+    } catch(e) {
+      console.error('[Reset] Error:', e);
+      toast('Error al resetear: ' + e.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  };
+})();
 
 /* ============================================================
    INCAPACIDADES — capa de datos
