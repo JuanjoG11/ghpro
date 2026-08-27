@@ -20,3 +20,6 @@ comment on column vacaciones.hora_fin       is 'Hora de fin del permiso (solo ap
 comment on column vacaciones.motivo         is 'Motivo de la solicitud (obligatorio en permisos)';
 comment on column vacaciones.es_remunerado  is 'Indica si el permiso es remunerado (true) o no remunerado (false). Null = no aplica';
 comment on column vacaciones.solicitado_en  is 'Fecha/hora en que el trabajador envió la solicitud desde el portal';
+
+-- Habilitar Realtime para la tabla vacaciones (para recibir solicitudes en vivo en el admin)
+alter publication supabase_realtime add table vacaciones;

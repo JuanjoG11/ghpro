@@ -1093,9 +1093,12 @@
         </div>
         <select class="filter-select" id="filterSolicStatus" onchange="renderSolicitudes()">
           <option value="">Todos los estados</option>
+          <option value="solicitada">📥 Solicitadas</option>
           <option value="en_proceso">⏳ En proceso</option>
+          <option value="en_curso">🔄 En curso</option>
           <option value="aprobada">✅ Aprobadas</option>
-          <option value="no_aprobada">❌ No aprobadas</option>
+          <option value="rechazada">❌ Rechazadas</option>
+          <option value="finalizada">🏁 Finalizadas</option>
         </select>
         <select class="filter-select" id="filterSolicTipo" onchange="renderSolicitudes()">
           <option value="">Todos los tipos</option>

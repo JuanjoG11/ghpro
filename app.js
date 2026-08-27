@@ -2800,9 +2800,13 @@ const SOLIC_TIPO_LABEL = {
 };
 
 const SOLIC_STATUS = {
-  en_proceso: { label: 'En proceso',   cls: 'badge-info',    icon: '⏳' },
-  aprobada:   { label: 'Aprobada',     cls: 'badge-success', icon: '✅' },
-  no_aprobada:{ label: 'No aprobada',  cls: 'badge-danger',  icon: '❌' },
+  solicitada:  { label: 'Solicitada',   cls: 'badge-info',    icon: '📥' },
+  en_proceso:  { label: 'En proceso',   cls: 'badge-warning', icon: '⏳' },
+  en_curso:    { label: 'En curso',     cls: 'badge-warning', icon: '🔄' },
+  aprobada:    { label: 'Aprobada',     cls: 'badge-success', icon: '✅' },
+  rechazada:   { label: 'Rechazada',   cls: 'badge-danger',  icon: '❌' },
+  finalizada:  { label: 'Finalizada',  cls: 'badge-neutral', icon: '🏁' },
+  no_aprobada: { label: 'No aprobada', cls: 'badge-danger',  icon: '❌' },
 };
 
 function _solicStatusBadge(status) {
@@ -2862,16 +2866,16 @@ async function renderSolicitudes() {
     // ── Stats ────────────────────────────────────────────────
     const pendientes  = lista.filter(v => ['solicitada','en_proceso'].includes(v.status)).length;
     const aprobadas   = lista.filter(v => v.status === 'aprobada').length;
-    const noAprobadas = lista.filter(v => v.status === 'no_aprobada').length;
+    const rechazadas  = lista.filter(v => ['rechazada','no_aprobada'].includes(v.status)).length;
 
     updateSolicBadge(pendientes);
 
     const statsEl = document.getElementById('solicStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '⏳', value: pendientes,  label: 'En proceso',   color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '⏳', value: pendientes,  label: 'Pendientes',   color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
         { icon: '✅', value: aprobadas,   label: 'Aprobadas',    color: 'var(--success)' },
-        { icon: '❌', value: noAprobadas, label: 'No aprobadas', color: 'var(--danger)' },
+        { icon: '❌', value: rechazadas,  label: 'Rechazadas',   color: 'var(--danger)' },
         { icon: '📋', value: lista.length, label: 'Total',       color: 'var(--text-muted)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
@@ -2959,8 +2963,8 @@ function _solicCardHTML(v) {
             ✅ Aprobar
           </button>
           <button class="btn btn-danger btn-sm"
-            onclick="gestionarSolicitud('${v.id}','no_aprobada')">
-            ❌ No aprobar
+            onclick="gestionarSolicitud('${v.id}','rechazada')">
+            ❌ Rechazar
           </button>
         </div>
       </div>
@@ -3005,9 +3009,9 @@ function _renderTablaSolicTodas(lista) {
       <td style="font-size:12px;color:var(--text-muted)">${solEn}</td>
       <td>
         <div class="td-actions">
-          ${v.status === 'en_proceso' ? `
-            <button class="btn btn-success btn-sm btn-icon" title="Aprobar"     onclick="gestionarSolicitud('${v.id}','aprobada')">✅</button>
-            <button class="btn btn-danger  btn-sm btn-icon" title="No aprobar"  onclick="gestionarSolicitud('${v.id}','no_aprobada')">❌</button>
+          ${['solicitada','en_proceso','en_curso'].includes(v.status) ? `
+            <button class="btn btn-success btn-sm btn-icon" title="Aprobar"    onclick="gestionarSolicitud('${v.id}','aprobada')">✅</button>
+            <button class="btn btn-danger  btn-sm btn-icon" title="Rechazar"   onclick="gestionarSolicitud('${v.id}','rechazada')">❌</button>
           ` : ''}
           <button class="btn btn-secondary btn-sm btn-icon" title="Cambiar estado" onclick="abrirCambioEstadoSolic('${v.id}')">✏️</button>
         </div>
@@ -3032,7 +3036,7 @@ async function gestionarSolicitud(id, nuevoStatus) {
 
   if (error) { toast('Error al actualizar: ' + error.message, 'error'); return; }
 
-  const labels = { aprobada: 'Aprobada ✅', no_aprobada: 'No aprobada ❌', en_proceso: 'En proceso ⏳' };
+  const labels = { aprobada: 'Aprobada ✅', rechazada: 'Rechazada ❌', no_aprobada: 'No aprobada ❌', en_proceso: 'En proceso ⏳', en_curso: 'En curso 🔄' };
   toast(`Solicitud ${labels[nuevoStatus] || nuevoStatus}`, 'success');
 
   // Invalidar cache de vacaciones también (comparten tabla)
@@ -3116,39 +3120,42 @@ async function _confirmarCambioEstado() {
   await renderSolicitudes();
 }
 
-// ── Inicialización: badge al arrancar y navigate override ──────
+// ── Inicialización: badge al arrancar, realtime y auto-refresco ──────
 (function _initSolicitudes() {
-  // Cargar badge al arrancar
-  document.addEventListener('DOMContentLoaded', async () => {
+  async function _refrescarBadgeYVista() {
     try {
       const { data } = await sb
         .from('vacaciones')
-        .select('id', { count: 'exact', head: false })
-        .eq('status', 'en_proceso');
+        .select('id')
+        .in('status', ['solicitada', 'en_proceso']);
       updateSolicBadge((data || []).length);
-    } catch (_) {}
-  });
 
-  // Suscripción Realtime: actualizar badge cuando llegan nuevas solicitudes del portal
+      const page = document.getElementById('page-solicitudes');
+      if (page && page.classList.contains('active')) {
+        Cache.solicitudes = null;
+        await renderSolicitudes();
+      }
+    } catch (_) {}
+  }
+
+  // Cargar badge al arrancar
+  document.addEventListener('DOMContentLoaded', _refrescarBadgeYVista);
+
+  // Auto-refrescar cuando el usuario vuelve a la pestaña
+  window.addEventListener('focus', _refrescarBadgeYVista);
+
+  // Polling cada 20 segundos por si Realtime no está activo en Postgres
+  setInterval(_refrescarBadgeYVista, 20000);
+
+  // Suscripción Realtime: actualizar en vivo cuando llegan nuevas solicitudes
   sb.channel('solicitudes-realtime')
     .on('postgres_changes', {
       event:  '*',
       schema: 'public',
       table:  'vacaciones',
     }, async () => {
-      try {
-        const { data } = await sb
-          .from('vacaciones')
-          .select('id')
-          .eq('status', 'en_proceso');
-        updateSolicBadge((data || []).length);
-        // Si la página solicitudes está activa, refrescar en vivo
-        const page = document.getElementById('page-solicitudes');
-        if (page && page.classList.contains('active')) {
-          Cache.solicitudes = null;
-          await renderSolicitudes();
-        }
-      } catch (_) {}
+      await _refrescarBadgeYVista();
     })
     .subscribe();
 })();
+
