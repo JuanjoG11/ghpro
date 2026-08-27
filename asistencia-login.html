@@ -432,35 +432,57 @@ async function getDeviceId() {
     return stored;
   }
 
-  // Si es una pestaña de incógnito o borraron caché, recuperar si hoy ya hay registro con este fingerprint
-  try {
-    const { data } = await sb
-      .from('asistencia')
-      .select('device_id')
-      .eq('fecha', today())
-      .like('device_id', `fp_${fp}_%`)
-      .limit(1);
-
-    if (data && data.length > 0 && data[0].device_id) {
-      const recoveredId = data[0].device_id;
-      persistDeviceId(recoveredId);
-      return recoveredId;
-    }
-  } catch (_) {}
-
+  // NOTA: ya no recuperamos el device_id de la DB por fingerprint.
+  // Esa recuperación causaba que celulares con hardware idéntico (mismo modelo,
+  // misma resolución, mismo idioma) heredaran el ID de otro usuario y quedaran
+  // bloqueados sin haber registrado nada. Cada sesión sin localStorage genera
+  // su propio ID único.
   const randomPart = 'xxxxxxxxxxxx'.replace(/[x]/g, () => (Math.random() * 16 | 0).toString(16));
   const newId = `fp_${fp}_${randomPart}`;
   persistDeviceId(newId);
   return newId;
 }
 
-// ── Consulta de registros del dispositivo hoy ─────────────────────
-// Retorna { count, tipos, tieneEntrada, tieneSalida, registros, offline }
-// IMPORTANTE: si hay error de red retorna offline:true para bloquear el registro
-async function verificarDispositivoHoy() {
+// ── Conteo total de registros del dispositivo hoy (sin filtrar cédula) ──
+// Usado para aplicar el límite absoluto de 2 registros por celular por día.
+// Solo usa el device_id guardado en localStorage — nunca el fingerprint — para
+// evitar que celulares con hardware idéntico se cuenten entre sí.
+async function verificarDispositivoTotal() {
   const deviceId = await getDeviceId();
-  const fp = getDeviceFingerprint();
-  const cacheKey = `device_${today()}`;
+  const cacheKey = `device_total_${today()}`;
+
+  const cached = QueryCache.get(cacheKey);
+  if (cached) return cached;
+
+  const { data, error } = await sb
+    .from('asistencia')
+    .select('id, tipo, cedula')
+    .eq('fecha', today())
+    .eq('device_id', deviceId);
+
+  if (error || data === null) {
+    return { count: 0, tieneEntrada: false, tieneSalida: false, offline: true };
+  }
+
+  const result = {
+    count:        data.length,
+    tieneEntrada: data.some(r => r.tipo === 'entrada'),
+    tieneSalida:  data.some(r => r.tipo === 'salida'),
+    offline:      false,
+  };
+
+  QueryCache.set(cacheKey, result, 8000);
+  return result;
+}
+
+// ── Registros del dispositivo hoy filtrados por cédula ────────────
+// Usado para saber si ESTE trabajador específico ya marcó desde este celular.
+// Retorna { count, tieneEntrada, tieneSalida, registros, offline }
+// IMPORTANTE: si hay error de red retorna offline:true para bloquear el registro
+async function verificarDispositivoHoy(cedula) {
+  const deviceId = await getDeviceId();
+  // La clave de caché incluye la cédula: cada trabajador tiene su propia verificación
+  const cacheKey = `device_${today()}_${cedula}`;
 
   const cached = QueryCache.get(cacheKey);
   if (cached) return cached;
@@ -469,21 +491,20 @@ async function verificarDispositivoHoy() {
     .from('asistencia')
     .select('id, tipo, hora, trabajador_nombre, cedula, device_id')
     .eq('fecha', today())
-    .or(`device_id.eq.${deviceId},device_id.like.fp_${fp}_%`);
+    .eq('device_id', deviceId)
+    .eq('cedula', cedula);
 
   // Si hay error de red o Supabase no responde, NO permitir registro
-  // Retornar offline:true para que el llamador lo maneje
   if (error || data === null) {
-    return { count: 0, tipos: [], tieneEntrada: false, tieneSalida: false, registros: [], offline: true };
+    return { count: 0, tieneEntrada: false, tieneSalida: false, registros: [], offline: true };
   }
 
   const result = {
-    count: data.length,
-    tipos: data.map(r => r.tipo),
+    count:        data.length,
     tieneEntrada: data.some(r => r.tipo === 'entrada'),
-    tieneSalida: data.some(r => r.tipo === 'salida'),
-    registros: data,
-    offline: false,
+    tieneSalida:  data.some(r => r.tipo === 'salida'),
+    registros:    data,
+    offline:      false,
   };
 
   // Cachear 8 segundos — suficiente para evitar queries duplicadas en el mismo flujo
@@ -515,7 +536,8 @@ async function actualizarBotonPorEstado() {
     return;
   }
 
-  const device = await verificarDispositivoHoy();
+  // Verificar bloqueo solo para la cédula de este trabajador en este dispositivo
+  const device = await verificarDispositivoHoy(t.cedula);
 
   // 0. Sin conexión: no se puede verificar nada, bloquear por seguridad
   if (device.offline) {
@@ -524,22 +546,23 @@ async function actualizarBotonPorEstado() {
     return;
   }
 
-  // 1. Si el dispositivo ya llegó al límite absoluto de 2 registros
-  if (device.count >= 2) {
+  // 1. Límite absoluto: este celular ya tiene 2 registros hoy (de cualquier cédula)
+  const deviceTotal = await verificarDispositivoTotal();
+  if (!deviceTotal.offline && deviceTotal.count >= 2) {
     btn.disabled  = true;
     btn.innerHTML = '📵 Límite de dispositivo alcanzado';
     return;
   }
 
-  // 2. Si el dispositivo ya registró el tipo seleccionado
+  // 2. Si este trabajador ya registró el tipo seleccionado desde este dispositivo
   if (State.tipo === 'entrada' && device.tieneEntrada) {
     btn.disabled  = true;
-    btn.innerHTML = '⚠️ Este celular ya marcó Entrada hoy';
+    btn.innerHTML = '⚠️ Ya registraste Entrada hoy';
     return;
   }
   if (State.tipo === 'salida' && device.tieneSalida) {
     btn.disabled  = true;
-    btn.innerHTML = '⚠️ Este celular ya marcó Salida hoy';
+    btn.innerHTML = '⚠️ Ya registraste Salida hoy';
     return;
   }
 
@@ -632,7 +655,7 @@ async function onCedula(val) {
       (estadoExtra ? `<br><span style="font-size:11px;color:var(--accent3)">${estadoExtra}</span>` : '');
 
     // Sugerir tipo automáticamente según lo que falta
-    const device = await verificarDispositivoHoy();
+    const device = await verificarDispositivoHoy(cedula);
     if (ultimoEntrada && !ultimaSalida) {
       setTipo('salida');
     } else if (!ultimoEntrada) {
@@ -673,19 +696,20 @@ async function registrar(metodo = 'qr') {
   const btn = document.getElementById('btnContinuar');
   btn.disabled = true;
 
-  // ── Verificación estricta del dispositivo (Anti-trampas) ────────
-  const device = await verificarDispositivoHoy();
+  // ── Verificación estricta por cédula + dispositivo ────────────
+  const device      = await verificarDispositivoHoy(t.cedula);
+  const deviceTotal = await verificarDispositivoTotal();
 
   // Regla 0: Sin conexión — no permitir registro (evita bypass por red caída)
-  if (device.offline) {
+  if (device.offline || deviceTotal.offline) {
     toast('📡 Sin conexión a internet. Verifica tu señal e intenta de nuevo.', 'error', 6000);
     btn.disabled = false;
     await actualizarBotonPorEstado();
     return;
   }
 
-  // Regla 1: Máximo 2 registros totales por día por dispositivo
-  if (device.count >= 2) {
+  // Regla 1: Máximo 2 registros totales por día por dispositivo (cualquier cédula)
+  if (deviceTotal.count >= 2) {
     mostrarBloqueo(
       'Límite de dispositivo alcanzado',
       'Este dispositivo ya completó sus 2 registros diarios (entrada y salida). No se permiten más registros desde este teléfono.',
@@ -694,16 +718,16 @@ async function registrar(metodo = 'qr') {
     return;
   }
 
-  // Regla 2: Solo 1 entrada por día por dispositivo
+  // Regla 2: Esta cédula ya registró entrada hoy en este dispositivo
   if (tipo === 'entrada' && device.tieneEntrada) {
-    toast('⛔ Este dispositivo ya registró una Entrada hoy. No se permite marcar entrada para otro trabajador.', 'error', 6000);
+    toast('⛔ Esta cédula ya tiene una Entrada registrada hoy.', 'error', 6000);
     await actualizarBotonPorEstado();
     return;
   }
 
-  // Regla 3: Solo 1 salida por día por dispositivo
+  // Regla 3: Esta cédula ya registró salida hoy en este dispositivo
   if (tipo === 'salida' && device.tieneSalida) {
-    toast('⛔ Este dispositivo ya registró una Salida hoy.', 'error', 6000);
+    toast('⛔ Esta cédula ya tiene una Salida registrada hoy.', 'error', 6000);
     await actualizarBotonPorEstado();
     return;
   }
@@ -762,8 +786,8 @@ async function registrar(metodo = 'qr') {
 
   await cargarRecientes(t.cedula);
 
-  // Si este registro completó los 2 permitidos para este dispositivo (ej. completó salida)
-  if (device.count + 1 >= 2) {
+  // Si este registro completó los 2 permitidos para este dispositivo (total del día)
+  if (deviceTotal.count + 1 >= 2) {
     setTimeout(() => {
       mostrarBloqueo(
         'Jornada registrada',
@@ -874,20 +898,8 @@ window.addEventListener('load', async () => {
   // 1. Validar QR antes de mostrar el formulario
   revisarQRenURL();
 
-  // 2. Verificar si este dispositivo ya alcanzó el límite de hoy (2 registros)
-  const device = await verificarDispositivoHoy();
-  if (device.offline) {
-    // Red caída al arrancar — mostrar aviso pero dejar cargar el formulario
-    // El bloqueo real ocurrirá al intentar registrar
-    toast('⚠️ Sin conexión al servidor. Verifica tu señal antes de registrar.', 'warning', 8000);
-  } else if (device.count >= 2) {
-    mostrarBloqueo(
-      'Límite de dispositivo alcanzado',
-      'Este dispositivo ya completó sus 2 registros diarios (entrada y salida). No se permiten más registros desde este teléfono hoy.',
-      'device'
-    );
-    return;
-  }
+  // 2. No bloqueamos la pantalla al arrancar sin cédula.
+  // El bloqueo por cédula se evalúa al momento de registrar.
 
   // 3. Cargar trabajadores desde Supabase
   const { data, error: errTrab } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');

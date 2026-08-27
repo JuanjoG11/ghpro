@@ -69,3 +69,42 @@ SELECT marca, cargo, COUNT(*) as total
 FROM trabajadores
 GROUP BY marca, cargo
 ORDER BY marca, cargo;
+
+
+-- ============================================================
+-- FIX: Ver y limpiar bloqueos falsos por device_id (hoy)
+-- Usar cuando un trabajador dice "Este celular ya marcó Entrada"
+-- pero nunca lo ha usado.
+-- Ejecutar en Supabase Dashboard > SQL Editor
+-- ============================================================
+
+-- 1. Ver todos los registros de hoy con su device_id
+--    (útil para identificar qué dispositivos están bloqueando a quién)
+SELECT
+  cedula,
+  trabajador_nombre,
+  tipo,
+  hora,
+  device_id
+FROM asistencia
+WHERE fecha = CURRENT_DATE
+ORDER BY hora DESC;
+
+-- 2. Ver si una cédula específica tiene registros hoy
+--    (reemplaza '1089601941' con la cédula del afectado)
+SELECT id, cedula, trabajador_nombre, tipo, hora, device_id
+FROM asistencia
+WHERE fecha = CURRENT_DATE
+  AND cedula = '1089601941';
+
+-- 3. Si hay un registro duplicado o incorrecto, elimínalo por su id:
+--    DELETE FROM asistencia WHERE id = <id_del_registro>;
+
+-- 4. Ver si hay device_ids que se repiten (posible colisión de fingerprint)
+SELECT device_id, COUNT(*) as registros, array_agg(cedula) as cedulas
+FROM asistencia
+WHERE fecha = CURRENT_DATE
+  AND device_id IS NOT NULL
+GROUP BY device_id
+HAVING COUNT(DISTINCT cedula) > 1
+ORDER BY registros DESC;
