@@ -4,19 +4,31 @@
    ============================================================ */
 'use strict';
 
-// ── Date helpers ───────────────────────────────────────────────
-// Usa la fecha LOCAL del dispositivo (no UTC) para evitar desfase en Colombia (UTC-5)
-const today = () => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
+// ── Date helpers (Zona horaria Colombia: America/Bogota) ───────
+const today = (date = new Date()) => {
+  const d = date instanceof Date ? date : new Date(date);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+};
+
+const horaActual = (date = new Date()) => {
+  const d = date instanceof Date ? date : new Date(date);
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(d);
 };
 
 const daysUntil = (dateStr) => {
   if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date(today());
+  const diff = new Date(dateStr + 'T12:00:00') - new Date(today() + 'T12:00:00');
   return Math.ceil(diff / 86400000);
 };
 
@@ -29,6 +41,7 @@ const fmtDate = (d) => {
 const fmtDateLong = (d) => {
   if (!d) return '';
   return new Date(d + 'T12:00:00').toLocaleDateString('es-CO', {
+    timeZone: 'America/Bogota',
     year: 'numeric', month: 'long', day: 'numeric',
   });
 };
@@ -1201,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const vac = await Vacaciones.getAll();
       Cache.vacaciones = vac;
-      const pend = vac.filter(v => v.status === 'solicitada').length;
+      const pend = vac.filter(v => v.status === 'en_proceso').length;
       updateVacBadge(pend);
     } catch (_) { /* silencioso */ }
   })();
@@ -1593,6 +1606,16 @@ window.navigate = function(pageId) {
     if (window.innerWidth <= 768) closeSidebar();
     return;
   }
+  if (pageId === 'solicitudes') {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const page = document.getElementById('page-solicitudes');
+    if (page) page.classList.add('active');
+    document.querySelectorAll('[data-page="solicitudes"]').forEach(n => n.classList.add('active'));
+    renderSolicitudes();
+    if (window.innerWidth <= 768) closeSidebar();
+    return;
+  }
   _navigateOrig(pageId);
 };
 
@@ -1622,11 +1645,9 @@ async function exportarIncapacidades() {
 Cache.vacaciones = null;
 
 const VAC_STATUS = {
-  solicitada:  { label: 'Solicitada',    cls: 'badge-neutral',  icon: '📥' },
-  aprobada:    { label: 'Aprobada',      cls: 'badge-success',  icon: '✅' },
-  rechazada:   { label: 'Rechazada',     cls: 'badge-danger',   icon: '❌' },
-  en_curso:    { label: 'En curso',      cls: 'badge-info',     icon: '🏖️' },
-  finalizada:  { label: 'Finalizada',    cls: 'badge-neutral',  icon: '🏁' },
+  en_proceso:  { label: 'En proceso',   cls: 'badge-neutral',  icon: '⏳' },
+  aprobada:    { label: 'Aprobada',     cls: 'badge-success',  icon: '✅' },
+  no_aprobada: { label: 'No aprobada',  cls: 'badge-danger',   icon: '❌' },
 };
 
 const VAC_TIPO = {
@@ -1667,9 +1688,9 @@ async function renderVacaciones() {
 
     // ── Stats ───────────────────────────────
     const totalDias    = lista.reduce((s, v) => s + (v.dias || 0), 0);
-    const pendientes   = lista.filter(v => v.status === 'solicitada').length;
-    const enCurso      = lista.filter(v => v.status === 'en_curso').length;
+    const pendientes   = lista.filter(v => v.status === 'en_proceso').length;
     const aprobadas    = lista.filter(v => v.status === 'aprobada').length;
+    const noAprobadas  = lista.filter(v => v.status === 'no_aprobada').length;
 
     updateVacBadge(pendientes);
 
@@ -1678,9 +1699,9 @@ async function renderVacaciones() {
       statsEl.innerHTML = [
         { icon: '🏖️', value: lista.length,  label: 'Total solicitudes', color: 'var(--accent)' },
         { icon: '📅', value: totalDias,     label: 'Días acumulados',    color: 'var(--info)' },
-        { icon: '📥', value: pendientes,    label: 'Solicitadas',        color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
-        { icon: '🏁', value: aprobadas,     label: 'Aprobadas',          color: 'var(--success)' },
-        { icon: '⏳', value: enCurso,       label: 'En curso',           color: 'var(--info)' },
+        { icon: '⏳', value: pendientes,    label: 'En proceso',         color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '✅', value: aprobadas,     label: 'Aprobadas',          color: 'var(--success)' },
+        { icon: '❌', value: noAprobadas,   label: 'No aprobadas',       color: 'var(--danger)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -1704,7 +1725,7 @@ async function renderVacaciones() {
     _renderTablaVac('tablaVacaciones', 'emptyVacaciones', filtered, true);
 
     // ── Tab: Pendientes ─────────────────────
-    const pend = lista.filter(v => v.status === 'solicitada' || v.status === 'en_curso');
+    const pend = lista.filter(v => v.status === 'en_proceso');
     _renderTablaVac('tablaVacPendientes', 'emptyVacPendientes', pend, false);
 
     // ── Tab: Resumen por trabajador ─────────
@@ -1874,7 +1895,7 @@ function editarVacacion(id) {
   document.getElementById('vacTipo').value        = v.tipo           || 'vacaciones';
   document.getElementById('vacInicio').value      = v.fecha_inicio   ? v.fecha_inicio.split('T')[0] : '';
   document.getElementById('vacFin').value         = v.fecha_fin      ? v.fecha_fin.split('T')[0]    : '';
-  document.getElementById('vacStatus').value      = v.status         || 'solicitada';
+  document.getElementById('vacStatus').value      = v.status         || 'en_proceso';
   document.getElementById('vacAprobadoPor').value = v.aprobado_por   || '';
   document.getElementById('vacObs').value         = v.observaciones  || '';
 
@@ -1923,7 +1944,7 @@ function _resetVacForm() {
   });
   const sel  = document.getElementById('vacTrabajador'); if (sel)  sel.value  = '';
   const tipo = document.getElementById('vacTipo');       if (tipo) tipo.value = 'vacaciones';
-  const stat = document.getElementById('vacStatus');     if (stat) stat.value = 'solicitada';
+  const stat = document.getElementById('vacStatus');     if (stat) stat.value = 'en_proceso';
   const ini  = document.getElementById('vacInicio');     if (ini)  ini.value  = '';
   const fin  = document.getElementById('vacFin');        if (fin)  fin.value  = '';
   // Campos extra de permiso
@@ -1977,11 +1998,6 @@ async function exportarVacaciones() {
 Cache.asistencia = null;
 
 // ── Helpers ────────────────────────────────────────────────────
-function horaActual() {
-  const n = new Date();
-  return n.toTimeString().slice(0, 8); // HH:MM:SS
-}
-
 function fmtHora(h) {
   if (!h) return '—';
   return h.slice(0, 5); // HH:MM
@@ -2076,6 +2092,7 @@ async function renderAsistencia() {
     const subtitleEl = document.getElementById('asistFecha');
     if (subtitleEl) {
       subtitleEl.textContent = new Date().toLocaleDateString('es-CO', {
+        timeZone: 'America/Bogota',
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
       });
     }
@@ -2764,3 +2781,374 @@ async function exportarPrendas() {
   ]);
   downloadCSV('dotacion_prendas', headers, rows);
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// SOLICITUDES — Bandeja admin (vacaciones + permisos + licencias)
+// Los datos viven en la tabla 'vacaciones' (mismo modelo)
+// ═══════════════════════════════════════════════════════════════
+
+Cache.solicitudes = null;
+
+const SOLIC_TIPO_LABEL = {
+  vacaciones:             { icon: '🏖️', label: 'Vacaciones' },
+  permiso:                { icon: '🕐', label: 'Permiso' },
+  licencia_remunerada:    { icon: '✅', label: 'Lic. Remunerada' },
+  licencia_no_remunerada: { icon: '📋', label: 'Lic. No Remunerada' },
+  calamidad:              { icon: '🚨', label: 'Calamidad' },
+  otro:                   { icon: '📄', label: 'Otro' },
+};
+
+const SOLIC_STATUS = {
+  en_proceso: { label: 'En proceso',   cls: 'badge-info',    icon: '⏳' },
+  aprobada:   { label: 'Aprobada',     cls: 'badge-success', icon: '✅' },
+  no_aprobada:{ label: 'No aprobada',  cls: 'badge-danger',  icon: '❌' },
+};
+
+function _solicStatusBadge(status) {
+  const s = SOLIC_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '•' };
+  return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
+}
+
+function _solicTipoBadge(tipo) {
+  const t = SOLIC_TIPO_LABEL[tipo] || { icon: '📄', label: tipo };
+  return `<span class="chip">${t.icon} ${t.label}</span>`;
+}
+
+function _solicFmtFechas(v) {
+  const ini = fmtDate(v.fecha_inicio);
+  const fin = fmtDate(v.fecha_fin);
+  if (v.tipo === 'permiso') {
+    const horas = (v.hora_inicio && v.hora_fin)
+      ? ` · ${v.hora_inicio.slice(0,5)}–${v.hora_fin.slice(0,5)}`
+      : '';
+    return `${ini}${horas}`;
+  }
+  return ini === fin ? ini : `${ini} → ${fin}`;
+}
+
+// ── Badge sidebar ──────────────────────────────────────────────
+function updateSolicBadge(count) {
+  const b = document.getElementById('solicBadge');
+  if (b) { b.textContent = count; b.style.display = count > 0 ? '' : 'none'; }
+}
+
+// ── Render principal ───────────────────────────────────────────
+async function renderSolicitudes() {
+  showLoading(true);
+  try {
+    // Siempre refrescar desde la BD
+    const { data, error } = await sb
+      .from('vacaciones')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { toast('Error al cargar solicitudes', 'error'); return; }
+    Cache.solicitudes = data || [];
+
+    const lista = Cache.solicitudes;
+
+    // Aplicar filtros de búsqueda / tipo / estado
+    const q       = (document.getElementById('searchSolic')?.value || '').toLowerCase();
+    const fStatus = document.getElementById('filterSolicStatus')?.value || '';
+    const fTipo   = document.getElementById('filterSolicTipo')?.value   || '';
+
+    const filtered = lista.filter(v => {
+      const txt = [v.trabajador_nombre, v.motivo, v.observaciones].join(' ').toLowerCase();
+      return (!q       || txt.includes(q))
+          && (!fStatus || v.status === fStatus)
+          && (!fTipo   || v.tipo   === fTipo);
+    });
+
+    // ── Stats ────────────────────────────────────────────────
+    const pendientes  = lista.filter(v => ['solicitada','en_proceso'].includes(v.status)).length;
+    const aprobadas   = lista.filter(v => v.status === 'aprobada').length;
+    const noAprobadas = lista.filter(v => v.status === 'no_aprobada').length;
+
+    updateSolicBadge(pendientes);
+
+    const statsEl = document.getElementById('solicStats');
+    if (statsEl) {
+      statsEl.innerHTML = [
+        { icon: '⏳', value: pendientes,  label: 'En proceso',   color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '✅', value: aprobadas,   label: 'Aprobadas',    color: 'var(--success)' },
+        { icon: '❌', value: noAprobadas, label: 'No aprobadas', color: 'var(--danger)' },
+        { icon: '📋', value: lista.length, label: 'Total',       color: 'var(--text-muted)' },
+      ].map(s => `
+        <div class="stat-card" style="--card-color:${s.color}">
+          <div class="stat-icon">${s.icon}</div>
+          <div class="stat-value">${s.value}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>`).join('');
+    }
+
+    // Contador en tab
+    const countEl = document.getElementById('solicPendCount');
+    if (countEl) countEl.textContent = pendientes > 0 ? `(${pendientes})` : '';
+
+    // ── Tab pendientes ────────────────────────────────────────
+    const pendList  = lista.filter(v => ['solicitada','en_proceso'].includes(v.status));
+    const listaPend = document.getElementById('listaSolicPendientes');
+    const emptyPend = document.getElementById('emptySolicPendientes');
+
+    if (!pendList.length) {
+      if (listaPend) listaPend.innerHTML = '';
+      if (emptyPend) emptyPend.style.display = '';
+    } else {
+      if (emptyPend) emptyPend.style.display = 'none';
+      if (listaPend) listaPend.innerHTML = pendList.map(_solicCardHTML).join('');
+    }
+
+    // ── Tab todas ─────────────────────────────────────────────
+    _renderTablaSolicTodas(filtered);
+
+  } finally { showLoading(false); }
+}
+
+// ── Tarjeta de solicitud pendiente ─────────────────────────────
+function _solicCardHTML(v) {
+  const tipo   = SOLIC_TIPO_LABEL[v.tipo] || { icon: '📄', label: v.tipo };
+  const fechas = _solicFmtFechas(v);
+  const dias   = v.dias != null ? `${v.dias} día${v.dias !== 1 ? 's' : ''}` : '';
+  const solEn  = v.solicitado_en || v.created_at
+    ? new Date(v.solicitado_en || v.created_at).toLocaleDateString('es-CO', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      })
+    : '';
+
+  const rem = v.tipo === 'permiso' && v.es_remunerado != null
+    ? `<span class="chip" style="font-size:11px">${v.es_remunerado ? '✅ Remunerado' : '❌ No remunerado'}</span>`
+    : '';
+
+  const motivoHtml = v.motivo
+    ? `<div class="solic-motivo">💬 ${v.motivo}</div>`
+    : '';
+
+  const obsHtml = v.observaciones
+    ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">📎 ${v.observaciones}</div>`
+    : '';
+
+  return `
+    <div class="solic-card ${v.status}" id="solic-card-${v.id}">
+      <div class="solic-avatar" style="background:${avatarColor(v.trabajador_nombre)};color:#fff">
+        ${(v.trabajador_nombre || '?').slice(0,2).toUpperCase()}
+      </div>
+      <div class="solic-body">
+        <div class="solic-top">
+          <span class="solic-nombre">${v.trabajador_nombre}</span>
+          ${_solicTipoBadge(v.tipo)}
+          ${_solicStatusBadge(v.status)}
+          ${rem}
+        </div>
+        <div class="solic-meta">
+          <span>📅 ${fechas}</span>
+          ${dias ? `<span>⏱ ${dias}</span>` : ''}
+          ${solEn ? `<span>🕐 Solicitado: ${solEn}</span>` : ''}
+        </div>
+        ${motivoHtml}
+        ${obsHtml}
+        <textarea
+          class="solic-nota-input"
+          id="nota-${v.id}"
+          rows="2"
+          placeholder="Nota interna (opcional — será visible para el trabajador)..."
+        ></textarea>
+        <div class="solic-actions">
+          <button class="btn btn-success btn-sm"
+            onclick="gestionarSolicitud('${v.id}','aprobada')">
+            ✅ Aprobar
+          </button>
+          <button class="btn btn-danger btn-sm"
+            onclick="gestionarSolicitud('${v.id}','no_aprobada')">
+            ❌ No aprobar
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Tabla "Todas" ──────────────────────────────────────────────
+function _renderTablaSolicTodas(lista) {
+  const tbody = document.getElementById('tablaSolicTodas');
+  const empty = document.getElementById('emptySolicTodas');
+  if (!tbody) return;
+
+  if (!lista.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  tbody.innerHTML = lista.map(v => {
+    const fechas = _solicFmtFechas(v);
+    const dias   = v.dias != null ? `<strong>${v.dias}d</strong>` : '—';
+    const solEn  = v.solicitado_en || v.created_at
+      ? new Date(v.solicitado_en || v.created_at).toLocaleDateString('es-CO', {
+          day: '2-digit', month: 'short', year: 'numeric',
+        })
+      : '—';
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="background:${avatarColor(v.trabajador_nombre)}">${(v.trabajador_nombre||'?').slice(0,2).toUpperCase()}</div>
+          <span style="font-weight:600">${v.trabajador_nombre}</span>
+        </div>
+      </td>
+      <td>${_solicTipoBadge(v.tipo)}</td>
+      <td style="font-size:12px">${fechas}</td>
+      <td>${dias}</td>
+      <td style="max-width:160px;font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.motivo||''}">
+        ${v.motivo || '—'}
+      </td>
+      <td>${_solicStatusBadge(v.status)}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${solEn}</td>
+      <td>
+        <div class="td-actions">
+          ${v.status === 'en_proceso' ? `
+            <button class="btn btn-success btn-sm btn-icon" title="Aprobar"     onclick="gestionarSolicitud('${v.id}','aprobada')">✅</button>
+            <button class="btn btn-danger  btn-sm btn-icon" title="No aprobar"  onclick="gestionarSolicitud('${v.id}','no_aprobada')">❌</button>
+          ` : ''}
+          <button class="btn btn-secondary btn-sm btn-icon" title="Cambiar estado" onclick="abrirCambioEstadoSolic('${v.id}')">✏️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Gestionar: aprobar / rechazar / en_curso ───────────────────
+async function gestionarSolicitud(id, nuevoStatus) {
+  const nota = document.getElementById(`nota-${id}`)?.value.trim() || '';
+
+  showLoading(true);
+  const updateData = { status: nuevoStatus };
+  if (nota) updateData.aprobado_por = nota; // reutilizamos aprobado_por para la nota
+
+  const { error } = await sb
+    .from('vacaciones')
+    .update(updateData)
+    .eq('id', id);
+  showLoading(false);
+
+  if (error) { toast('Error al actualizar: ' + error.message, 'error'); return; }
+
+  const labels = { aprobada: 'Aprobada ✅', no_aprobada: 'No aprobada ❌', en_proceso: 'En proceso ⏳' };
+  toast(`Solicitud ${labels[nuevoStatus] || nuevoStatus}`, 'success');
+
+  // Invalidar cache de vacaciones también (comparten tabla)
+  Cache.invalidate('vacaciones');
+  Cache.solicitudes = null;
+
+  await renderSolicitudes();
+}
+
+// ── Cambio de estado rápido desde tabla "Todas" ────────────────
+function abrirCambioEstadoSolic(id) {
+  const v = (Cache.solicitudes || []).find(x => x.id === id);
+  if (!v) return;
+
+  // Crear modal inline si no existe
+  let overlay = document.getElementById('modalCambioEstadoSolic');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'modalCambioEstadoSolic';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:360px">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Cambiar estado</span>
+          <button class="modal-close" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="font-weight:600;margin-bottom:12px" id="csNombre"></div>
+          <div class="form-group">
+            <label>Nuevo estado</label>
+            <select id="csStatus">
+            ${Object.entries(SOLIC_STATUS).map(([k,s]) => `<option value="${k}">${s.icon} ${s.label}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group" style="margin-top:12px">
+            <label>Nota para el trabajador (opcional)</label>
+            <textarea id="csNota" rows="3" placeholder="Ej: Aprobado por gerencia. Coordinar con jefe directo..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open')">Cancelar</button>
+          <button class="btn btn-primary" onclick="_confirmarCambioEstado()">💾 Guardar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  document.getElementById('csNombre').textContent = `${v.trabajador_nombre} — ${SOLIC_TIPO_LABEL[v.tipo]?.label || v.tipo}`;
+  document.getElementById('csStatus').value = v.status;
+  document.getElementById('csNota').value   = v.aprobado_por || '';
+  overlay.dataset.solicId = id;
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  overlay.onclick = (e) => {
+    if (e.target === overlay) { overlay.classList.remove('open'); document.body.style.overflow = ''; }
+  };
+}
+
+async function _confirmarCambioEstado() {
+  const overlay = document.getElementById('modalCambioEstadoSolic');
+  const id      = overlay?.dataset.solicId;
+  const status  = document.getElementById('csStatus').value;
+  const nota    = document.getElementById('csNota').value.trim();
+  if (!id) return;
+
+  showLoading(true);
+  const { error } = await sb
+    .from('vacaciones')
+    .update({ status, aprobado_por: nota || null })
+    .eq('id', id);
+  showLoading(false);
+
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+  Cache.invalidate('vacaciones');
+  Cache.solicitudes = null;
+  toast('Estado actualizado ✅', 'success');
+  await renderSolicitudes();
+}
+
+// ── Inicialización: badge al arrancar y navigate override ──────
+(function _initSolicitudes() {
+  // Cargar badge al arrancar
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const { data } = await sb
+        .from('vacaciones')
+        .select('id', { count: 'exact', head: false })
+        .eq('status', 'en_proceso');
+      updateSolicBadge((data || []).length);
+    } catch (_) {}
+  });
+
+  // Suscripción Realtime: actualizar badge cuando llegan nuevas solicitudes del portal
+  sb.channel('solicitudes-realtime')
+    .on('postgres_changes', {
+      event:  '*',
+      schema: 'public',
+      table:  'vacaciones',
+    }, async () => {
+      try {
+        const { data } = await sb
+          .from('vacaciones')
+          .select('id')
+          .eq('status', 'en_proceso');
+        updateSolicBadge((data || []).length);
+        // Si la página solicitudes está activa, refrescar en vivo
+        const page = document.getElementById('page-solicitudes');
+        if (page && page.classList.contains('active')) {
+          Cache.solicitudes = null;
+          await renderSolicitudes();
+        }
+      } catch (_) {}
+    })
+    .subscribe();
+})();

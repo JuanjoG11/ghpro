@@ -299,17 +299,29 @@ const QueryCache = {
   },
 };
 
-// ── Helpers ──────────────────────────────────────────────────────
-// today() usa la fecha LOCAL del dispositivo (no UTC) para evitar desfase en Colombia (UTC-5)
-const today = () => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
+// ── Helpers (Zona horaria Colombia: America/Bogota) ──────────────
+const today = (date = new Date()) => {
+  const d = date instanceof Date ? date : new Date(date);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
 };
-const horaActual = () => new Date().toTimeString().slice(0, 8);
-const fmtHora    = h  => h ? h.slice(0, 5) : '—';
+
+const horaActual = (date = new Date()) => {
+  const d = date instanceof Date ? date : new Date(date);
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(d);
+};
+
+const fmtHora = h => h ? h.slice(0, 5) : '—';
 
 const AVATAR_COLORS = ['#6c63ff','#ff6584','#43e97b','#f7971e','#1e90ff','#ff9f43'];
 const avatarColor   = s => AVATAR_COLORS[(s || '').charCodeAt(0) % AVATAR_COLORS.length];
@@ -331,9 +343,9 @@ function actualizarReloj() {
   const now = new Date();
   const h   = document.getElementById('horaDisplay');
   const f   = document.getElementById('fechaDisplay');
-  if (h) h.textContent = now.toTimeString().slice(0, 5);
+  if (h) h.textContent = horaActual(now).slice(0, 5);
   if (f) {
-    const s = now.toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const s = now.toLocaleDateString('es-CO', { timeZone: 'America/Bogota', weekday:'long', day:'numeric', month:'long', year:'numeric' });
     f.textContent = s.charAt(0).toUpperCase() + s.slice(1);
   }
 }

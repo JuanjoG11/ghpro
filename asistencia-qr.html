@@ -94,10 +94,13 @@
     .recent-flash.salida { background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.4); }
   </style>
   <script>
-    // Auto-agrega ?v=FECHA a la URL para forzar recarga fresca en el TV.
+    // Auto-agrega ?v=FECHA a la URL para forzar recarga fresca en el TV (Hora Colombia).
     // Si ya tiene el parámetro del día de hoy, no hace nada.
     (function() {
-      var hoy = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      var hoy = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Bogota',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(new Date()).replace(/-/g, '');
       var params = new URLSearchParams(location.search);
       if (params.get('v') !== hoy) {
         params.set('v', hoy);
@@ -227,10 +230,21 @@ function tick() {
 }
 
 // Reloj
+function horaActual(date) {
+  var d = (date instanceof Date) ? date : new Date();
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).format(d);
+}
+
 function actualizarReloj() {
   var now   = new Date();
-  var hora  = now.toTimeString().slice(0, 8);
-  var fecha = now.toLocaleDateString('es-CO', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  var hora  = horaActual(now);
+  var fecha = now.toLocaleDateString('es-CO', {
+    timeZone: 'America/Bogota',
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
   var c = document.getElementById('clockDisplay');
   var d = document.getElementById('clockDate');
   if (c) c.textContent = hora;

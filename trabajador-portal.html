@@ -31,8 +31,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       padding: 24px 16px 60px;
+    }
+    @media (min-height: 700px) {
+      body { justify-content: center; }
     }
 
     /* ── Orbs ── */
@@ -133,6 +136,34 @@
     .permiso-fields { display: none; }
     .permiso-fields.show { display: block; }
 
+    /* ── Tipo de solicitud — botones visuales ── */
+    .tipo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .tipo-opcion {
+      padding: 11px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid var(--border);
+      border-radius: var(--rsm);
+      color: var(--ts);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      text-align: left; font-family: inherit;
+    }
+    .tipo-opcion:hover {
+      background: rgba(58,130,200,0.1);
+      border-color: rgba(58,130,200,0.4);
+      color: var(--tp);
+    }
+    .tipo-opcion.selected {
+      background: rgba(58,130,200,0.18);
+      border-color: var(--accent); color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(58,130,200,0.12);
+    }
+    .tipo-opcion[data-value="calamidad"] { grid-column: 1 / -1; }
+
     /* ── Toggle remunerado ── */
     .toggle-row {
       display: flex; align-items: center; gap: 12px;
@@ -200,26 +231,77 @@
 
     /* ── Historial de solicitudes ── */
     .historial-item {
-      padding: 14px 16px;
+      padding: 16px 18px;
       border: 1px solid var(--border);
       border-radius: var(--rsm);
       margin-bottom: 10px;
       background: rgba(255,255,255,0.025);
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .historial-item::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+    }
+    .historial-item.status-en_proceso::before  { background: var(--accent); }
+    .historial-item.status-aprobada::before    { background: var(--success); }
+    .historial-item.status-no_aprobada::before { background: var(--danger); }
+
+    .historial-item.status-aprobada {
+      background: rgba(58,170,128,0.06);
+      border-color: rgba(58,170,128,0.2);
+    }
+    .historial-item.status-no_aprobada {
+      background: rgba(224,85,85,0.06);
+      border-color: rgba(224,85,85,0.2);
     }
     .historial-item:last-child { margin-bottom: 0; }
-    .historial-item:hover { border-color: rgba(255,255,255,0.14); }
+
     .hist-top {
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      margin-bottom: 6px;
+      margin-bottom: 8px; flex-wrap: wrap;
     }
     .hist-tipo {
-      font-size: 13px; font-weight: 700;
+      font-size: 14px; font-weight: 700;
       display: flex; align-items: center; gap: 6px;
     }
-    .hist-fecha { font-size: 12px; color: var(--tm); }
-    .hist-detail { font-size: 12px; color: var(--ts); }
+    .hist-fecha  { font-size: 12px; color: var(--tm); }
+    .hist-detail { font-size: 13px; color: var(--ts); margin-bottom: 4px; }
     .hist-motivo { font-size: 12px; color: var(--ts); margin-top: 4px; font-style: italic; }
+
+    /* Nota del admin */
+    .hist-nota {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.04);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--rsm) var(--rsm) 0;
+      font-size: 12px; color: var(--ts);
+    }
+    .hist-nota.aprobada    { border-left-color: var(--success); }
+    .hist-nota.no_aprobada { border-left-color: var(--danger); }
+
+    /* Banner de notificación de nuevo estado */
+    .estado-banner {
+      display: none;
+      padding: 14px 18px;
+      border-radius: var(--rsm);
+      margin-bottom: 16px;
+      font-size: 14px; font-weight: 600;
+      animation: bannerPop 0.4s ease;
+      align-items: center; gap: 12px;
+    }
+    .estado-banner.show { display: flex; }
+    .estado-banner.aprobada    { background: rgba(58,170,128,0.15); border: 1px solid rgba(58,170,128,0.35); color: var(--success); }
+    .estado-banner.no_aprobada { background: rgba(224,85,85,0.15);  border: 1px solid rgba(224,85,85,0.35);  color: var(--danger); }
+    .estado-banner.en_proceso  { background: rgba(200,124,58,0.15); border: 1px solid rgba(200,124,58,0.35); color: var(--warning); }
+    @keyframes bannerPop {
+      from { transform: translateY(-8px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
 
     /* ── Badges de estado ── */
     .badge {
@@ -227,8 +309,10 @@
       padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
     }
     .badge-solicitada { background: rgba(58,130,200,0.15); color: var(--accent); border: 1px solid rgba(58,130,200,0.3); }
+    .badge-en_proceso { background: rgba(58,130,200,0.15); color: var(--accent); border: 1px solid rgba(58,130,200,0.3); }
     .badge-aprobada   { background: rgba(58,170,128,0.15); color: var(--success); border: 1px solid rgba(58,170,128,0.3); }
     .badge-rechazada  { background: rgba(224,85,85,0.15);  color: var(--danger);  border: 1px solid rgba(224,85,85,0.3); }
+    .badge-no_aprobada{ background: rgba(224,85,85,0.15);  color: var(--danger);  border: 1px solid rgba(224,85,85,0.3); }
     .badge-en_curso   { background: rgba(200,124,58,0.15); color: var(--warning); border: 1px solid rgba(200,124,58,0.3); }
     .badge-finalizada { background: rgba(255,255,255,0.08); color: var(--tm); border: 1px solid var(--border); }
 
@@ -291,12 +375,12 @@
     <div class="section-title">👤 Identificación</div>
     <div class="form-group">
       <label>Número de cédula</label>
-      <input type="number" id="inputCedula" placeholder="Ingresa tu número de cédula"
-        autofocus autocomplete="off"
+      <input type="tel" id="inputCedula" placeholder="Ingresa tu número de cédula"
+        autofocus autocomplete="off" inputmode="numeric" pattern="[0-9]*"
         onkeydown="if(event.key==='Enter') buscarTrabajador()">
     </div>
     <button class="btn btn-primary" id="btnBuscar" onclick="buscarTrabajador()">
-      🔍 Buscar
+      🚀 Entrar
     </button>
   </div>
 
@@ -310,30 +394,46 @@
         <div class="worker-nombre" id="workerNombre">—</div>
         <div class="worker-cargo"  id="workerCargo">—</div>
       </div>
-      <button class="worker-change" onclick="cerrarSesion()">Cambiar</button>
+      <button class="worker-change" onclick="cerrarSesion()">Salir</button>
     </div>
 
     <!-- ══ FORMULARIO DE SOLICITUD ══ -->
     <div class="card">
       <div class="section-title">📝 Nueva Solicitud</div>
 
-      <!-- Tipo de solicitud -->
+      <!-- Tipo de solicitud: Nivel 1 (Vacaciones o Permiso) -->
       <div class="form-group">
-        <label>¿Qué necesitas solicitar? *</label>
-        <select id="solTipo" onchange="onTipoChange()">
-          <option value="">— Selecciona el tipo —</option>
-          <optgroup label="Vacaciones">
-            <option value="vacaciones">🏖️ Vacaciones</option>
-          </optgroup>
-          <optgroup label="Permisos">
-            <option value="permiso">🕐 Permiso</option>
-          </optgroup>
-          <optgroup label="Licencias">
-            <option value="licencia_remunerada">✅ Licencia Remunerada</option>
-            <option value="licencia_no_remunerada">📋 Licencia No Remunerada</option>
-            <option value="calamidad">🚨 Calamidad Doméstica</option>
-          </optgroup>
-        </select>
+        <label>¿Qué deseas solicitar? *</label>
+        <div class="tipo-grid" id="tipoGridPrincipal" style="grid-template-columns:1fr 1fr">
+          <button type="button" class="tipo-opcion tipo-principal" data-value="vacaciones" onclick="seleccionarTipo(this)">
+            🏖️ Vacaciones
+          </button>
+          <button type="button" class="tipo-opcion tipo-principal" data-value="permiso" onclick="seleccionarTipo(this)">
+            🕐 Permiso
+          </button>
+        </div>
+        <input type="hidden" id="solCategoria">
+      </div>
+
+      <!-- Subtipo de permiso (aparece solo cuando se selecciona Permiso) -->
+      <div class="form-group" id="subtipoGroup" style="display:none">
+        <label>Tipo de permiso *</label>
+        <div class="tipo-grid" id="subtipoGrid" style="grid-template-columns:1fr 1fr">
+          <button type="button" class="tipo-opcion subtipo-opcion" data-value="calamidad" onclick="seleccionarSubtipo(this)">
+            🚨 Calamidad
+          </button>
+          <button type="button" class="tipo-opcion subtipo-opcion" data-value="licencia_remunerada" onclick="seleccionarSubtipo(this)">
+            ✅ Lic. Remunerada
+          </button>
+          <button type="button" class="tipo-opcion subtipo-opcion" data-value="licencia_no_remunerada" onclick="seleccionarSubtipo(this)">
+            📋 Lic. No Remunerada
+          </button>
+          <button type="button" class="tipo-opcion subtipo-opcion" data-value="permiso" onclick="seleccionarSubtipo(this)">
+            🕐 Permiso por horas
+          </button>
+        </div>
+        <input type="hidden" id="solTipo">
+    <input type="hidden" id="solSubTipo">
       </div>
 
       <!-- Fechas (siempre visibles) -->
@@ -402,6 +502,18 @@
     <!-- ══ HISTORIAL ══ -->
     <div class="card" id="cardHistorial" style="margin-top:16px">
       <div class="section-title">📋 Mis Solicitudes</div>
+
+      <!-- Banner de cambio de estado en tiempo real -->
+      <div class="estado-banner" id="estadoBanner">
+        <span id="estadoBannerIcon" style="font-size:22px"></span>
+        <div>
+          <div id="estadoBannerTitulo" style="font-weight:700"></div>
+          <div id="estadoBannerDesc" style="font-size:12px;opacity:0.85;margin-top:2px"></div>
+        </div>
+        <button onclick="document.getElementById('estadoBanner').classList.remove('show')"
+          style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;opacity:0.6;color:inherit">✕</button>
+      </div>
+
       <div id="listaHistorial">
         <div class="empty">
           <div class="empty-icon">📋</div>
@@ -547,22 +659,48 @@ function mostrarPanel() {
   const hoy = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
   document.getElementById('solFechaInicio').min = hoy;
   document.getElementById('solFechaFin').min    = hoy;
+
+  // Suscribir realtime para notificar cambios de estado al trabajador
+  suscribirCambiosEstado();
 }
 
 /* ============================================================
    CERRAR SESIÓN (volver al login)
    ============================================================ */
 function cerrarSesion() {
+  // Desuscribir canal realtime
+  if (_realtimeChannel) { sb.removeChannel(_realtimeChannel); _realtimeChannel = null; }
+
   trabajadorActual = null;
   document.getElementById('inputCedula').value       = '';
   document.getElementById('cardLogin').style.display = '';
   document.getElementById('panelPrincipal').style.display = 'none';
+  // Ocultar banner si estaba visible
+  const banner = document.getElementById('estadoBanner');
+  if (banner) banner.classList.remove('show');
   resetFormulario();
 }
 
 /* ============================================================
-   LÓGICA DE TIPO DE SOLICITUD
+   LÓGICA DE TIPO DE SOLICITUD — botones visuales
    ============================================================ */
+function seleccionarTipo(btn) {
+  // Marcar botón activo
+  document.querySelectorAll('.tipo-opcion').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // Sincronizar input oculto
+  document.getElementById('solTipo').value = btn.dataset.value;
+  onTipoChange();
+}
+
+function seleccionarSubtipo(btn) {
+  // Mark active sub‑type button
+  document.querySelectorAll('.subtipo-opcion').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // Store selected sub‑type
+  document.getElementById('solSubTipo').value = btn.dataset.value;
+}
+
 function onTipoChange() {
   const tipo = document.getElementById('solTipo').value;
 
@@ -571,7 +709,15 @@ function onTipoChange() {
   const esPermiso = tipo === 'permiso';
   permisoFields.classList.toggle('show', esPermiso);
 
+  // Clear sub‑tipo when not permiso
+  if (!esPermiso) {
+    document.getElementById('solSubTipo').value = '';
+    document.querySelectorAll('.subtipo-opcion').forEach(b => b.classList.remove('selected'));
+  }
+
   // Motivo obligatorio en: permiso, calamidad, licencias
+  const subtipoGroup = document.getElementById('subtipoGroup');
+  subtipoGroup.style.display = esPermiso ? 'block' : 'none';
   const necesitaMotivo = ['permiso', 'calamidad', 'licencia_remunerada', 'licencia_no_remunerada'].includes(tipo);
   const motivoGroup = document.getElementById('motivoGroup');
   motivoGroup.style.display = necesitaMotivo ? 'block' : 'none';
@@ -643,12 +789,13 @@ async function enviarSolicitud() {
     toast('El motivo es obligatorio para este tipo de solicitud', 'warning'); return;
   }
 
+  const subtipo = document.getElementById('solSubTipo').value;
   const row = {
     trabajador_id:     trabajadorActual.id,
     trabajador_nombre: trabajadorActual.nombre,
     fecha_inicio:      fechaIni,
     fecha_fin:         fechaFinFinal,
-    tipo,
+    tipo: subtipo || tipo,
     status:            'solicitada',
     observaciones:     obs || null,
     motivo:            motivo || null,
@@ -723,44 +870,138 @@ async function cargarHistorial() {
       return;
     }
 
-    lista.innerHTML = data.map(v => {
-      const esPermiso = v.tipo === 'permiso';
-      let detalle = '';
-
-      if (esPermiso) {
-        const horas = (v.hora_inicio && v.hora_fin) ? ` · ${v.hora_inicio.slice(0,5)}–${v.hora_fin.slice(0,5)}` : '';
-        const rem   = v.es_remunerado === true ? ' · Remunerado' : v.es_remunerado === false ? ' · No remunerado' : '';
-        detalle = `📅 ${fmtFecha(v.fecha_inicio)}${horas}${rem}`;
-      } else {
-        const dias = v.dias || calcDias(v.fecha_inicio, v.fecha_fin);
-        detalle = `📅 ${fmtFecha(v.fecha_inicio)} → ${fmtFecha(v.fecha_fin)} · ${dias} día${dias !== 1 ? 's' : ''}`;
-      }
-
-      const motivoHtml = v.motivo
-        ? `<div class="hist-motivo">💬 ${v.motivo}</div>`
-        : '';
-
-      const fechaSolicitud = v.solicitado_en
-        ? new Date(v.solicitado_en).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
-        : v.created_at
-          ? new Date(v.created_at).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
-          : '';
-
-      return `
-        <div class="historial-item">
-          <div class="hist-top">
-            <div class="hist-tipo">${tipoLabel(v.tipo)}</div>
-            ${statusBadge(v.status)}
-          </div>
-          <div class="hist-detail">${detalle}</div>
-          ${motivoHtml}
-          <div class="hist-fecha" style="margin-top:6px">Solicitado: ${fechaSolicitud}</div>
-        </div>`;
-    }).join('');
+    lista.innerHTML = data.map(v => _renderHistorialItem(v)).join('');
 
   } catch (e) {
     lista.innerHTML = `<div class="empty"><div class="empty-text">Error al cargar historial</div></div>`;
   }
+}
+
+function _renderHistorialItem(v) {
+  const TIPO_LABEL = {
+    vacaciones:             '🏖️ Vacaciones',
+    permiso:                '🕐 Permiso',
+    licencia_remunerada:    '✅ Lic. Remunerada',
+    licencia_no_remunerada: '📋 Lic. No Remunerada',
+    calamidad:              '🚨 Calamidad',
+    otro:                   '📄 Otro',
+  };
+  const STATUS_INFO = {
+    en_proceso:  { label: 'En proceso',   cls: 'badge-en_proceso',  icon: '⏳' },
+    aprobada:    { label: 'Aprobada',     cls: 'badge-aprobada',    icon: '✅' },
+    no_aprobada: { label: 'No aprobada',  cls: 'badge-no_aprobada', icon: '❌' },
+  };
+
+  const esPermiso = v.tipo === 'permiso';
+  let detalle = '';
+  if (esPermiso) {
+    const horas = (v.hora_inicio && v.hora_fin) ? ` · ${v.hora_inicio.slice(0,5)}–${v.hora_fin.slice(0,5)}` : '';
+    const rem   = v.es_remunerado === true ? ' · Remunerado' : v.es_remunerado === false ? ' · No remunerado' : '';
+    detalle = `📅 ${fmtFecha(v.fecha_inicio)}${horas}${rem}`;
+  } else {
+    const dias = v.dias || calcDias(v.fecha_inicio, v.fecha_fin);
+    detalle = `📅 ${fmtFecha(v.fecha_inicio)} → ${fmtFecha(v.fecha_fin)} · <strong>${dias} día${dias !== 1 ? 's' : ''}</strong>`;
+  }
+
+  const motivoHtml = v.motivo
+    ? `<div class="hist-motivo">💬 ${v.motivo}</div>`
+    : '';
+
+  // Nota del admin (aprobado_por contiene la nota cuando se gestionó)
+  const notaHtml = v.aprobado_por
+    ? `<div class="hist-nota ${v.status}">📌 <strong>RRHH:</strong> ${v.aprobado_por}</div>`
+    : '';
+
+  const fechaSolicitud = v.solicitado_en || v.created_at
+    ? new Date(v.solicitado_en || v.created_at).toLocaleDateString('es-CO', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      })
+    : '';
+
+  const st = STATUS_INFO[v.status] || { label: v.status, cls: 'badge-solicitada', icon: '•' };
+
+  return `
+    <div class="historial-item status-${v.status}" id="hist-item-${v.id}">
+      <div class="hist-top">
+        <div class="hist-tipo">${TIPO_LABEL[v.tipo] || v.tipo}</div>
+        <span class="badge ${st.cls}">${st.icon} ${st.label}</span>
+      </div>
+      <div class="hist-detail">${detalle}</div>
+      ${motivoHtml}
+      ${notaHtml}
+      <div class="hist-fecha" style="margin-top:8px">Solicitado: ${fechaSolicitud}</div>
+    </div>`;
+}
+
+/* ============================================================
+   REALTIME — escuchar cambios de estado en las solicitudes
+   del trabajador actual para notificarle en vivo
+   ============================================================ */
+let _realtimeChannel = null;
+
+function suscribirCambiosEstado() {
+  if (_realtimeChannel) { sb.removeChannel(_realtimeChannel); }
+
+  _realtimeChannel = sb.channel(`solicitudes-trabajador-${trabajadorActual.id}`)
+    .on('postgres_changes', {
+      event:  'UPDATE',
+      schema: 'public',
+      table:  'vacaciones',
+      filter: `trabajador_id=eq.${trabajadorActual.id}`,
+    }, (payload) => {
+      const v = payload.new;
+      _mostrarBannerEstado(v);
+      // Actualizar la tarjeta específica en el historial sin recargar todo
+      const item = document.getElementById(`hist-item-${v.id}`);
+      if (item) {
+        item.outerHTML = _renderHistorialItem(v);
+      } else {
+        // Si no existe aún (solicitud nueva), recargar todo el historial
+        cargarHistorial();
+      }
+    })
+    .subscribe();
+}
+
+function _mostrarBannerEstado(v) {
+  const CONFIG = {
+    aprobada:    { icon: '🎉', titulo: '¡Tu solicitud fue aprobada!',   cls: 'aprobada'    },
+    no_aprobada: { icon: '❌', titulo: 'Tu solicitud no fue aprobada',  cls: 'rechazada'   },
+    en_proceso:  { icon: '⏳', titulo: 'Tu solicitud está en proceso',  cls: 'en_curso'    },
+  };
+  const cfg = CONFIG[v.status];
+  if (!cfg) return;
+
+  const TIPO = {
+    vacaciones: 'Vacaciones', permiso: 'Permiso',
+    licencia_remunerada: 'Licencia Remunerada',
+    licencia_no_remunerada: 'Licencia No Remunerada',
+    calamidad: 'Calamidad',
+  };
+
+  const banner  = document.getElementById('estadoBanner');
+  const bIcon   = document.getElementById('estadoBannerIcon');
+  const bTitulo = document.getElementById('estadoBannerTitulo');
+  const bDesc   = document.getElementById('estadoBannerDesc');
+  if (!banner) return;
+
+  bIcon.textContent   = cfg.icon;
+  bTitulo.textContent = cfg.titulo;
+  bDesc.textContent   = [
+    TIPO[v.tipo] || v.tipo,
+    v.fecha_inicio ? `· ${fmtFecha(v.fecha_inicio)}` : '',
+    v.aprobado_por ? `· Nota: ${v.aprobado_por}` : '',
+  ].filter(Boolean).join(' ');
+
+  banner.className = `estado-banner show ${cfg.cls}`;
+
+  // Scroll al banner para que el trabajador lo vea
+  banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Ocultar automáticamente después de 12 segundos
+  clearTimeout(banner._timeout);
+  banner._timeout = setTimeout(() => banner.classList.remove('show'), 12000);
 }
 
 /* ============================================================
@@ -768,6 +1009,9 @@ async function cargarHistorial() {
    ============================================================ */
 function resetFormulario() {
   document.getElementById('solTipo').value          = '';
+  document.querySelectorAll('.tipo-opcion').forEach(b => b.classList.remove('selected'));
+  document.getElementById('solSubTipo').value = '';
+  document.querySelectorAll('.subtipo-opcion').forEach(b => b.classList.remove('selected'));
   document.getElementById('solFechaInicio').value   = '';
   document.getElementById('solFechaFin').value      = '';
   document.getElementById('solHoraInicio').value    = '';

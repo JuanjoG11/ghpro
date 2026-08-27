@@ -875,7 +875,7 @@ const Vacaciones = {
       r.total_solicitudes++;
       r.dias_tomados   += (v.dias || 0);
       if (v.status === 'aprobada')                    r.dias_aprobados += (v.dias || 0);
-      if (v.status === 'solicitada' || v.status === 'en_curso') r.pendientes++;
+      if (v.status === 'en_proceso') r.pendientes++;
       if (!r.ultima_fecha || v.fecha_fin > r.ultima_fecha) r.ultima_fecha = v.fecha_fin;
     });
     return Object.values(map).sort((a, b) =>

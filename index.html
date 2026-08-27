@@ -393,6 +393,42 @@
       .tabs { flex-wrap: wrap; }
     }
 
+    /* ===== SOLICITUDES — tarjeta pendiente ===== */
+    .solic-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px;
+      margin-bottom: 12px; transition: all var(--transition);
+      display: flex; gap: 18px; align-items: flex-start;
+    }
+    .solic-card:hover { border-color: rgba(255,255,255,0.15); }
+    .solic-card.solicitada { border-left: 3px solid var(--accent); }
+    .solic-card.aprobada   { border-left: 3px solid var(--success); }
+    .solic-card.rechazada  { border-left: 3px solid var(--danger); }
+    .solic-card.en_curso   { border-left: 3px solid var(--warning); }
+    .solic-avatar {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; text-transform: uppercase;
+    }
+    .solic-body  { flex: 1; min-width: 0; }
+    .solic-top   { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+    .solic-nombre { font-weight: 700; font-size: 15px; }
+    .solic-tipo  { font-size: 13px; color: var(--text-secondary); }
+    .solic-meta  { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .solic-motivo {
+      font-size: 12px; color: var(--text-secondary); font-style: italic;
+      background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px 12px;
+      border-left: 2px solid var(--border); margin-bottom: 10px;
+    }
+    .solic-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .solic-nota-input {
+      width: 100%; margin-top: 8px; padding: 8px 12px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-primary);
+      font-size: 13px; resize: none;
+    }
+    .solic-nota-input:focus { outline: none; border-color: var(--border-glow); }
+
     /* ===== SCROLLBAR ===== */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -457,10 +493,6 @@
         <span class="nav-icon">🏥</span> Incapacidades
         <span class="nav-badge warning" id="incapBadge" style="display:none">0</span>
       </div>
-      <div class="nav-item" data-page="vacaciones">
-        <span class="nav-icon">🏖️</span> Vacaciones
-        <span class="nav-badge warning" id="vacBadge" style="display:none">0</span>
-      </div>
       <div class="nav-item" data-page="examenes">
         <span class="nav-icon">🩺</span> Exámenes Médicos
         <span class="nav-badge warning" id="examBadge" style="display:none">0</span>
@@ -488,6 +520,14 @@
       </div>
       <div class="nav-item" data-page="entregas">
         <span class="nav-icon">📦</span> Entregas
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Gestión</div>
+      <div class="nav-item" data-page="solicitudes">
+        <span class="nav-icon">📨</span> Solicitudes
+        <span class="nav-badge warning" id="solicBadge" style="display:none">0</span>
       </div>
     </div>
 
@@ -934,11 +974,9 @@
               </div>
               <select class="filter-select" id="filterVacStatus" onchange="renderVacaciones()">
                 <option value="">Todos los estados</option>
-                <option value="solicitada">Solicitada</option>
-                <option value="aprobada">Aprobada</option>
-                <option value="rechazada">Rechazada</option>
-                <option value="en_curso">En curso</option>
-                <option value="finalizada">Finalizada</option>
+                <option value="en_proceso">⏳ En proceso</option>
+                <option value="aprobada">✅ Aprobada</option>
+                <option value="no_aprobada">❌ No aprobada</option>
               </select>
               <select class="filter-select" id="filterVacTipo" onchange="renderVacaciones()">
                 <option value="">Todos los tipos</option>
@@ -1027,6 +1065,87 @@
               <div class="empty-state-icon">👥</div>
               <div class="empty-state-text">Sin datos de vacaciones</div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SOLICITUDES ===== -->
+    <div class="page" id="page-solicitudes">
+      <div class="page-header">
+        <div class="page-title">📨 <span>Bandeja de Solicitudes</span></div>
+        <div class="page-subtitle">Aprueba o rechaza permisos, vacaciones y licencias enviadas por los trabajadores</div>
+        <div class="page-actions">
+          <button class="btn btn-secondary" onclick="renderSolicitudes()">🔄 Actualizar</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="solicStats"></div>
+
+      <!-- Filtros -->
+      <div class="search-bar" style="margin-bottom:20px">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="searchSolic"
+            placeholder="Buscar por nombre o tipo..."
+            oninput="renderSolicitudes()">
+        </div>
+        <select class="filter-select" id="filterSolicStatus" onchange="renderSolicitudes()">
+          <option value="">Todos los estados</option>
+          <option value="en_proceso">⏳ En proceso</option>
+          <option value="aprobada">✅ Aprobadas</option>
+          <option value="no_aprobada">❌ No aprobadas</option>
+        </select>
+        <select class="filter-select" id="filterSolicTipo" onchange="renderSolicitudes()">
+          <option value="">Todos los tipos</option>
+          <option value="vacaciones">🏖️ Vacaciones</option>
+          <option value="permiso">🕐 Permiso</option>
+          <option value="licencia_remunerada">✅ Lic. Remunerada</option>
+          <option value="licencia_no_remunerada">📋 Lic. No Remunerada</option>
+          <option value="calamidad">🚨 Calamidad</option>
+        </select>
+      </div>
+
+      <!-- Tabs pendientes / historial -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-solic-pendientes">📥 Pendientes <span id="solicPendCount" style="font-size:11px;opacity:0.8"></span></button>
+        <button class="tab-btn" data-tab="tab-solic-todas">📋 Todas las solicitudes</button>
+      </div>
+
+      <!-- TAB: Pendientes -->
+      <div class="tab-content active" id="tab-solic-pendientes">
+        <div id="listaSolicPendientes"></div>
+        <div id="emptySolicPendientes" class="empty-state" style="display:none">
+          <div class="empty-state-icon">✅</div>
+          <div class="empty-state-text">No hay solicitudes pendientes</div>
+          <div class="empty-state-sub">Todas las solicitudes están gestionadas</div>
+        </div>
+      </div>
+
+      <!-- TAB: Todas -->
+      <div class="tab-content" id="tab-solic-todas">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trabajador</th>
+                  <th>Tipo</th>
+                  <th>Fechas</th>
+                  <th>Días</th>
+                  <th>Motivo</th>
+                  <th>Estado</th>
+                  <th>Solicitado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaSolicTodas"></tbody>
+            </table>
+          </div>
+          <div id="emptySolicTodas" class="empty-state" style="display:none">
+            <div class="empty-state-icon">📨</div>
+            <div class="empty-state-text">No hay solicitudes registradas</div>
           </div>
         </div>
       </div>
@@ -1714,11 +1833,9 @@
         <div class="form-group" style="flex:1">
           <label class="form-label">Estado</label>
           <select class="form-control" id="vacStatus">
-            <option value="solicitada">Solicitada</option>
-            <option value="aprobada">Aprobada</option>
-            <option value="rechazada">Rechazada</option>
-            <option value="en_curso">En curso</option>
-            <option value="finalizada">Finalizada</option>
+            <option value="en_proceso">⏳ En proceso</option>
+            <option value="aprobada">✅ Aprobada</option>
+            <option value="no_aprobada">❌ No aprobada</option>
           </select>
         </div>
         <div class="form-group" style="flex:1">
