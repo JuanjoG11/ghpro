@@ -902,6 +902,16 @@
         </div>
       </div>
 
+      <!-- Link al portal del trabajador -->
+      <a class="vac-portal-link" href="trabajador-portal.html" target="_blank">
+        <div class="vac-portal-icon">📲</div>
+        <div>
+          <div class="vac-portal-title">Portal del Trabajador</div>
+          <div class="vac-portal-sub">Comparte este link para que los trabajadores soliciten vacaciones y permisos directamente</div>
+        </div>
+        <div class="vac-portal-arrow">↗</div>
+      </a>
+
       <!-- Stats -->
       <div class="stats-grid" id="vacStats"></div>
 
@@ -1627,13 +1637,23 @@
 
 <!-- Modal Vacacion -->
 <div class="modal-overlay" id="modalVacacion">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:580px">
     <div class="modal-header">
       <div class="modal-title" id="modalVacTitle">🏖️ Nueva Solicitud</div>
       <button class="modal-close" onclick="closeModal('modalVacacion')">✕</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="vacId">
+
+      <!-- Badge cuando viene del portal del trabajador -->
+      <div id="vacPortalBadge" style="display:none;margin-bottom:14px;
+        padding:10px 14px;background:rgba(58,130,200,0.1);
+        border:1px solid rgba(58,130,200,0.28);border-radius:10px;
+        font-size:12px;color:var(--text-secondary);display:none">
+        📲 Solicitud enviada desde el portal del trabajador
+        <span id="vacPortalFecha" style="color:var(--text-muted);margin-left:6px"></span>
+      </div>
+
       <div class="form-row">
         <div class="form-group" style="flex:1">
           <label class="form-label">Trabajador *</label>
@@ -1641,7 +1661,7 @@
         </div>
         <div class="form-group" style="flex:1">
           <label class="form-label">Tipo *</label>
-          <select class="form-control" id="vacTipo">
+          <select class="form-control" id="vacTipo" onchange="onVacTipoChange()">
             <option value="vacaciones">Vacaciones</option>
             <option value="licencia_remunerada">Licencia Remunerada</option>
             <option value="licencia_no_remunerada">Licencia No Remunerada</option>
@@ -1661,6 +1681,35 @@
           <input type="date" class="form-control" id="vacFin" required>
         </div>
       </div>
+
+      <!-- Campos extra de PERMISO (se muestran cuando tipo=permiso) -->
+      <div id="vacPermisoExtra" style="display:none">
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Hora inicio</label>
+            <input type="time" class="form-control" id="vacHoraInicio">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Hora fin</label>
+            <input type="time" class="form-control" id="vacHoraFin">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">¿Permiso remunerado?</label>
+          <select class="form-control" id="vacRemunerado">
+            <option value="">— Sin especificar —</option>
+            <option value="true">✅ Sí, es remunerado</option>
+            <option value="false">❌ No es remunerado</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Motivo (visible en permiso, calamidad, licencias) -->
+      <div class="form-group" id="vacMotivoGroup" style="display:none">
+        <label class="form-label" id="vacMotivoLabel">Motivo</label>
+        <textarea class="form-control" id="vacMotivo" rows="2" placeholder="Describe el motivo..."></textarea>
+      </div>
+
       <div class="form-row">
         <div class="form-group" style="flex:1">
           <label class="form-label">Estado</label>
@@ -1922,14 +1971,29 @@
     position: relative;
   }
   .prenda-cell.bajo { background: rgba(200,124,58,0.10); }
-  .prenda-stock {
-    display: block;
+  .prenda-stock-input {
+    width: 54px;
+    text-align: center;
     font-size: 15px;
     font-weight: 700;
     color: var(--text-primary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 2px 4px;
     line-height: 1.2;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .prenda-cell.bajo .prenda-stock { color: var(--warning); }
+  .prenda-stock-input::-webkit-outer-spin-button,
+  .prenda-stock-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .prenda-stock-input:focus {
+    outline: none;
+    background: rgba(255,255,255,0.07);
+    border-color: var(--accent);
+  }
+  .prenda-stock-input.bajo { color: var(--warning); }
   .prenda-btns {
     display: flex;
     justify-content: center;
@@ -1969,6 +2033,76 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase.js"></script>
 <script src="app.js"></script>
+
+<!-- Estilos y lógica del portal de trabajadores -->
+<style>
+  /* Link al portal en la página de vacaciones */
+  .vac-portal-link {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 20px;
+    background: rgba(58,130,200,0.07);
+    border: 1px solid rgba(58,130,200,0.22);
+    border-radius: var(--radius);
+    text-decoration: none; color: var(--text-primary);
+    margin-bottom: 22px;
+    transition: all var(--transition);
+  }
+  .vac-portal-link:hover {
+    background: rgba(58,130,200,0.13);
+    border-color: rgba(58,130,200,0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(58,130,200,0.18);
+  }
+  .vac-portal-icon { font-size: 32px; flex-shrink: 0; }
+  .vac-portal-title { font-weight: 700; font-size: 14px; margin-bottom: 3px; }
+  .vac-portal-sub   { font-size: 12px; color: var(--text-muted); }
+  .vac-portal-arrow { margin-left: auto; font-size: 22px; color: var(--accent); opacity: 0.7; flex-shrink: 0; }
+</style>
+
+<script>
+/* ── Toggle campos extra en modal de vacaciones ── */
+function onVacTipoChange() {
+  const tipo = document.getElementById('vacTipo') && document.getElementById('vacTipo').value;
+  if (!tipo) return;
+
+  const extra       = document.getElementById('vacPermisoExtra');
+  const motivoGroup = document.getElementById('vacMotivoGroup');
+  const motivoLabel = document.getElementById('vacMotivoLabel');
+
+  // Campos de hora y remunerado solo para permiso
+  if (extra) extra.style.display = tipo === 'permiso' ? 'block' : 'none';
+
+  // Motivo en permiso, calamidad y licencias
+  const conMotivo = ['permiso', 'calamidad', 'licencia_remunerada', 'licencia_no_remunerada'].includes(tipo);
+  if (motivoGroup) motivoGroup.style.display = conMotivo ? 'block' : 'none';
+  if (motivoLabel) {
+    const etiquetas = {
+      permiso:                'Motivo del permiso',
+      calamidad:              'Describe la calamidad',
+      licencia_remunerada:    'Motivo de la licencia',
+      licencia_no_remunerada: 'Motivo de la licencia',
+    };
+    motivoLabel.textContent = etiquetas[tipo] || 'Motivo';
+  }
+}
+
+/* ── Parche para guardarVacacion: incluir campos nuevos ──
+   Se ejecuta después de que app.js defina guardarVacacion,
+   sobreescribiendo solo la parte de recogida de datos. ── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Espera a que app.js haya cargado y definido guardarVacacion
+  const _orig = window.guardarVacacion;
+  if (!_orig) return; // app.js no carga de forma síncrona, se parchea al invocar
+
+  window.guardarVacacion = async function() {
+    // Inyectar campos nuevos antes de llamar al original
+    // Los campos extra se leen directamente en app.js si se parchea ahí,
+    // o bien se incluyen via observaciones como fallback si app.js no fue modificado.
+    // Ver nota en app.js.
+    return _orig.apply(this, arguments);
+  };
+});
+</script>
 
 </body>
 </html>

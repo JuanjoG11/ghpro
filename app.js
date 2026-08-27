@@ -5,7 +5,14 @@
 'use strict';
 
 // ── Date helpers ───────────────────────────────────────────────
-const today = () => new Date().toISOString().split('T')[0];
+// Usa la fecha LOCAL del dispositivo (no UTC) para evitar desfase en Colombia (UTC-5)
+const today = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+};
 
 const daysUntil = (dateStr) => {
   if (!dateStr) return null;
@@ -1714,20 +1721,43 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
   if (!data.length) { tbody.innerHTML = ''; if (empty) empty.style.display = ''; return; }
   if (empty) empty.style.display = 'none';
 
-  tbody.innerHTML = data.map(v => `
+  tbody.innerHTML = data.map(v => {
+    // Detalle extra para permisos
+    const esPermiso = v.tipo === 'permiso';
+    let detalleExtra = '';
+    if (esPermiso) {
+      const horas = (v.hora_inicio && v.hora_fin)
+        ? `<br><span style="font-size:11px;color:var(--text-muted)">🕐 ${v.hora_inicio.slice(0,5)}–${v.hora_fin.slice(0,5)}</span>`
+        : '';
+      const rem = v.es_remunerado === true
+        ? `<span style="font-size:10px;color:var(--success);margin-left:4px">✅ Rem.</span>`
+        : v.es_remunerado === false
+          ? `<span style="font-size:10px;color:var(--warning);margin-left:4px">❌ No rem.</span>`
+          : '';
+      detalleExtra = horas + rem;
+    }
+    const motivoHtml = v.motivo
+      ? `<br><span style="font-size:11px;color:var(--text-muted);font-style:italic" title="${v.motivo}">💬 ${v.motivo.length > 40 ? v.motivo.slice(0,40)+'…' : v.motivo}</span>`
+      : '';
+    // Ícono si viene del portal
+    const portalIcon = v.solicitado_en
+      ? `<span title="Enviado desde el portal del trabajador" style="font-size:12px;margin-left:4px">📲</span>`
+      : '';
+
+    return `
     <tr>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="avatar" style="background:${avatarColor(v.trabajador_nombre)};width:28px;height:28px;font-size:11px">
             ${(v.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
           </div>
-          <span style="font-weight:600">${v.trabajador_nombre}</span>
+          <span style="font-weight:600">${v.trabajador_nombre}</span>${portalIcon}
         </div>
       </td>
-      <td>${tipoBadgeVac(v.tipo)}</td>
+      <td>${tipoBadgeVac(v.tipo)}${detalleExtra}</td>
       <td>${fmtDate(v.fecha_inicio)}</td>
       <td>${fmtDate(v.fecha_fin)}</td>
-      <td><strong>${v.dias ?? '—'}</strong></td>
+      <td><strong>${v.dias ?? '—'}</strong>${motivoHtml}</td>
       <td>
         <select class="form-control" style="padding:4px 8px;font-size:12px;width:auto"
           onchange="cambiarStatusVac('${v.id}', this.value)">
@@ -1743,7 +1773,8 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
           <button class="btn btn-danger   btn-sm btn-icon" title="Eliminar" onclick="eliminarVacacion('${v.id}')">🗑️</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function _renderResumenVac(resumen) {
@@ -1784,6 +1815,7 @@ async function guardarVacacion() {
   const trabajadorId = document.getElementById('vacTrabajador').value;
   const fechaInicio  = document.getElementById('vacInicio').value;
   const fechaFin     = document.getElementById('vacFin').value;
+  const tipo         = document.getElementById('vacTipo').value;
 
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
   if (!fechaInicio)  return toast('La fecha de inicio es obligatoria', 'error');
@@ -1792,15 +1824,24 @@ async function guardarVacacion() {
 
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
 
+  // Campos extra para permisos
+  const esPermiso = tipo === 'permiso';
+  const remVal    = document.getElementById('vacRemunerado')?.value;
+  const esRemun   = remVal === 'true' ? true : remVal === 'false' ? false : null;
+
   const row = {
     trabajador_id:     trabajadorId,
     trabajador_nombre: trabajador?.nombre || '',
     fecha_inicio:      fechaInicio,
     fecha_fin:         fechaFin,
-    tipo:              document.getElementById('vacTipo').value,
+    tipo,
     status:            document.getElementById('vacStatus').value,
     aprobado_por:      document.getElementById('vacAprobadoPor').value.trim(),
-    observaciones:     document.getElementById('vacObs').value.trim(),
+    observaciones:     document.getElementById('vacObs').value.trim() || null,
+    motivo:            document.getElementById('vacMotivo')?.value.trim() || null,
+    hora_inicio:       esPermiso ? (document.getElementById('vacHoraInicio')?.value || null) : null,
+    hora_fin:          esPermiso ? (document.getElementById('vacHoraFin')?.value    || null) : null,
+    es_remunerado:     esPermiso ? esRemun : null,
   };
 
   showLoading(true);
@@ -1836,7 +1877,32 @@ function editarVacacion(id) {
   document.getElementById('vacStatus').value      = v.status         || 'solicitada';
   document.getElementById('vacAprobadoPor').value = v.aprobado_por   || '';
   document.getElementById('vacObs').value         = v.observaciones  || '';
+
+  // Campos extra de permiso
+  if (document.getElementById('vacMotivo'))      document.getElementById('vacMotivo').value      = v.motivo      || '';
+  if (document.getElementById('vacHoraInicio')) document.getElementById('vacHoraInicio').value  = v.hora_inicio  || '';
+  if (document.getElementById('vacHoraFin'))    document.getElementById('vacHoraFin').value     = v.hora_fin     || '';
+  if (document.getElementById('vacRemunerado')) {
+    const r = v.es_remunerado;
+    document.getElementById('vacRemunerado').value = r === true ? 'true' : r === false ? 'false' : '';
+  }
+
+  // Badge "desde portal"
+  const badge = document.getElementById('vacPortalBadge');
+  if (badge) {
+    if (v.solicitado_en) {
+      badge.style.display = 'block';
+      const fechaStr = new Date(v.solicitado_en).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' });
+      const span = document.getElementById('vacPortalFecha');
+      if (span) span.textContent = `(${fechaStr})`;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
   document.getElementById('modalVacTitle').textContent = '✏️ Editar Solicitud';
+  // Activar toggle de campos extra según tipo
+  if (typeof onVacTipoChange === 'function') onVacTipoChange();
   openModal('modalVacacion');
 }
 
@@ -1860,6 +1926,14 @@ function _resetVacForm() {
   const stat = document.getElementById('vacStatus');     if (stat) stat.value = 'solicitada';
   const ini  = document.getElementById('vacInicio');     if (ini)  ini.value  = '';
   const fin  = document.getElementById('vacFin');        if (fin)  fin.value  = '';
+  // Campos extra de permiso
+  ['vacMotivo','vacHoraInicio','vacHoraFin'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const rem = document.getElementById('vacRemunerado'); if (rem) rem.value = '';
+  const extra = document.getElementById('vacPermisoExtra');    if (extra) extra.style.display = 'none';
+  const mg    = document.getElementById('vacMotivoGroup');     if (mg)    mg.style.display    = 'none';
+  const badge = document.getElementById('vacPortalBadge');     if (badge) badge.style.display  = 'none';
   document.getElementById('modalVacTitle').textContent = '🏖️ Nueva Solicitud';
 }
 
@@ -2545,12 +2619,18 @@ function _renderPrendasTabla(tipo, lista) {
                   if (!row) return `<td class="prenda-cell">—</td>`;
                   const bajo  = row.stock <= row.stock_min;
                   const cls   = bajo ? 'prenda-cell bajo' : 'prenda-cell';
-                  return `<td class="${cls}">
-                    <span class="prenda-stock" id="ps-${row.id}">${row.stock}</span>
+                  return `<td class="${cls}" id="ptd-${row.id}">
+                    <input
+                      type="number" min="0"
+                      class="prenda-stock-input${bajo ? ' bajo' : ''}"
+                      id="ps-${row.id}"
+                      value="${row.stock}"
+                      onchange="prendasSetStock('${row.id}', this.value, this)"
+                      onkeydown="if(event.key==='Enter'){this.blur()}"
+                    >
                     <div class="prenda-btns">
                       <button onclick="prendasAjustar('${row.id}',1)"  title="+ stock">＋</button>
                       <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">－</button>
-                      <button onclick="prendasEditar('${row.id}')"    title="Editar">✏️</button>
                     </div>
                   </td>`;
                 }).join('');
@@ -2583,6 +2663,28 @@ function _renderPrendasTabla(tipo, lista) {
   contenedor.innerHTML = html;
 }
 
+// ── Guardar stock escrito directamente en el input ────────────
+async function prendasSetStock(id, valor, inputEl) {
+  const nuevo = Math.max(0, parseInt(valor) || 0);
+  inputEl.value = nuevo; // corregir si pusieron negativo o letras
+  showLoading(true);
+  const result = await DotacionPrendas.updateStock(id, nuevo);
+  showLoading(false);
+  if (!result) return;
+
+  if (Cache.prendas) {
+    const idx = Cache.prendas.findIndex(r => r.id === id);
+    if (idx > -1) Cache.prendas[idx] = result;
+  }
+
+  const bajo = result.stock <= result.stock_min;
+  inputEl.classList.toggle('bajo', bajo);
+  const td = document.getElementById(`ptd-${id}`);
+  if (td) td.classList.toggle('bajo', bajo);
+
+  _renderPrendasStats(Cache.prendas || []);
+}
+
 // ── Ajuste rápido de stock (+ / −) ────────────────────────────
 async function prendasAjustar(id, delta) {
   showLoading(true);
@@ -2597,13 +2699,13 @@ async function prendasAjustar(id, delta) {
   }
 
   // Actualizar solo la celda sin re-renderizar todo
-  const span = document.getElementById(`ps-${id}`);
-  if (span) {
-    span.textContent = result.stock;
-    const cell = span.closest('td');
-    if (cell) {
-      cell.classList.toggle('bajo', result.stock <= result.stock_min);
-    }
+  const input = document.getElementById(`ps-${id}`);
+  if (input) {
+    input.value = result.stock;
+    const bajo = result.stock <= result.stock_min;
+    input.classList.toggle('bajo', bajo);
+    const td = document.getElementById(`ptd-${id}`);
+    if (td) td.classList.toggle('bajo', bajo);
   }
 
   // Actualizar stats

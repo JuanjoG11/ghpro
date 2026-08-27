@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Trabajador — GH Pro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #080d14;
+      --bg2:      #0c1220;
+      --card:     rgba(255,255,255,0.04);
+      --border:   rgba(255,255,255,0.08);
+      --glow:     rgba(58,130,200,0.45);
+      --accent:   #3a82c8;
+      --accent2:  #c87c3a;
+      --success:  #3aaa80;
+      --danger:   #e05555;
+      --warning:  #c87c3a;
+      --tp:       #e8f0fa;
+      --ts:       #8fa8c8;
+      --tm:       #4a6080;
+      --radius:   16px;
+      --rsm:      10px;
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--tp);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── Orbs ── */
+    .orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb  { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.13; animation: floatOrb 20s infinite ease-in-out; }
+    .o1 { width:500px;height:500px;background:var(--accent);top:-180px;left:-180px; }
+    .o2 { width:350px;height:350px;background:var(--accent2);bottom:-80px;right:-80px;animation-delay:-8s; }
+    @keyframes floatOrb {
+      0%,100% { transform:translate(0,0) scale(1); }
+      33%      { transform:translate(50px,-30px) scale(1.1); }
+      66%      { transform:translate(-30px,50px) scale(0.9); }
+    }
+
+    /* ── Wrapper ── */
+    .wrapper {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 480px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      margin-top: 16px;
+    }
+    .logo-box {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 18px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 30px;
+      box-shadow: 0 6px 24px rgba(58,130,200,0.35);
+      margin-bottom: 16px;
+    }
+    .header h1 { font-size: 24px; font-weight: 800; }
+    .header h1 span { background: linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .header p  { color: var(--ts); font-size: 14px; margin-top: 6px; }
+
+    /* ── Card ── */
+    .card {
+      background: rgba(12,18,32,0.95);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    }
+    .card + .card { margin-top: 16px; }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--ts);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--ts);
+      margin-bottom: 6px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--rsm);
+      color: var(--tp);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--glow);
+      box-shadow: 0 0 0 3px rgba(58,130,200,0.12);
+      background: rgba(255,255,255,0.07);
+    }
+    input::placeholder, textarea::placeholder { color: var(--tm); }
+    select option { background: #12122a; }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Campos de permiso — ocultos por defecto */
+    .permiso-fields { display: none; }
+    .permiso-fields.show { display: block; }
+
+    /* ── Toggle remunerado ── */
+    .toggle-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--rsm);
+    }
+    .toggle-row label { margin: 0; text-transform: none; font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--tp); cursor: pointer; }
+    input[type="checkbox"] {
+      width: 20px; height: 20px; cursor: pointer;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 20px; border-radius: var(--rsm);
+      font-size: 14px; font-weight: 700;
+      cursor: pointer; border: none; transition: all 0.25s;
+      width: 100%;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #2a6aaa);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(58,130,200,0.3);
+    }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(58,130,200,0.45); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--ts);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); color: var(--tp); }
+
+    /* ── Worker badge (after login) ── */
+    .worker-badge {
+      display: none;
+      align-items: center; gap: 14px;
+      padding: 16px 20px;
+      background: rgba(58,130,200,0.1);
+      border: 1px solid rgba(58,130,200,0.28);
+      border-radius: var(--rsm);
+      margin-bottom: 20px;
+    }
+    .worker-badge.show { display: flex; }
+    .worker-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #2a6aaa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .worker-name  { font-size: 15px; font-weight: 700; }
+    .worker-cargo { font-size: 12px; color: var(--ts); margin-top: 2px; }
+    .worker-change {
+      margin-left: auto; font-size: 12px; color: var(--tm);
+      cursor: pointer; text-decoration: underline;
+      background: none; border: none; color: var(--ts);
+      transition: color 0.2s;
+    }
+    .worker-change:hover { color: var(--tp); }
+
+    /* ── Historial de solicitudes ── */
+    .historial-item {
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--rsm);
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.025);
+      transition: border-color 0.2s;
+    }
+    .historial-item:last-child { margin-bottom: 0; }
+    .historial-item:hover { border-color: rgba(255,255,255,0.14); }
+    .hist-top {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      margin-bottom: 6px;
+    }
+    .hist-tipo {
+      font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .hist-fecha { font-size: 12px; color: var(--tm); }
+    .hist-detail { font-size: 12px; color: var(--ts); }
+    .hist-motivo { font-size: 12px; color: var(--ts); margin-top: 4px; font-style: italic; }
+
+    /* ── Badges de estado ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .badge-solicitada { background: rgba(58,130,200,0.15); color: var(--accent); border: 1px solid rgba(58,130,200,0.3); }
+    .badge-aprobada   { background: rgba(58,170,128,0.15); color: var(--success); border: 1px solid rgba(58,170,128,0.3); }
+    .badge-rechazada  { background: rgba(224,85,85,0.15);  color: var(--danger);  border: 1px solid rgba(224,85,85,0.3); }
+    .badge-en_curso   { background: rgba(200,124,58,0.15); color: var(--warning); border: 1px solid rgba(200,124,58,0.3); }
+    .badge-finalizada { background: rgba(255,255,255,0.08); color: var(--tm); border: 1px solid var(--border); }
+
+    /* ── Toast ── */
+    .toast-wrap { position: fixed; bottom: 24px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      background: #1a1a35; border: 1px solid var(--border); border-radius: var(--rsm);
+      padding: 14px 18px; min-width: 260px; max-width: 340px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5); animation: slideIn 0.3s ease;
+    }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast-msg { font-size: 13px; color: var(--ts); flex: 1; }
+    @keyframes slideIn { from { transform: translateX(80px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 32px 16px; color: var(--tm); }
+    .empty-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
+    .empty-text { font-size: 14px; color: var(--ts); }
+
+    /* ── Responsive ── */
+    @media (max-width: 500px) {
+      .card { padding: 22px 16px; }
+      .row2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Orbs de fondo -->
+<div class="orbs">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-box">🏢</div>
+    <h1>Portal <span>Trabajador</span></h1>
+    <p>Solicita tus vacaciones o permisos de forma rápida</p>
+  </div>
+
+  <!-- ══ PASO 1: Identificación ══ -->
+  <div class="card" id="cardLogin">
+    <div class="section-title">👤 Identificación</div>
+    <div class="form-group">
+      <label>Número de cédula</label>
+      <input type="number" id="inputCedula" placeholder="Ingresa tu número de cédula"
+        autofocus autocomplete="off"
+        onkeydown="if(event.key==='Enter') buscarTrabajador()">
+    </div>
+    <button class="btn btn-primary" id="btnBuscar" onclick="buscarTrabajador()">
+      🔍 Buscar
+    </button>
+  </div>
+
+  <!-- ══ PANEL principal (oculto hasta login) ══ -->
+  <div id="panelPrincipal" style="display:none">
+
+    <!-- Badge del trabajador -->
+    <div class="worker-badge show" id="workerBadge" style="margin-top:16px">
+      <div class="worker-avatar" id="workerAvatar">?</div>
+      <div>
+        <div class="worker-nombre" id="workerNombre">—</div>
+        <div class="worker-cargo"  id="workerCargo">—</div>
+      </div>
+      <button class="worker-change" onclick="cerrarSesion()">Cambiar</button>
+    </div>
+
+    <!-- ══ FORMULARIO DE SOLICITUD ══ -->
+    <div class="card">
+      <div class="section-title">📝 Nueva Solicitud</div>
+
+      <!-- Tipo de solicitud -->
+      <div class="form-group">
+        <label>¿Qué necesitas solicitar? *</label>
+        <select id="solTipo" onchange="onTipoChange()">
+          <option value="">— Selecciona el tipo —</option>
+          <optgroup label="Vacaciones">
+            <option value="vacaciones">🏖️ Vacaciones</option>
+          </optgroup>
+          <optgroup label="Permisos">
+            <option value="permiso">🕐 Permiso</option>
+          </optgroup>
+          <optgroup label="Licencias">
+            <option value="licencia_remunerada">✅ Licencia Remunerada</option>
+            <option value="licencia_no_remunerada">📋 Licencia No Remunerada</option>
+            <option value="calamidad">🚨 Calamidad Doméstica</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Fechas (siempre visibles) -->
+      <div class="row2">
+        <div class="form-group">
+          <label id="labelFechaInicio">Fecha de inicio *</label>
+          <input type="date" id="solFechaInicio" oninput="onFechasChange()">
+        </div>
+        <div class="form-group">
+          <label id="labelFechaFin">Fecha de fin *</label>
+          <input type="date" id="solFechaFin" oninput="onFechasChange()">
+        </div>
+      </div>
+
+      <!-- Resumen de días (solo vacaciones/licencias) -->
+      <div id="resumenDias" style="display:none;margin-bottom:16px;
+        padding:10px 14px;background:rgba(58,130,200,0.08);
+        border:1px solid rgba(58,130,200,0.2);border-radius:var(--rsm);
+        font-size:13px;color:var(--ts)">
+        📅 Total: <strong id="textDias" style="color:var(--accent)">0 días</strong>
+      </div>
+
+      <!-- ══ Campos exclusivos de PERMISO ══ -->
+      <div class="permiso-fields" id="permisoFields">
+        <div class="row2">
+          <div class="form-group">
+            <label>Hora de inicio</label>
+            <input type="time" id="solHoraInicio">
+          </div>
+          <div class="form-group">
+            <label>Hora de fin</label>
+            <input type="time" id="solHoraFin">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>¿El permiso es remunerado?</label>
+          <div class="toggle-row">
+            <input type="checkbox" id="solRemunerado">
+            <label for="solRemunerado" style="cursor:pointer">
+              Sí, es un permiso remunerado
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Motivo (visible en permiso, calamidad y licencias) -->
+      <div class="form-group" id="motivoGroup" style="display:none">
+        <label id="labelMotivo">Motivo *</label>
+        <textarea id="solMotivo" rows="3"
+          placeholder="Describe brevemente el motivo de tu solicitud..."></textarea>
+      </div>
+
+      <!-- Observaciones opcionales -->
+      <div class="form-group">
+        <label>Observaciones adicionales</label>
+        <textarea id="solObs" rows="2"
+          placeholder="Cualquier información extra que quieras agregar..."></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="btnEnviar" onclick="enviarSolicitud()">
+        📤 Enviar Solicitud
+      </button>
+    </div>
+
+    <!-- ══ HISTORIAL ══ -->
+    <div class="card" id="cardHistorial" style="margin-top:16px">
+      <div class="section-title">📋 Mis Solicitudes</div>
+      <div id="listaHistorial">
+        <div class="empty">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">Cargando...</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panelPrincipal -->
+
+</div><!-- /wrapper -->
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* ============================================================
+   CONFIGURACIÓN SUPABASE
+   ============================================================ */
+const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ============================================================
+   ESTADO GLOBAL
+   ============================================================ */
+let trabajadorActual = null; // objeto con id, nombre, cedula, cargo
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, tipo = 'info', ms = 3500) {
+  const iconos = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  const el = document.createElement('div');
+  el.className = `toast ${tipo}`;
+  el.innerHTML = `<span>${iconos[tipo] || 'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+function fmtFecha(fecha) {
+  if (!fecha) return '—';
+  const [y, m, d] = fecha.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function calcDias(ini, fin) {
+  if (!ini || !fin) return 0;
+  const d1 = new Date(ini), d2 = new Date(fin);
+  if (d2 < d1) return 0;
+  return Math.round((d2 - d1) / 86400000) + 1;
+}
+
+function tipoLabel(tipo) {
+  const m = {
+    vacaciones:             '🏖️ Vacaciones',
+    permiso:                '🕐 Permiso',
+    licencia_remunerada:    '✅ Lic. Remunerada',
+    licencia_no_remunerada: '📋 Lic. No Remunerada',
+    calamidad:              '🚨 Calamidad',
+    otro:                   '📄 Otro',
+  };
+  return m[tipo] || tipo;
+}
+
+function statusBadge(status) {
+  const labels = {
+    solicitada: 'Solicitada',
+    aprobada:   'Aprobada',
+    rechazada:  'Rechazada',
+    en_curso:   'En curso',
+    finalizada: 'Finalizada',
+  };
+  return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
+}
+
+function setBtn(id, loading) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) btn.innerHTML = `<span class="spinner"></span> Procesando...`;
+}
+
+/* ============================================================
+   PASO 1 — BUSCAR TRABAJADOR POR CÉDULA
+   ============================================================ */
+async function buscarTrabajador() {
+  const cedula = document.getElementById('inputCedula').value.trim();
+  if (!cedula) { toast('Ingresa tu número de cédula', 'warning'); return; }
+
+  setBtn('btnBuscar', true);
+  document.getElementById('btnBuscar').innerHTML = `<span class="spinner"></span> Buscando...`;
+
+  try {
+    const { data, error } = await sb
+      .from('trabajadores')
+      .select('id, nombre, cedula, cargo, ciudad')
+      .eq('cedula', cedula)
+      .eq('estado', 'activo')
+      .single();
+
+    if (error || !data) {
+      toast('Cédula no encontrada. Verifica el número o consulta con RRHH.', 'error', 5000);
+      document.getElementById('btnBuscar').disabled = false;
+      document.getElementById('btnBuscar').innerHTML = '🔍 Buscar';
+      return;
+    }
+
+    trabajadorActual = data;
+    mostrarPanel();
+    cargarHistorial();
+
+  } catch (e) {
+    toast('Error de conexión. Intenta de nuevo.', 'error');
+  } finally {
+    const btn = document.getElementById('btnBuscar');
+    if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Buscar'; }
+  }
+}
+
+/* ============================================================
+   MOSTRAR PANEL PRINCIPAL
+   ============================================================ */
+function mostrarPanel() {
+  const t = trabajadorActual;
+  const iniciales = t.nombre.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+  document.getElementById('workerAvatar').textContent = iniciales;
+  document.getElementById('workerNombre').textContent = t.nombre;
+  document.getElementById('workerCargo').textContent  = `${t.cargo || 'Trabajador'} · ${t.ciudad || ''}`;
+
+  document.getElementById('cardLogin').style.display     = 'none';
+  document.getElementById('panelPrincipal').style.display = 'block';
+
+  // Fecha mínima = hoy (usando fecha local, no UTC, para evitar desfase en Colombia UTC-5)
+  const _d = new Date();
+  const hoy = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+  document.getElementById('solFechaInicio').min = hoy;
+  document.getElementById('solFechaFin').min    = hoy;
+}
+
+/* ============================================================
+   CERRAR SESIÓN (volver al login)
+   ============================================================ */
+function cerrarSesion() {
+  trabajadorActual = null;
+  document.getElementById('inputCedula').value       = '';
+  document.getElementById('cardLogin').style.display = '';
+  document.getElementById('panelPrincipal').style.display = 'none';
+  resetFormulario();
+}
+
+/* ============================================================
+   LÓGICA DE TIPO DE SOLICITUD
+   ============================================================ */
+function onTipoChange() {
+  const tipo = document.getElementById('solTipo').value;
+
+  // Campos de permiso
+  const permisoFields = document.getElementById('permisoFields');
+  const esPermiso = tipo === 'permiso';
+  permisoFields.classList.toggle('show', esPermiso);
+
+  // Motivo obligatorio en: permiso, calamidad, licencias
+  const necesitaMotivo = ['permiso', 'calamidad', 'licencia_remunerada', 'licencia_no_remunerada'].includes(tipo);
+  const motivoGroup = document.getElementById('motivoGroup');
+  motivoGroup.style.display = necesitaMotivo ? 'block' : 'none';
+
+  // Etiqueta del motivo
+  const etiquetas = {
+    permiso:                 'Motivo del permiso *',
+    calamidad:               'Describe la calamidad *',
+    licencia_remunerada:     'Motivo de la licencia *',
+    licencia_no_remunerada:  'Motivo de la licencia *',
+  };
+  document.getElementById('labelMotivo').textContent = etiquetas[tipo] || 'Motivo *';
+
+  // Etiquetas de fecha
+  const esSoloUnDia = tipo === 'permiso';
+  document.getElementById('labelFechaInicio').textContent = esSoloUnDia ? 'Fecha del permiso *' : 'Fecha de inicio *';
+  document.getElementById('labelFechaFin').textContent    = esSoloUnDia ? 'Fecha de fin' : 'Fecha de fin *';
+
+  // Resumen días
+  onFechasChange();
+}
+
+function onFechasChange() {
+  const tipo = document.getElementById('solTipo').value;
+  const ini  = document.getElementById('solFechaInicio').value;
+  const fin  = document.getElementById('solFechaFin').value;
+  const dias = calcDias(ini, fin);
+  const resumen = document.getElementById('resumenDias');
+
+  if (tipo && tipo !== 'permiso' && ini && fin && dias > 0) {
+    resumen.style.display = 'block';
+    document.getElementById('textDias').textContent =
+      dias === 1 ? '1 día' : `${dias} días`;
+  } else {
+    resumen.style.display = 'none';
+  }
+}
+
+/* ============================================================
+   ENVIAR SOLICITUD
+   ============================================================ */
+async function enviarSolicitud() {
+  const tipo      = document.getElementById('solTipo').value;
+  const fechaIni  = document.getElementById('solFechaInicio').value;
+  const fechaFin  = document.getElementById('solFechaFin').value;
+  const motivo    = document.getElementById('solMotivo').value.trim();
+  const obs       = document.getElementById('solObs').value.trim();
+  const horaIni   = document.getElementById('solHoraInicio').value || null;
+  const horaFin   = document.getElementById('solHoraFin').value   || null;
+  const remunerado = document.getElementById('solRemunerado').checked;
+
+  // Validaciones
+  if (!tipo) { toast('Selecciona el tipo de solicitud', 'warning'); return; }
+  if (!fechaIni) { toast('Indica la fecha de inicio', 'warning'); return; }
+
+  // Para tipos que no son permiso, la fecha fin es obligatoria
+  if (tipo !== 'permiso' && !fechaFin) {
+    toast('Indica la fecha de fin', 'warning'); return;
+  }
+  // Si no hay fecha fin en permiso, usar misma fecha
+  const fechaFinFinal = fechaFin || fechaIni;
+
+  if (new Date(fechaFinFinal) < new Date(fechaIni)) {
+    toast('La fecha de fin no puede ser anterior a la de inicio', 'warning'); return;
+  }
+
+  const necesitaMotivo = ['permiso', 'calamidad', 'licencia_remunerada', 'licencia_no_remunerada'].includes(tipo);
+  if (necesitaMotivo && !motivo) {
+    toast('El motivo es obligatorio para este tipo de solicitud', 'warning'); return;
+  }
+
+  const row = {
+    trabajador_id:     trabajadorActual.id,
+    trabajador_nombre: trabajadorActual.nombre,
+    fecha_inicio:      fechaIni,
+    fecha_fin:         fechaFinFinal,
+    tipo,
+    status:            'solicitada',
+    observaciones:     obs || null,
+    motivo:            motivo || null,
+    hora_inicio:       tipo === 'permiso' ? horaIni : null,
+    hora_fin:          tipo === 'permiso' ? horaFin  : null,
+    es_remunerado:     tipo === 'permiso' ? remunerado : null,
+    solicitado_en:     new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('btnEnviar');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Enviando...`;
+
+  try {
+    const { data, error } = await sb
+      .from('vacaciones')
+      .insert([row])
+      .select()
+      .single();
+
+    if (error) {
+      // Si los campos nuevos no existen aún (SQL no ejecutado), reintentar sin ellos
+      if (error.message && error.message.includes('column')) {
+        const rowBasico = {
+          trabajador_id:     row.trabajador_id,
+          trabajador_nombre: row.trabajador_nombre,
+          fecha_inicio:      row.fecha_inicio,
+          fecha_fin:         row.fecha_fin,
+          tipo:              row.tipo,
+          status:            row.status,
+          observaciones:     [obs, motivo ? `Motivo: ${motivo}` : '', horaIni ? `Hora: ${horaIni}–${horaFin || '?'}` : '', tipo === 'permiso' ? (remunerado ? '✅ Remunerado' : '❌ No remunerado') : ''].filter(Boolean).join(' | ') || null,
+        };
+        const { error: e2 } = await sb.from('vacaciones').insert([rowBasico]);
+        if (e2) { toast(`Error al enviar: ${e2.message}`, 'error', 6000); return; }
+      } else {
+        toast(`Error al enviar: ${error.message}`, 'error', 6000);
+        return;
+      }
+    }
+
+    toast('¡Solicitud enviada correctamente! 🎉 RRHH la revisará pronto.', 'success', 5000);
+    resetFormulario();
+    cargarHistorial();
+
+  } catch (e) {
+    toast('Error de conexión. Intenta de nuevo.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📤 Enviar Solicitud';
+  }
+}
+
+/* ============================================================
+   CARGAR HISTORIAL DEL TRABAJADOR
+   ============================================================ */
+async function cargarHistorial() {
+  const lista = document.getElementById('listaHistorial');
+  lista.innerHTML = `<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div>`;
+
+  try {
+    const { data, error } = await sb
+      .from('vacaciones')
+      .select('*')
+      .eq('trabajador_id', trabajadorActual.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) { lista.innerHTML = `<div class="empty"><div class="empty-text">No se pudo cargar el historial</div></div>`; return; }
+
+    if (!data || data.length === 0) {
+      lista.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Aún no tienes solicitudes registradas</div></div>`;
+      return;
+    }
+
+    lista.innerHTML = data.map(v => {
+      const esPermiso = v.tipo === 'permiso';
+      let detalle = '';
+
+      if (esPermiso) {
+        const horas = (v.hora_inicio && v.hora_fin) ? ` · ${v.hora_inicio.slice(0,5)}–${v.hora_fin.slice(0,5)}` : '';
+        const rem   = v.es_remunerado === true ? ' · Remunerado' : v.es_remunerado === false ? ' · No remunerado' : '';
+        detalle = `📅 ${fmtFecha(v.fecha_inicio)}${horas}${rem}`;
+      } else {
+        const dias = v.dias || calcDias(v.fecha_inicio, v.fecha_fin);
+        detalle = `📅 ${fmtFecha(v.fecha_inicio)} → ${fmtFecha(v.fecha_fin)} · ${dias} día${dias !== 1 ? 's' : ''}`;
+      }
+
+      const motivoHtml = v.motivo
+        ? `<div class="hist-motivo">💬 ${v.motivo}</div>`
+        : '';
+
+      const fechaSolicitud = v.solicitado_en
+        ? new Date(v.solicitado_en).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+        : v.created_at
+          ? new Date(v.created_at).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
+          : '';
+
+      return `
+        <div class="historial-item">
+          <div class="hist-top">
+            <div class="hist-tipo">${tipoLabel(v.tipo)}</div>
+            ${statusBadge(v.status)}
+          </div>
+          <div class="hist-detail">${detalle}</div>
+          ${motivoHtml}
+          <div class="hist-fecha" style="margin-top:6px">Solicitado: ${fechaSolicitud}</div>
+        </div>`;
+    }).join('');
+
+  } catch (e) {
+    lista.innerHTML = `<div class="empty"><div class="empty-text">Error al cargar historial</div></div>`;
+  }
+}
+
+/* ============================================================
+   RESET FORMULARIO
+   ============================================================ */
+function resetFormulario() {
+  document.getElementById('solTipo').value          = '';
+  document.getElementById('solFechaInicio').value   = '';
+  document.getElementById('solFechaFin').value      = '';
+  document.getElementById('solHoraInicio').value    = '';
+  document.getElementById('solHoraFin').value       = '';
+  document.getElementById('solMotivo').value        = '';
+  document.getElementById('solObs').value           = '';
+  document.getElementById('solRemunerado').checked  = false;
+  document.getElementById('permisoFields').classList.remove('show');
+  document.getElementById('motivoGroup').style.display  = 'none';
+  document.getElementById('resumenDias').style.display  = 'none';
+}
+</script>
+</body>
+</html>

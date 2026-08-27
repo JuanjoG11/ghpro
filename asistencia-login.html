@@ -300,7 +300,14 @@ const QueryCache = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────
-const today      = () => new Date().toISOString().split('T')[0];
+// today() usa la fecha LOCAL del dispositivo (no UTC) para evitar desfase en Colombia (UTC-5)
+const today = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+};
 const horaActual = () => new Date().toTimeString().slice(0, 8);
 const fmtHora    = h  => h ? h.slice(0, 5) : '—';
 
