@@ -2978,6 +2978,9 @@ function _solicCardHTML(v) {
             onclick="gestionarSolicitud('${v.id}','rechazada')">
             ❌ Rechazar
           </button>
+          <button class="btn btn-secondary btn-sm" onclick="abrirAprobacion('${v.id}')">
+            📋 Formulario
+          </button>
         </div>
       </div>
     </div>`;
@@ -3025,6 +3028,7 @@ function _renderTablaSolicTodas(lista) {
             <button class="btn btn-success btn-sm btn-icon" title="Aprobar"    onclick="abrirAprobacion('${v.id}')">✅</button>
             <button class="btn btn-danger  btn-sm btn-icon" title="Rechazar"   onclick="gestionarSolicitud('${v.id}','rechazada')">❌</button>
           ` : ''}
+          <button class="btn btn-secondary btn-sm btn-icon" title="Ver / Generar PDF" onclick="abrirAprobacion('${v.id}')">📋</button>
           <button class="btn btn-secondary btn-sm btn-icon" title="Cambiar estado" onclick="abrirCambioEstadoSolic('${v.id}')">✏️</button>
         </div>
       </td>
