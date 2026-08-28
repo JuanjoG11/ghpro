@@ -2971,7 +2971,7 @@ function _solicCardHTML(v) {
         ></textarea>
         <div class="solic-actions">
           <button class="btn btn-success btn-sm"
-            onclick="gestionarSolicitud('${v.id}','aprobada')">
+            onclick="abrirAprobacion('${v.id}')">
             ✅ Aprobar
           </button>
           <button class="btn btn-danger btn-sm"
@@ -3022,7 +3022,7 @@ function _renderTablaSolicTodas(lista) {
       <td>
         <div class="td-actions">
           ${['solicitada','en_proceso','en_curso'].includes(v.status) ? `
-            <button class="btn btn-success btn-sm btn-icon" title="Aprobar"    onclick="gestionarSolicitud('${v.id}','aprobada')">✅</button>
+            <button class="btn btn-success btn-sm btn-icon" title="Aprobar"    onclick="abrirAprobacion('${v.id}')">✅</button>
             <button class="btn btn-danger  btn-sm btn-icon" title="Rechazar"   onclick="gestionarSolicitud('${v.id}','rechazada')">❌</button>
           ` : ''}
           <button class="btn btn-secondary btn-sm btn-icon" title="Cambiar estado" onclick="abrirCambioEstadoSolic('${v.id}')">✏️</button>
@@ -3171,3 +3171,161 @@ async function _confirmarCambioEstado() {
     .subscribe();
 })();
 
+
+// ═══════════════════════════════════════════════════════════════
+// APROBACIÓN DE VACACIONES — Formulario oficial
+// ═══════════════════════════════════════════════════════════════
+
+// ── Helpers de formato de fecha ────────────────────────────────
+function _fmtDateInput(d) {
+  // Convierte 'YYYY-MM-DD' o Date a 'YYYY-MM-DD' para input[type=date]
+  if (!d) return '';
+  if (d instanceof Date) {
+    return d.toISOString().split('T')[0];
+  }
+  return String(d).split('T')[0];
+}
+
+function _splitNombre(nombreCompleto) {
+  // Intenta separar nombre(s) y apellido(s) heurísticamente
+  // Asume que los 2 últimos tokens son apellidos
+  const parts = (nombreCompleto || '').trim().split(/\s+/);
+  if (parts.length <= 1) return { nombres: nombreCompleto || '', apellidos: '' };
+  if (parts.length === 2) return { nombres: parts[0], apellidos: parts[1] };
+  // 3+ palabras: últimas 2 como apellidos
+  const apellidos = parts.slice(-2).join(' ');
+  const nombres   = parts.slice(0, -2).join(' ');
+  return { nombres, apellidos };
+}
+
+// ── Abrir modal de aprobación ──────────────────────────────────
+async function abrirAprobacion(id) {
+  // Buscar en cache o cargar
+  let v = (Cache.vacaciones || []).find(x => x.id === id)
+       || (Cache.solicitudes || []).find(x => x.id === id);
+
+  if (!v) {
+    showLoading(true);
+    const { data } = await sb.from('vacaciones').select('*').eq('id', id).single();
+    showLoading(false);
+    if (!data) return toast('No se encontró la solicitud', 'error');
+    v = data;
+  }
+
+  // Buscar datos del trabajador para ciudad y cédula
+  const trabajador = (Cache.trabajadores || []).find(t => t.id === v.trabajador_id) || {};
+
+  // Separar nombre en nombres y apellidos
+  const { nombres, apellidos } = _splitNombre(v.trabajador_nombre);
+
+  // Poblar campos de solo lectura
+  document.getElementById('aprobVacId').value         = v.id;
+  document.getElementById('aprobVacCiudad').textContent   = trabajador.ciudad || '—';
+  document.getElementById('aprobVacNombres').textContent  = nombres  || '—';
+  document.getElementById('aprobVacApellidos').textContent= apellidos || '—';
+  document.getElementById('aprobVacCedula').textContent   = trabajador.cedula || v.cedula || '—';
+  document.getElementById('aprobVacCargo').textContent    = trabajador.cargo  || v.cargo  || '—';
+
+  // Subtitle
+  const VAC_TIPO_MAP = {
+    vacaciones:              'Vacaciones',
+    licencia_remunerada:     'Licencia Remunerada',
+    licencia_no_remunerada:  'Licencia No Remunerada',
+    permiso:                 'Permiso',
+    calamidad:               'Calamidad',
+    otro:                    'Otro',
+  };
+  const sub = document.getElementById('aprobVacSubtitle');
+  if (sub) sub.textContent = VAC_TIPO_MAP[v.tipo] || v.tipo || '';
+
+  // Poblar inputs editables con datos ya guardados o valores por defecto
+  const hoy = _fmtDateInput(new Date());
+
+  document.getElementById('aprobFechaSolicitud').value     = _fmtDateInput(v.fecha_solicitud)   || _fmtDateInput(v.created_at) || hoy;
+  document.getElementById('aprobFechaAprobacion').value    = _fmtDateInput(v.fecha_aprobacion)  || hoy;
+  document.getElementById('aprobDiasSolicitados').value    = v.dias_solicitados ?? v.dias ?? '';
+  document.getElementById('aprobFechaInicio').value        = _fmtDateInput(v.fecha_inicio);
+  document.getElementById('aprobPeriodoInicio').value      = _fmtDateInput(v.periodo_inicio)    || '';
+  document.getElementById('aprobPeriodoFin').value         = _fmtDateInput(v.periodo_fin)       || '';
+  document.getElementById('aprobFirmaColab').value         = v.firma_colaborador || v.trabajador_nombre || '';
+  document.getElementById('aprobDiasDinero').value         = v.dias_dinero ?? 0;
+  document.getElementById('aprobDiasHabAprobados').value   = v.dias_habiles_aprobados ?? v.dias ?? '';
+  document.getElementById('aprobFirmaJefe').value          = v.firma_jefe     || v.aprobado_por || '';
+  document.getElementById('aprobFechaReintegro').value     = _fmtDateInput(v.fecha_reintegro)   || '';
+  document.getElementById('aprobFechaInicioDefinitiva').value = _fmtDateInput(v.fecha_inicio_definitiva) || _fmtDateInput(v.fecha_inicio) || '';
+
+  // Espejo de días hábiles aprobados y fecha reintegro (fila 5)
+  _actualizarEspejos();
+
+  document.getElementById('aprobVacStatus').value = v.status === 'aprobada' ? 'aprobada' : 'aprobada';
+  document.getElementById('aprobVacObs').value    = v.observaciones || '';
+
+  // Listeners para el espejo en tiempo real
+  ['aprobDiasHabAprobados', 'aprobFechaReintegro'].forEach(elId => {
+    const el = document.getElementById(elId);
+    if (el) {
+      el.oninput = _actualizarEspejos;
+      el.onchange = _actualizarEspejos;
+    }
+  });
+
+  openModal('modalAprobarVac');
+}
+
+// ── Actualizar los campos espejo de la fila 5 ─────────────────
+function _actualizarEspejos() {
+  const dias      = document.getElementById('aprobDiasHabAprobados')?.value  || '—';
+  const reintegro = document.getElementById('aprobFechaReintegro')?.value;
+
+  const elDias = document.getElementById('aprobDiasHabAprobadosRepeat');
+  const elRei  = document.getElementById('aprobFechaReintegroRepeat');
+
+  if (elDias) elDias.textContent = dias || '—';
+  if (elRei)  elRei.textContent  = reintegro
+    ? new Date(reintegro + 'T12:00:00').toLocaleDateString('es-CO', { day:'2-digit', month:'2-digit', year:'numeric' })
+    : '—';
+}
+
+// ── Guardar aprobación ─────────────────────────────────────────
+async function guardarAprobacion() {
+  const id = document.getElementById('aprobVacId').value;
+  if (!id) return toast('Error: sin ID de solicitud', 'error');
+
+  const n = (sel) => document.getElementById(sel)?.value || null;
+
+  const row = {
+    status:                   n('aprobVacStatus') || 'aprobada',
+    observaciones:            n('aprobVacObs'),
+    fecha_solicitud:          n('aprobFechaSolicitud'),
+    fecha_aprobacion:         n('aprobFechaAprobacion'),
+    dias_solicitados:         n('aprobDiasSolicitados')    ? parseInt(n('aprobDiasSolicitados'))    : null,
+    fecha_inicio:             n('aprobFechaInicio')         || null,
+    periodo_inicio:           n('aprobPeriodoInicio')       || null,
+    periodo_fin:              n('aprobPeriodoFin')          || null,
+    firma_colaborador:        n('aprobFirmaColab'),
+    dias_dinero:              n('aprobDiasDinero')          ? parseInt(n('aprobDiasDinero'))          : 0,
+    dias_habiles_aprobados:   n('aprobDiasHabAprobados')    ? parseInt(n('aprobDiasHabAprobados'))    : null,
+    firma_jefe:               n('aprobFirmaJefe'),
+    fecha_reintegro:          n('aprobFechaReintegro')      || null,
+    fecha_inicio_definitiva:  n('aprobFechaInicioDefinitiva') || null,
+    aprobado_por:             n('aprobFirmaJefe'),          // también guardamos en aprobado_por
+  };
+
+  // Limpiar nulls para no sobreescribir con nada
+  Object.keys(row).forEach(k => { if (row[k] === null || row[k] === '') delete row[k]; });
+
+  showLoading(true);
+  const result = await Vacaciones.update(id, row);
+  showLoading(false);
+
+  if (!result) return; // Vacaciones.update ya muestra el error
+
+  toast('✅ Aprobación guardada correctamente', 'success', 4000);
+  closeModal('modalAprobarVac');
+  Cache.invalidate('vacaciones');
+  Cache.solicitudes = null;
+  await renderSolicitudes();
+  // Si el módulo de vacaciones está abierto, refrescar también
+  const pageVac = document.getElementById('page-vacaciones');
+  if (pageVac && pageVac.classList.contains('active')) await renderVacaciones();
+}

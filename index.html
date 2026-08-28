@@ -1860,6 +1860,231 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     MODAL APROBACIÓN VACACIONES — Formulario oficial
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalAprobarVac">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header" style="background:linear-gradient(135deg,rgba(58,130,200,0.15),rgba(74,184,160,0.10));border-bottom:1px solid var(--border)">
+      <div>
+        <div class="modal-title">📋 Aprobación de Solicitud</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px" id="aprobVacSubtitle">Vacaciones</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalAprobarVac')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <input type="hidden" id="aprobVacId">
+
+      <!-- ── Documento preview ─────────────────────────────────── -->
+      <div style="padding:20px 24px 0">
+        <div class="aprobvac-doc">
+
+          <!-- Encabezado del documento -->
+          <div class="aprobvac-title">SOLICITUD DE VACACIONES</div>
+
+          <!-- Fila 1: Ciudad | Nombre(s) | Apellido(s) | Identificación -->
+          <div class="aprobvac-grid aprobvac-grid-4">
+            <div class="aprobvac-cell aprobvac-label">Ciudad</div>
+            <div class="aprobvac-cell aprobvac-label">Nombre(s)</div>
+            <div class="aprobvac-cell aprobvac-label">Apellido(s)</div>
+            <div class="aprobvac-cell aprobvac-label">Identificación</div>
+            <div class="aprobvac-cell aprobvac-value" id="aprobVacCiudad">—</div>
+            <div class="aprobvac-cell aprobvac-value" id="aprobVacNombres">—</div>
+            <div class="aprobvac-cell aprobvac-value" id="aprobVacApellidos">—</div>
+            <div class="aprobvac-cell aprobvac-value" id="aprobVacCedula">—</div>
+          </div>
+
+          <!-- Fila 2: Cargo | Fecha solicitud | Fecha aprobación -->
+          <div class="aprobvac-grid" style="grid-template-columns:2fr 1fr 1fr">
+            <div class="aprobvac-cell aprobvac-label">Cargo</div>
+            <div class="aprobvac-cell aprobvac-label">Fecha de solicitud</div>
+            <div class="aprobvac-cell aprobvac-label">Fecha de aprobación</div>
+            <div class="aprobvac-cell aprobvac-value" id="aprobVacCargo">—</div>
+            <div class="aprobvac-cell">
+              <input type="date" class="aprobvac-input" id="aprobFechaSolicitud">
+            </div>
+            <div class="aprobvac-cell">
+              <input type="date" class="aprobvac-input" id="aprobFechaAprobacion">
+            </div>
+          </div>
+
+          <!-- Fila 3: Días hábiles sol. | Fecha inicio vacaciones | Período | Firma Colaborador -->
+          <div class="aprobvac-grid" style="grid-template-columns:100px 1fr 1fr 1fr">
+            <div class="aprobvac-cell aprobvac-label" style="grid-column:1;grid-row:1">Días Hábiles<br>Solicitados</div>
+            <div class="aprobvac-cell aprobvac-label" style="grid-column:2;grid-row:1">Fecha de inicio de vacaciones</div>
+            <div class="aprobvac-cell aprobvac-label" style="grid-column:3;grid-row:1">Período</div>
+            <div class="aprobvac-cell aprobvac-label" style="grid-column:4;grid-row:1">Firma Colaborador</div>
+            <div class="aprobvac-cell" style="grid-column:1;grid-row:2">
+              <input type="number" class="aprobvac-input aprobvac-num" id="aprobDiasSolicitados" min="0" placeholder="0">
+            </div>
+            <div class="aprobvac-cell" style="grid-column:2;grid-row:2">
+              <input type="date" class="aprobvac-input" id="aprobFechaInicio">
+            </div>
+            <div class="aprobvac-cell" style="grid-column:3;grid-row:2;display:flex;gap:4px;align-items:center">
+              <input type="date" class="aprobvac-input" id="aprobPeriodoInicio" style="flex:1">
+              <span style="color:var(--text-muted);font-size:11px">–</span>
+              <input type="date" class="aprobvac-input" id="aprobPeriodoFin" style="flex:1">
+            </div>
+            <div class="aprobvac-cell" style="grid-column:4;grid-row:2">
+              <input type="text" class="aprobvac-input" id="aprobFirmaColab" placeholder="Nombre colaborador">
+            </div>
+          </div>
+
+          <!-- Separador -->
+          <div style="height:1px;background:var(--border);margin:0"></div>
+
+          <!-- Fila 4: Días en dinero | Días aprobados | Firma jefe | Fecha reintegro -->
+          <div class="aprobvac-grid" style="grid-template-columns:120px 120px 1fr 140px">
+            <div class="aprobvac-cell aprobvac-label">Solicitud<br>Días en Dinero</div>
+            <div class="aprobvac-cell aprobvac-label">Días Hábiles<br>Aprobados</div>
+            <div class="aprobvac-cell aprobvac-label">Firma Jefe Inmediato</div>
+            <div class="aprobvac-cell aprobvac-label">Fecha de reintegro</div>
+
+            <div class="aprobvac-cell">
+              <input type="number" class="aprobvac-input aprobvac-num" id="aprobDiasDinero" min="0" placeholder="0">
+            </div>
+            <div class="aprobvac-cell">
+              <input type="number" class="aprobvac-input aprobvac-num" id="aprobDiasHabAprobados" min="0" placeholder="0">
+            </div>
+            <div class="aprobvac-cell">
+              <input type="text" class="aprobvac-input" id="aprobFirmaJefe" placeholder="Nombre jefe inmediato">
+            </div>
+            <div class="aprobvac-cell">
+              <input type="date" class="aprobvac-input" id="aprobFechaReintegro">
+            </div>
+          </div>
+
+          <!-- Fila 5: Fecha inicio definitiva -->
+          <div class="aprobvac-grid" style="grid-template-columns:120px 1fr 1fr 140px">
+            <div class="aprobvac-cell aprobvac-label">Días hábiles<br>Aprobados</div>
+            <div class="aprobvac-cell aprobvac-label">Fecha de inicio definitiva</div>
+            <div class="aprobvac-cell aprobvac-label"></div>
+            <div class="aprobvac-cell aprobvac-label">Fecha de reintegro</div>
+
+            <div class="aprobvac-cell">
+              <span class="aprobvac-value" id="aprobDiasHabAprobadosRepeat">—</span>
+            </div>
+            <div class="aprobvac-cell">
+              <input type="date" class="aprobvac-input" id="aprobFechaInicioDefinitiva">
+            </div>
+            <div class="aprobvac-cell"></div>
+            <div class="aprobvac-cell">
+              <span class="aprobvac-value" id="aprobFechaReintegroRepeat">—</span>
+            </div>
+          </div>
+
+        </div><!-- /aprobvac-doc -->
+      </div>
+
+      <!-- ── Campos extra ───────────────────────────────────────── -->
+      <div style="padding:16px 24px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Estado</label>
+            <select class="form-control" id="aprobVacStatus">
+              <option value="aprobada">✅ Aprobada</option>
+              <option value="no_aprobada">❌ No aprobada</option>
+              <option value="en_proceso">⏳ En proceso</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Observaciones</label>
+            <input type="text" class="form-control" id="aprobVacObs" placeholder="Notas opcionales...">
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-secondary" onclick="closeModal('modalAprobarVac')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarAprobacion()" style="background:linear-gradient(135deg,#3aaa80,#2a8a60);box-shadow:0 4px 15px rgba(58,170,128,0.3)">
+        ✅ Guardar Aprobación
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Estilos del formulario de aprobación -->
+<style>
+.aprobvac-doc {
+  border: 2px solid rgba(58,130,200,0.35);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 12px;
+  background: rgba(255,255,255,0.02);
+}
+.aprobvac-title {
+  text-align: center;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(58,130,200,0.18), rgba(74,184,160,0.12));
+  border-bottom: 1px solid rgba(58,130,200,0.25);
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+.aprobvac-grid {
+  display: grid;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.aprobvac-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.aprobvac-cell {
+  padding: 6px 10px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.aprobvac-cell:last-child { border-right: none; }
+.aprobvac-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-secondary);
+  background: rgba(58,130,200,0.07);
+}
+.aprobvac-value {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.aprobvac-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 8px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.aprobvac-input:focus {
+  outline: none;
+  border-color: rgba(58,130,200,0.6);
+  background: rgba(58,130,200,0.08);
+}
+.aprobvac-num {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.aprobvac-num::-webkit-inner-spin-button,
+.aprobvac-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* Mirror de días y fecha reintegro */
+#aprobDiasHabAprobados, #aprobFechaReintegro {
+  /* cuando cambian, actualizan el espejo de abajo */
+}
+@media (max-width: 600px) {
+  .aprobvac-grid { grid-template-columns: 1fr 1fr !important; }
+  .aprobvac-cell[style*="grid-column"] { grid-column: auto !important; grid-row: auto !important; }
+}
+</style>
+
 <!-- Modal Examen Medico -->
 <div class="modal-overlay" id="modalExamenMedico">
   <div class="modal" style="max-width:620px">
