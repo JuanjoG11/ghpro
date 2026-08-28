@@ -3373,7 +3373,7 @@ function generarPDFVacaciones() {
   const fechaReint   = fmtD(v('aprobFechaReintegro'));
   const fechaIniDef  = fmtD(v('aprobFechaInicioDefinitiva'));
 
-  const logoUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/icon-192.png';
+  const logoUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/logo_tym.png';
 
   const html = `<!DOCTYPE html>
 <html lang="es">
