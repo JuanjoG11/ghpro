@@ -3244,6 +3244,7 @@ async function abrirAprobacion(id) {
   document.getElementById('aprobFechaSolicitud').value     = _fmtDateInput(v.fecha_solicitud)   || _fmtDateInput(v.created_at) || hoy;
   document.getElementById('aprobFechaAprobacion').value    = _fmtDateInput(v.fecha_aprobacion)  || hoy;
   document.getElementById('aprobDiasSolicitados').value    = v.dias_solicitados ?? v.dias ?? '';
+  document.getElementById('aprobDiasCalendario').value     = v.dias_calendario  ?? '';
   document.getElementById('aprobFechaInicio').value        = _fmtDateInput(v.fecha_inicio);
   document.getElementById('aprobPeriodoInicio').value      = _fmtDateInput(v.periodo_inicio)    || '';
   document.getElementById('aprobPeriodoFin').value         = _fmtDateInput(v.periodo_fin)       || '';
@@ -3299,6 +3300,7 @@ async function guardarAprobacion() {
     fecha_solicitud:          n('aprobFechaSolicitud'),
     fecha_aprobacion:         n('aprobFechaAprobacion'),
     dias_solicitados:         n('aprobDiasSolicitados')    ? parseInt(n('aprobDiasSolicitados'))    : null,
+    dias_calendario:          n('aprobDiasCalendario')      ? parseInt(n('aprobDiasCalendario'))      : null,
     fecha_inicio:             n('aprobFechaInicio')         || null,
     periodo_inicio:           n('aprobPeriodoInicio')       || null,
     periodo_fin:              n('aprobPeriodoFin')          || null,
@@ -3328,4 +3330,175 @@ async function guardarAprobacion() {
   // Si el módulo de vacaciones está abierto, refrescar también
   const pageVac = document.getElementById('page-vacaciones');
   if (pageVac && pageVac.classList.contains('active')) await renderVacaciones();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GENERADOR DE PDF — Solicitud de Vacaciones
+// Abre una ventana con HTML/CSS puro y lanza window.print()
+// El usuario elige "Guardar como PDF" en el diálogo del navegador.
+// ═══════════════════════════════════════════════════════════════
+function generarPDFVacaciones() {
+
+  const v  = (id) => document.getElementById(id)?.value?.trim() || '';
+  const tx = (id) => document.getElementById(id)?.textContent?.trim() || '';
+
+  const ciudad    = tx('aprobVacCiudad');
+  const nombres   = tx('aprobVacNombres');
+  const apellidos = tx('aprobVacApellidos');
+  const cedula    = tx('aprobVacCedula');
+  const cargo     = tx('aprobVacCargo');
+  const tipoDoc   = document.getElementById('aprobVacSubtitle')?.textContent?.trim() || 'Vacaciones';
+
+  const fmtD = (val) => {
+    if (!val) return '___________';
+    const d = new Date(val + 'T12:00:00');
+    return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const fechaSolic   = fmtD(v('aprobFechaSolicitud'));
+  const fechaAprob   = fmtD(v('aprobFechaAprobacion'));
+  const diasHabSol   = v('aprobDiasSolicitados')     || '___';
+  const diasCal      = v('aprobDiasCalendario')       || '___';
+  const fechaInicio  = fmtD(v('aprobFechaInicio'));
+  const periodoIni   = fmtD(v('aprobPeriodoInicio'));
+  const periodoFin   = fmtD(v('aprobPeriodoFin'));
+  const firmaColab   = v('aprobFirmaColab')           || '';
+  const diasDinero   = v('aprobDiasDinero')           || '0';
+  const diasHabAprob = v('aprobDiasHabAprobados')     || '___';
+  const firmaJefe    = v('aprobFirmaJefe')            || '';
+  const fechaReint   = fmtD(v('aprobFechaReintegro'));
+  const fechaIniDef  = fmtD(v('aprobFechaInicioDefinitiva'));
+
+  // URL del logo — relativa al sitio desplegado
+  const logoUrl = location.origin + (location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/icon-192.png';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Solicitud de ${tipoDoc} — ${nombres} ${apellidos}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;background:#fff;padding:20px 28px}
+
+  /* ─── Encabezado empresa ─── */
+  .hdr{display:flex;align-items:center;gap:16px;border-bottom:3px solid #1a5c99;padding-bottom:12px;margin-bottom:16px}
+  .hdr img{width:70px;height:70px;object-fit:contain;flex-shrink:0}
+  .hdr-info{flex:1;text-align:center}
+  .hdr-nombre{font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#1a3a5c}
+  .hdr-nit{font-size:11px;font-weight:700;color:#1a5c99;margin-top:3px}
+  .hdr-tipo{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#1a3a5c;margin-top:5px;text-decoration:underline}
+
+  /* ─── Tabla principal ─── */
+  table{width:100%;border-collapse:collapse}
+  th,td{border:1px solid #999;padding:5px 8px;vertical-align:middle}
+  th{background:#cfe2f3;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1a3a5c;text-align:left}
+  td{font-size:11px;font-weight:600;color:#111;min-height:22px}
+  .big{font-size:22px;font-weight:900;text-align:center;color:#1a3a5c;padding:6px}
+  .sep td{background:#e8f4fc;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#1a5c99;border-top:2px solid #1a5c99;padding:4px 8px}
+
+  /* ─── Firmas ─── */
+  .firmas{display:flex;margin-top:28px;border:1px solid #999}
+  .firma{flex:1;padding:10px 14px;border-right:1px solid #999;min-height:85px;display:flex;flex-direction:column;justify-content:space-between}
+  .firma:last-child{border-right:none}
+  .f-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#555;margin-bottom:3px}
+  .f-nombre{font-size:11px;font-weight:700;color:#1a3a5c;min-height:16px}
+  .f-linea{border-bottom:1.5px solid #333;margin-top:30px;margin-bottom:4px}
+  .f-pie{font-size:9px;color:#888;text-align:center}
+
+  /* ─── Pie ─── */
+  .pie{margin-top:14px;font-size:9px;color:#aaa;text-align:center;border-top:1px solid #ddd;padding-top:7px}
+
+  @media print{
+    body{padding:8px 14px}
+    @page{margin:1cm;size:letter portrait}
+  }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
+  <div class="hdr-info">
+    <div class="hdr-nombre">Tiendas y Marcas Eje Cafetero</div>
+    <div class="hdr-nit">NIT 900973929</div>
+    <div class="hdr-tipo">Solicitud de ${tipoDoc}</div>
+  </div>
+</div>
+
+<table>
+  <tr>
+    <th>Ciudad</th><th>Nombre(s)</th><th>Apellido(s)</th><th>Identificación</th>
+  </tr>
+  <tr>
+    <td>${ciudad}</td><td>${nombres}</td><td>${apellidos}</td><td>${cedula}</td>
+  </tr>
+  <tr>
+    <th colspan="2">Cargo</th><th>Fecha de solicitud</th><th>Fecha de aprobación</th>
+  </tr>
+  <tr>
+    <td colspan="2">${cargo}</td><td>${fechaSolic}</td><td>${fechaAprob}</td>
+  </tr>
+  <tr>
+    <th>Días Hábiles<br>Solicitados</th>
+    <th>Días<br>Calendario</th>
+    <th>Fecha inicio de vacaciones</th>
+    <th>Período</th>
+  </tr>
+  <tr>
+    <td class="big">${diasHabSol}</td>
+    <td class="big">${diasCal}</td>
+    <td>${fechaInicio}</td>
+    <td>${periodoIni} &ndash; ${periodoFin}</td>
+  </tr>
+  <tr class="sep"><td colspan="4">Sección de aprobación</td></tr>
+  <tr>
+    <th>Solicitud Días<br>en Dinero</th>
+    <th>Días Hábiles<br>Aprobados</th>
+    <th>Fecha inicio definitiva</th>
+    <th>Fecha de reintegro</th>
+  </tr>
+  <tr>
+    <td class="big">${diasDinero}</td>
+    <td class="big">${diasHabAprob}</td>
+    <td>${fechaIniDef}</td>
+    <td>${fechaReint}</td>
+  </tr>
+</table>
+
+<div class="firmas">
+  <div class="firma">
+    <div class="f-lbl">Firma del colaborador</div>
+    <div class="f-nombre">${firmaColab}</div>
+    <div class="f-linea"></div>
+    <div class="f-pie">Firma y nombre</div>
+  </div>
+  <div class="firma">
+    <div class="f-lbl">Firma del jefe inmediato</div>
+    <div class="f-nombre">${firmaJefe}</div>
+    <div class="f-linea"></div>
+    <div class="f-pie">Firma y nombre</div>
+  </div>
+  <div class="firma">
+    <div class="f-lbl">Gestión Humana</div>
+    <div class="f-nombre"></div>
+    <div class="f-linea"></div>
+    <div class="f-pie">Sello y firma</div>
+  </div>
+</div>
+
+<div class="pie">
+  Documento generado por GH Pro &nbsp;·&nbsp; Tiendas y Marcas Eje Cafetero &nbsp;·&nbsp; NIT 900973929
+</div>
+
+<script>window.onload=function(){window.print()};<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=860,height=700');
+  if (!win) {
+    toast('Permite las ventanas emergentes de este sitio para generar el PDF.', 'warning', 6000);
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
 }

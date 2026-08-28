@@ -7,6 +7,7 @@
 ALTER TABLE vacaciones ADD COLUMN IF NOT EXISTS periodo_inicio          date;
 ALTER TABLE vacaciones ADD COLUMN IF NOT EXISTS periodo_fin             date;
 ALTER TABLE vacaciones ADD COLUMN IF NOT EXISTS dias_solicitados        integer;
+ALTER TABLE vacaciones ADD COLUMN IF NOT EXISTS dias_calendario         integer;
 ALTER TABLE vacaciones ADD COLUMN IF NOT EXISTS dias_dinero             integer DEFAULT 0;
 ALTER TABLE vacaciones ADD COLUMN IF NOT EXISTS dias_habiles_aprobados  integer;
 ALTER TABLE vacaciones ADD COLUMN IF NOT EXISTS fecha_inicio_definitiva date;

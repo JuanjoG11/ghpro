@@ -1864,7 +1864,7 @@
      MODAL APROBACIÓN VACACIONES — Formulario oficial
      ══════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modalAprobarVac">
-  <div class="modal" style="max-width:720px">
+  <div class="modal" style="max-width:740px">
     <div class="modal-header" style="background:linear-gradient(135deg,rgba(58,130,200,0.15),rgba(74,184,160,0.10));border-bottom:1px solid var(--border)">
       <div>
         <div class="modal-title">📋 Aprobación de Solicitud</div>
@@ -1908,24 +1908,29 @@
             </div>
           </div>
 
-          <!-- Fila 3: Días hábiles sol. | Fecha inicio vacaciones | Período | Firma Colaborador -->
-          <div class="aprobvac-grid" style="grid-template-columns:100px 1fr 1fr 1fr">
-            <div class="aprobvac-cell aprobvac-label" style="grid-column:1;grid-row:1">Días Hábiles<br>Solicitados</div>
-            <div class="aprobvac-cell aprobvac-label" style="grid-column:2;grid-row:1">Fecha de inicio de vacaciones</div>
-            <div class="aprobvac-cell aprobvac-label" style="grid-column:3;grid-row:1">Período</div>
-            <div class="aprobvac-cell aprobvac-label" style="grid-column:4;grid-row:1">Firma Colaborador</div>
-            <div class="aprobvac-cell" style="grid-column:1;grid-row:2">
+          <!-- Fila 3: Días hábiles sol. | Días calendario | Fecha inicio | Período | Firma Colaborador -->
+          <div class="aprobvac-grid" style="grid-template-columns:90px 90px 1fr 1fr 1fr">
+            <div class="aprobvac-cell aprobvac-label">Días Hábiles<br>Solicitados</div>
+            <div class="aprobvac-cell aprobvac-label">Días<br>Calendario</div>
+            <div class="aprobvac-cell aprobvac-label">Fecha de inicio de vacaciones</div>
+            <div class="aprobvac-cell aprobvac-label">Período</div>
+            <div class="aprobvac-cell aprobvac-label">Firma Colaborador</div>
+
+            <div class="aprobvac-cell">
               <input type="number" class="aprobvac-input aprobvac-num" id="aprobDiasSolicitados" min="0" placeholder="0">
             </div>
-            <div class="aprobvac-cell" style="grid-column:2;grid-row:2">
+            <div class="aprobvac-cell">
+              <input type="number" class="aprobvac-input aprobvac-num" id="aprobDiasCalendario" min="0" placeholder="0">
+            </div>
+            <div class="aprobvac-cell">
               <input type="date" class="aprobvac-input" id="aprobFechaInicio">
             </div>
-            <div class="aprobvac-cell" style="grid-column:3;grid-row:2;display:flex;gap:4px;align-items:center">
+            <div class="aprobvac-cell" style="display:flex;gap:4px;align-items:center">
               <input type="date" class="aprobvac-input" id="aprobPeriodoInicio" style="flex:1">
               <span style="color:var(--text-muted);font-size:11px">–</span>
               <input type="date" class="aprobvac-input" id="aprobPeriodoFin" style="flex:1">
             </div>
-            <div class="aprobvac-cell" style="grid-column:4;grid-row:2">
+            <div class="aprobvac-cell">
               <input type="text" class="aprobvac-input" id="aprobFirmaColab" placeholder="Nombre colaborador">
             </div>
           </div>
@@ -1933,8 +1938,8 @@
           <!-- Separador -->
           <div style="height:1px;background:var(--border);margin:0"></div>
 
-          <!-- Fila 4: Días en dinero | Días aprobados | Firma jefe | Fecha reintegro -->
-          <div class="aprobvac-grid" style="grid-template-columns:120px 120px 1fr 140px">
+          <!-- Fila 4: Días en dinero | Días hábiles aprobados | Firma jefe | Fecha reintegro -->
+          <div class="aprobvac-grid" style="grid-template-columns:110px 110px 1fr 140px">
             <div class="aprobvac-cell aprobvac-label">Solicitud<br>Días en Dinero</div>
             <div class="aprobvac-cell aprobvac-label">Días Hábiles<br>Aprobados</div>
             <div class="aprobvac-cell aprobvac-label">Firma Jefe Inmediato</div>
@@ -1954,9 +1959,9 @@
             </div>
           </div>
 
-          <!-- Fila 5: Fecha inicio definitiva -->
-          <div class="aprobvac-grid" style="grid-template-columns:120px 1fr 1fr 140px">
-            <div class="aprobvac-cell aprobvac-label">Días hábiles<br>Aprobados</div>
+          <!-- Fila 5: espejo días + fecha inicio definitiva + espejo reintegro -->
+          <div class="aprobvac-grid" style="grid-template-columns:110px 1fr 1fr 140px">
+            <div class="aprobvac-cell aprobvac-label">Días Hábiles<br>Aprobados</div>
             <div class="aprobvac-cell aprobvac-label">Fecha de inicio definitiva</div>
             <div class="aprobvac-cell aprobvac-label"></div>
             <div class="aprobvac-cell aprobvac-label">Fecha de reintegro</div>
@@ -1997,9 +2002,14 @@
     </div><!-- /modal-body -->
     <div class="modal-footer" style="justify-content:space-between">
       <button class="btn btn-secondary" onclick="closeModal('modalAprobarVac')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarAprobacion()" style="background:linear-gradient(135deg,#3aaa80,#2a8a60);box-shadow:0 4px 15px rgba(58,170,128,0.3)">
-        ✅ Guardar Aprobación
-      </button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" onclick="generarPDFVacaciones()" style="border-color:rgba(58,130,200,0.4);color:var(--accent)">
+          🖨️ Generar PDF
+        </button>
+        <button class="btn btn-primary" onclick="guardarAprobacion()" style="background:linear-gradient(135deg,#3aaa80,#2a8a60);box-shadow:0 4px 15px rgba(58,170,128,0.3)">
+          ✅ Guardar Aprobación
+        </button>
+      </div>
     </div>
   </div>
 </div>
