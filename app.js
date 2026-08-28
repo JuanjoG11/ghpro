@@ -3354,27 +3354,26 @@ function generarPDFVacaciones() {
   const tipoDoc   = document.getElementById('aprobVacSubtitle')?.textContent?.trim() || 'Vacaciones';
 
   const fmtD = (val) => {
-    if (!val) return '___________';
+    if (!val) return '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
     const d = new Date(val + 'T12:00:00');
     return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   const fechaSolic   = fmtD(v('aprobFechaSolicitud'));
   const fechaAprob   = fmtD(v('aprobFechaAprobacion'));
-  const diasHabSol   = v('aprobDiasSolicitados')     || '___';
-  const diasCal      = v('aprobDiasCalendario')       || '___';
+  const diasHabSol   = v('aprobDiasSolicitados')     || '&mdash;';
+  const diasCal      = v('aprobDiasCalendario')       || '&mdash;';
   const fechaInicio  = fmtD(v('aprobFechaInicio'));
   const periodoIni   = fmtD(v('aprobPeriodoInicio'));
   const periodoFin   = fmtD(v('aprobPeriodoFin'));
-  const firmaColab   = v('aprobFirmaColab')           || '';
+  const firmaColab   = v('aprobFirmaColab')           || '&nbsp;';
   const diasDinero   = v('aprobDiasDinero')           || '0';
-  const diasHabAprob = v('aprobDiasHabAprobados')     || '___';
-  const firmaJefe    = v('aprobFirmaJefe')            || '';
+  const diasHabAprob = v('aprobDiasHabAprobados')     || '&mdash;';
+  const firmaJefe    = v('aprobFirmaJefe')            || '&nbsp;';
   const fechaReint   = fmtD(v('aprobFechaReintegro'));
   const fechaIniDef  = fmtD(v('aprobFechaInicioDefinitiva'));
 
-  // URL del logo — relativa al sitio desplegado
-  const logoUrl = location.origin + (location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/icon-192.png';
+  const logoUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/icon-192.png';
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -3382,123 +3381,296 @@ function generarPDFVacaciones() {
 <meta charset="UTF-8">
 <title>Solicitud de ${tipoDoc} — ${nombres} ${apellidos}</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;background:#fff;padding:20px 28px}
+  body{
+    font-family:'Inter',Arial,sans-serif;
+    font-size:10.5px;color:#1a1a2e;
+    background:#fff;
+    padding:28px 32px;
+    line-height:1.4;
+  }
 
-  /* ─── Encabezado empresa ─── */
-  .hdr{display:flex;align-items:center;gap:16px;border-bottom:3px solid #1a5c99;padding-bottom:12px;margin-bottom:16px}
-  .hdr img{width:70px;height:70px;object-fit:contain;flex-shrink:0}
-  .hdr-info{flex:1;text-align:center}
-  .hdr-nombre{font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#1a3a5c}
-  .hdr-nit{font-size:11px;font-weight:700;color:#1a5c99;margin-top:3px}
-  .hdr-tipo{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#1a3a5c;margin-top:5px;text-decoration:underline}
+  /* ── Encabezado ── */
+  .hdr{
+    display:flex;align-items:center;
+    background:linear-gradient(135deg,#1a3a5c 0%,#1a5c99 60%,#2a8a6e 100%);
+    border-radius:12px;
+    padding:16px 22px;
+    margin-bottom:20px;
+    gap:18px;
+    color:#fff;
+  }
+  .hdr img{
+    width:64px;height:64px;
+    object-fit:contain;
+    background:#fff;
+    border-radius:10px;
+    padding:4px;
+    flex-shrink:0;
+  }
+  .hdr-centro{flex:1;text-align:center}
+  .hdr-empresa{font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
+  .hdr-nit{font-size:11px;font-weight:500;opacity:.85;margin-bottom:6px}
+  .hdr-doc{
+    display:inline-block;
+    background:rgba(255,255,255,0.2);
+    border:1px solid rgba(255,255,255,0.35);
+    border-radius:20px;
+    padding:4px 16px;
+    font-size:12px;font-weight:700;
+    letter-spacing:1px;text-transform:uppercase;
+  }
+  .hdr-fecha{font-size:10px;opacity:.75;margin-top:4px}
 
-  /* ─── Tabla principal ─── */
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid #999;padding:5px 8px;vertical-align:middle}
-  th{background:#cfe2f3;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1a3a5c;text-align:left}
-  td{font-size:11px;font-weight:600;color:#111;min-height:22px}
-  .big{font-size:22px;font-weight:900;text-align:center;color:#1a3a5c;padding:6px}
-  .sep td{background:#e8f4fc;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#1a5c99;border-top:2px solid #1a5c99;padding:4px 8px}
+  /* ── Secciones ── */
+  .seccion{margin-bottom:14px}
+  .sec-titulo{
+    font-size:9px;font-weight:800;text-transform:uppercase;
+    letter-spacing:1.2px;color:#1a5c99;
+    border-bottom:2px solid #1a5c99;
+    padding-bottom:4px;margin-bottom:10px;
+  }
 
-  /* ─── Firmas ─── */
-  .firmas{display:flex;margin-top:28px;border:1px solid #999}
-  .firma{flex:1;padding:10px 14px;border-right:1px solid #999;min-height:85px;display:flex;flex-direction:column;justify-content:space-between}
-  .firma:last-child{border-right:none}
-  .f-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#555;margin-bottom:3px}
-  .f-nombre{font-size:11px;font-weight:700;color:#1a3a5c;min-height:16px}
-  .f-linea{border-bottom:1.5px solid #333;margin-top:30px;margin-bottom:4px}
-  .f-pie{font-size:9px;color:#888;text-align:center}
+  /* ── Grid de campos ── */
+  .campos{display:grid;gap:8px}
+  .campos-4{grid-template-columns:repeat(4,1fr)}
+  .campos-3{grid-template-columns:2fr 1fr 1fr}
+  .campos-2{grid-template-columns:1fr 1fr}
+  .campo{
+    background:#f4f8fc;
+    border:1px solid #d0e4f4;
+    border-radius:8px;
+    padding:8px 12px;
+  }
+  .campo-lbl{
+    font-size:8.5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.7px;
+    color:#6b8aaa;margin-bottom:3px;
+  }
+  .campo-val{
+    font-size:12px;font-weight:700;color:#1a1a2e;
+    min-height:16px;
+  }
+  .campo-val.big{
+    font-size:26px;font-weight:900;color:#1a5c99;
+    text-align:center;line-height:1;
+  }
+  .campo-val.big-green{
+    font-size:26px;font-weight:900;color:#2a7a5c;
+    text-align:center;line-height:1;
+  }
+  .campo.accent{
+    background:linear-gradient(135deg,#eaf4ff,#e0f2f7);
+    border-color:#1a5c99;
+  }
+  .campo.accent-green{
+    background:linear-gradient(135deg,#e8f8f0,#e0f7f2);
+    border-color:#2a7a5c;
+  }
 
-  /* ─── Pie ─── */
-  .pie{margin-top:14px;font-size:9px;color:#aaa;text-align:center;border-top:1px solid #ddd;padding-top:7px}
+  /* ── Separador de sección aprobación ── */
+  .sep-aprob{
+    background:linear-gradient(90deg,#1a5c99,#2a7a5c);
+    color:#fff;font-size:9px;font-weight:800;
+    text-transform:uppercase;letter-spacing:1.2px;
+    padding:6px 14px;border-radius:6px;
+    margin:16px 0 12px;
+    display:flex;align-items:center;gap:8px;
+  }
+
+  /* ── Firmas ── */
+  .firmas{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+  .firma-card{
+    border:1px solid #d0e4f4;
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .firma-header{
+    background:linear-gradient(135deg,#1a3a5c,#1a5c99);
+    color:#fff;font-size:9px;font-weight:800;
+    text-transform:uppercase;letter-spacing:.8px;
+    padding:7px 12px;
+  }
+  .firma-body{
+    padding:10px 12px;
+    min-height:75px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    background:#fafcff;
+  }
+  .firma-nombre{
+    font-size:11px;font-weight:700;color:#1a1a2e;min-height:16px;
+  }
+  .firma-linea{
+    border-bottom:1.5px solid #b0c8e4;
+    margin:20px 0 6px;
+  }
+  .firma-pie{
+    font-size:8.5px;color:#8aa0bc;text-align:center;
+  }
+
+  /* ── Pie de página ── */
+  .doc-pie{
+    margin-top:20px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid #d0e4f4;
+    padding-top:10px;
+    font-size:9px;color:#8aa0bc;
+  }
+  .doc-pie-logo{width:22px;height:22px;object-fit:contain;opacity:.4}
+  .doc-numero{
+    font-size:9px;color:#8aa0bc;
+  }
 
   @media print{
-    body{padding:8px 14px}
-    @page{margin:1cm;size:letter portrait}
+    body{padding:10px 14px}
+    @page{margin:.8cm;size:letter portrait}
   }
 </style>
 </head>
 <body>
 
+<!-- ── Encabezado empresa ── -->
 <div class="hdr">
   <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
-  <div class="hdr-info">
-    <div class="hdr-nombre">Tiendas y Marcas Eje Cafetero</div>
-    <div class="hdr-nit">NIT 900973929</div>
-    <div class="hdr-tipo">Solicitud de ${tipoDoc}</div>
+  <div class="hdr-centro">
+    <div class="hdr-empresa">Tiendas y Marcas Eje Cafetero</div>
+    <div class="hdr-nit">NIT 900.973.929-0</div>
+    <div class="hdr-doc">Solicitud de ${tipoDoc}</div>
   </div>
 </div>
 
-<table>
-  <tr>
-    <th>Ciudad</th><th>Nombre(s)</th><th>Apellido(s)</th><th>Identificación</th>
-  </tr>
-  <tr>
-    <td>${ciudad}</td><td>${nombres}</td><td>${apellidos}</td><td>${cedula}</td>
-  </tr>
-  <tr>
-    <th colspan="2">Cargo</th><th>Fecha de solicitud</th><th>Fecha de aprobación</th>
-  </tr>
-  <tr>
-    <td colspan="2">${cargo}</td><td>${fechaSolic}</td><td>${fechaAprob}</td>
-  </tr>
-  <tr>
-    <th>Días Hábiles<br>Solicitados</th>
-    <th>Días<br>Calendario</th>
-    <th>Fecha inicio de vacaciones</th>
-    <th>Período</th>
-  </tr>
-  <tr>
-    <td class="big">${diasHabSol}</td>
-    <td class="big">${diasCal}</td>
-    <td>${fechaInicio}</td>
-    <td>${periodoIni} &ndash; ${periodoFin}</td>
-  </tr>
-  <tr class="sep"><td colspan="4">Sección de aprobación</td></tr>
-  <tr>
-    <th>Solicitud Días<br>en Dinero</th>
-    <th>Días Hábiles<br>Aprobados</th>
-    <th>Fecha inicio definitiva</th>
-    <th>Fecha de reintegro</th>
-  </tr>
-  <tr>
-    <td class="big">${diasDinero}</td>
-    <td class="big">${diasHabAprob}</td>
-    <td>${fechaIniDef}</td>
-    <td>${fechaReint}</td>
-  </tr>
-</table>
+<!-- ── Datos del colaborador ── -->
+<div class="seccion">
+  <div class="sec-titulo">👤 Datos del colaborador</div>
+  <div class="campos campos-4">
+    <div class="campo">
+      <div class="campo-lbl">Ciudad</div>
+      <div class="campo-val">${ciudad}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Nombre(s)</div>
+      <div class="campo-val">${nombres}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Apellido(s)</div>
+      <div class="campo-val">${apellidos}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Identificación</div>
+      <div class="campo-val">${cedula}</div>
+    </div>
+  </div>
+  <div class="campos campos-3" style="margin-top:8px">
+    <div class="campo">
+      <div class="campo-lbl">Cargo</div>
+      <div class="campo-val">${cargo}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Fecha de solicitud</div>
+      <div class="campo-val">${fechaSolic}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Fecha de aprobación</div>
+      <div class="campo-val">${fechaAprob}</div>
+    </div>
+  </div>
+</div>
 
+<!-- ── Solicitud ── -->
+<div class="seccion">
+  <div class="sec-titulo">📅 Solicitud de vacaciones</div>
+  <div class="campos" style="grid-template-columns:90px 90px 1fr 1fr">
+    <div class="campo accent">
+      <div class="campo-lbl">Días hábiles solicitados</div>
+      <div class="campo-val big">${diasHabSol}</div>
+    </div>
+    <div class="campo accent">
+      <div class="campo-lbl">Días calendario</div>
+      <div class="campo-val big">${diasCal}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Fecha inicio de vacaciones</div>
+      <div class="campo-val">${fechaInicio}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Período</div>
+      <div class="campo-val">${periodoIni} &ndash; ${periodoFin}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Aprobación ── -->
+<div class="sep-aprob">
+  <span>✅</span> Sección de aprobación
+</div>
+
+<div class="seccion">
+  <div class="campos" style="grid-template-columns:100px 110px 1fr 140px">
+    <div class="campo">
+      <div class="campo-lbl">Solicitud días en dinero</div>
+      <div class="campo-val big" style="font-size:22px">${diasDinero}</div>
+    </div>
+    <div class="campo accent-green">
+      <div class="campo-lbl">Días hábiles aprobados</div>
+      <div class="campo-val big-green">${diasHabAprob}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Fecha de inicio definitiva</div>
+      <div class="campo-val">${fechaIniDef}</div>
+    </div>
+    <div class="campo">
+      <div class="campo-lbl">Fecha de reintegro</div>
+      <div class="campo-val">${fechaReint}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Firmas ── -->
 <div class="firmas">
-  <div class="firma">
-    <div class="f-lbl">Firma del colaborador</div>
-    <div class="f-nombre">${firmaColab}</div>
-    <div class="f-linea"></div>
-    <div class="f-pie">Firma y nombre</div>
+  <div class="firma-card">
+    <div class="firma-header">✍️ Firma del colaborador</div>
+    <div class="firma-body">
+      <div class="firma-nombre">${firmaColab}</div>
+      <div>
+        <div class="firma-linea"></div>
+        <div class="firma-pie">Firma y nombre</div>
+      </div>
+    </div>
   </div>
-  <div class="firma">
-    <div class="f-lbl">Firma del jefe inmediato</div>
-    <div class="f-nombre">${firmaJefe}</div>
-    <div class="f-linea"></div>
-    <div class="f-pie">Firma y nombre</div>
+  <div class="firma-card">
+    <div class="firma-header">✍️ Firma del jefe inmediato</div>
+    <div class="firma-body">
+      <div class="firma-nombre">${firmaJefe}</div>
+      <div>
+        <div class="firma-linea"></div>
+        <div class="firma-pie">Firma y nombre</div>
+      </div>
+    </div>
   </div>
-  <div class="firma">
-    <div class="f-lbl">Gestión Humana</div>
-    <div class="f-nombre"></div>
-    <div class="f-linea"></div>
-    <div class="f-pie">Sello y firma</div>
+  <div class="firma-card">
+    <div class="firma-header">🏢 Gestión Humana</div>
+    <div class="firma-body">
+      <div class="firma-nombre">&nbsp;</div>
+      <div>
+        <div class="firma-linea"></div>
+        <div class="firma-pie">Sello y firma</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="pie">
-  Documento generado por GH Pro &nbsp;·&nbsp; Tiendas y Marcas Eje Cafetero &nbsp;·&nbsp; NIT 900973929
+<!-- ── Pie ── -->
+<div class="doc-pie">
+  <img class="doc-pie-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
+  <span>Tiendas y Marcas Eje Cafetero &nbsp;·&nbsp; NIT 900.973.929-0 &nbsp;·&nbsp; Documento generado por GH Pro</span>
+  <span class="doc-numero">Fecha impresión: ${new Date().toLocaleDateString('es-CO')}</span>
 </div>
 
 <script>window.onload=function(){window.print()};<\/script>
 </body></html>`;
 
-  const win = window.open('', '_blank', 'width=860,height=700');
+  const win = window.open('', '_blank', 'width=900,height=720');
   if (!win) {
     toast('Permite las ventanas emergentes de este sitio para generar el PDF.', 'warning', 6000);
     return;
