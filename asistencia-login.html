@@ -229,8 +229,8 @@
     <!-- Toggle Entrada / Salida almuerzo / Regreso almuerzo / Salida -->
     <div class="tipo-toggle">
       <button class="tipo-btn active-entrada"  id="btnEntrada"         onclick="setTipo('entrada')">🟢 Entrada</button>
-      <button class="tipo-btn"                 id="btnSalidaAlmuerzo"  onclick="setTipo('salida_almuerzo')">🟠 Sal. Almuerzo</button>
-      <button class="tipo-btn"                 id="btnRegresoAlmuerzo" onclick="setTipo('regreso_almuerzo')">🔵 Reg. Almuerzo</button>
+      <button class="tipo-btn"                 id="btnSalidaAlmuerzo"  onclick="setTipo('salida_almuerzo')"  style="display:none">🟠 Sal. Almuerzo</button>
+      <button class="tipo-btn"                 id="btnRegresoAlmuerzo" onclick="setTipo('regreso_almuerzo')" style="display:none">🔵 Reg. Almuerzo</button>
       <button class="tipo-btn"                 id="btnSalida"          onclick="setTipo('salida')">🔴 Salida</button>
     </div>
 
@@ -539,6 +539,13 @@ const TIPO_EMOJI = {
   salida:           '🔴',
 };
 
+// ── Cargos que tienen botones de almuerzo ────────────────────────
+const CARGOS_ALMUERZO = ['administrativo', 'coordinador comercial', 'coordinadora comercial'];
+
+function tieneAlmuerzo(cargo) {
+  return CARGOS_ALMUERZO.includes((cargo || '').toLowerCase().trim());
+}
+
 // ── Toggle tipo ──────────────────────────────────────────────────
 async function setTipo(tipo) {
   State.tipo = tipo;
@@ -641,6 +648,11 @@ async function onCedula(val) {
     State.trabajador = null;
     btn.disabled     = true;
     btn.innerHTML    = '✅ Registrar Asistencia';
+    // Ocultar botones de almuerzo hasta que se conozca el cargo
+    const btnSA = document.getElementById('btnSalidaAlmuerzo');
+    const btnRA = document.getElementById('btnRegresoAlmuerzo');
+    if (btnSA) btnSA.style.display = 'none';
+    if (btnRA) btnRA.style.display = 'none';
     return;
   }
 
@@ -650,6 +662,18 @@ async function onCedula(val) {
     document.getElementById('tAvatar').style.background = avatarColor(t.nombre);
     document.getElementById('tAvatar').textContent      = t.nombre.charAt(0).toUpperCase();
     document.getElementById('tNombre').textContent      = t.nombre;
+
+    // Mostrar u ocultar botones de almuerzo según el cargo del trabajador
+    const conAlmuerzo = tieneAlmuerzo(t.cargo);
+    const btnSA = document.getElementById('btnSalidaAlmuerzo');
+    const btnRA = document.getElementById('btnRegresoAlmuerzo');
+    if (btnSA) btnSA.style.display = conAlmuerzo ? '' : 'none';
+    if (btnRA) btnRA.style.display = conAlmuerzo ? '' : 'none';
+
+    // Si el tipo actual es de almuerzo pero el cargo no lo permite, resetear a entrada
+    if (!conAlmuerzo && (State.tipo === 'salida_almuerzo' || State.tipo === 'regreso_almuerzo')) {
+      State.tipo = 'entrada';
+    }
 
     // Consultar registros de hoy para este trabajador (con cache 10s)
     const cacheKeyCedula = `cedula_${cedula}_${today()}`;
@@ -841,6 +865,11 @@ function resetearFormulario() {
   document.getElementById('btnContinuar').disabled    = true;
   document.getElementById('btnContinuar').innerHTML   = '✅ Registrar Asistencia';
   State.trabajador = null;
+  // Ocultar botones de almuerzo al resetear
+  const btnSA = document.getElementById('btnSalidaAlmuerzo');
+  const btnRA = document.getElementById('btnRegresoAlmuerzo');
+  if (btnSA) btnSA.style.display = 'none';
+  if (btnRA) btnRA.style.display = 'none';
   setTipo('entrada');
   setTimeout(() => document.getElementById('cedulaInput').focus(), 300);
 }
