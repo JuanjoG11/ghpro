@@ -542,16 +542,16 @@ const TIPO_EMOJI = {
 // ── Toggle tipo ──────────────────────────────────────────────────
 async function setTipo(tipo) {
   State.tipo = tipo;
-  const ids = {
-    entrada:          'btnEntrada',
-    salida_almuerzo:  'btnSalidaAlmuerzo',
-    regreso_almuerzo: 'btnRegresoAlmuerzo',
-    salida:           'btnSalida',
-  };
-  // Quitar active de todos y poner en el seleccionado
-  Object.entries(ids).forEach(([t, id]) => {
+  // Mapa: valor interno → id del botón → clase CSS activa
+  const btns = [
+    { tipo: 'entrada',          id: 'btnEntrada',         cls: 'active-entrada'         },
+    { tipo: 'salida_almuerzo',  id: 'btnSalidaAlmuerzo',  cls: 'active-salida-almuerzo' },
+    { tipo: 'regreso_almuerzo', id: 'btnRegresoAlmuerzo', cls: 'active-regreso-almuerzo'},
+    { tipo: 'salida',           id: 'btnSalida',          cls: 'active-salida'          },
+  ];
+  btns.forEach(({ tipo: t, id, cls }) => {
     const el = document.getElementById(id);
-    if (el) el.className = 'tipo-btn' + (t === tipo ? ` active-${tipo}` : '');
+    if (el) el.className = 'tipo-btn' + (t === tipo ? ' ' + cls : '');
   });
 
   if (State.trabajador) {
