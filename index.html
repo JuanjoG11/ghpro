@@ -1228,6 +1228,8 @@
                  color:var(--text-primary);padding:6px 10px;font-size:13px">
           <option value="">Todos</option>
           <option value="entrada">Entradas</option>
+          <option value="salida_almuerzo">Salida Almuerzo</option>
+          <option value="regreso_almuerzo">Regreso Almuerzo</option>
           <option value="salida">Salidas</option>
         </select>
       </div>
@@ -1999,8 +2001,10 @@
   .asist-log-tipo {
     font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 600;
   }
-  .asist-log-tipo.entrada { background: rgba(67,233,123,0.15); color: var(--accent3); }
-  .asist-log-tipo.salida  { background: rgba(255,71,87,0.15);  color: var(--danger); }
+  .asist-log-tipo.entrada          { background: rgba(67,233,123,0.15);  color: var(--accent3); }
+  .asist-log-tipo.salida           { background: rgba(255,71,87,0.15);   color: var(--danger); }
+  .asist-log-tipo.salida_almuerzo  { background: rgba(247,151,30,0.15);  color: #f7971e; }
+  .asist-log-tipo.regreso_almuerzo { background: rgba(30,144,255,0.15);  color: #1e90ff; }
   .asist-log-nombre { font-size: 13px; color: var(--text-primary); flex: 1; min-width: 120px; }
   .asist-log-metodo { font-size: 11px; color: var(--text-muted); }
   @media (max-width: 600px) {

@@ -78,15 +78,22 @@
       padding: 12px; border-radius: var(--radius-sm);
       border: 2px solid var(--border);
       background: none; color: var(--muted);
-      font-size: 14px; font-weight: 700; cursor: pointer;
+      font-size: 13px; font-weight: 700; cursor: pointer;
       transition: all var(--transition);
       display: flex; align-items: center; justify-content: center; gap: 6px;
+      line-height: 1.2;
     }
     .tipo-btn.active-entrada {
       border-color: var(--accent3); background: rgba(67,233,123,0.12); color: var(--accent3);
     }
     .tipo-btn.active-salida {
       border-color: var(--danger); background: rgba(255,71,87,0.12); color: var(--danger);
+    }
+    .tipo-btn.active-salida-almuerzo {
+      border-color: #f7971e; background: rgba(247,151,30,0.12); color: #f7971e;
+    }
+    .tipo-btn.active-regreso-almuerzo {
+      border-color: #1e90ff; background: rgba(30,144,255,0.12); color: #1e90ff;
     }
 
     /* Cédula input */
@@ -192,8 +199,10 @@
     .rec-tipo {
       font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 700; flex-shrink: 0;
     }
-    .rec-tipo.entrada { background: rgba(67,233,123,0.15); color: var(--accent3); }
-    .rec-tipo.salida  { background: rgba(255,71,87,0.15);  color: var(--danger); }
+    .rec-tipo.entrada          { background: rgba(67,233,123,0.15);  color: var(--accent3); }
+    .rec-tipo.salida           { background: rgba(255,71,87,0.15);   color: var(--danger); }
+    .rec-tipo.salida_almuerzo  { background: rgba(247,151,30,0.15);  color: #f7971e; }
+    .rec-tipo.regreso_almuerzo { background: rgba(30,144,255,0.15);  color: #1e90ff; }
     .rec-hora { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 40px; }
     .rec-nombre { flex: 1; color: var(--text); }
   </style>
@@ -217,10 +226,12 @@
 
   <div class="card">
 
-    <!-- Toggle Entrada / Salida -->
+    <!-- Toggle Entrada / Salida almuerzo / Regreso almuerzo / Salida -->
     <div class="tipo-toggle">
-      <button class="tipo-btn active-entrada" id="btnEntrada" onclick="setTipo('entrada')">🟢 Entrada</button>
-      <button class="tipo-btn"               id="btnSalida"  onclick="setTipo('salida')">🔴 Salida</button>
+      <button class="tipo-btn active-entrada"  id="btnEntrada"         onclick="setTipo('entrada')">🟢 Entrada</button>
+      <button class="tipo-btn"                 id="btnSalidaAlmuerzo"  onclick="setTipo('salida_almuerzo')">🟠 Sal. Almuerzo</button>
+      <button class="tipo-btn"                 id="btnRegresoAlmuerzo" onclick="setTipo('regreso_almuerzo')">🔵 Reg. Almuerzo</button>
+      <button class="tipo-btn"                 id="btnSalida"          onclick="setTipo('salida')">🔴 Salida</button>
     </div>
 
     <!-- Input cédula -->
@@ -500,11 +511,13 @@ async function verificarDispositivoHoy(cedula) {
   }
 
   const result = {
-    count:        data.length,
-    tieneEntrada: data.some(r => r.tipo === 'entrada'),
-    tieneSalida:  data.some(r => r.tipo === 'salida'),
-    registros:    data,
-    offline:      false,
+    count:                data.length,
+    tieneEntrada:         data.some(r => r.tipo === 'entrada'),
+    tieneSalidaAlmuerzo:  data.some(r => r.tipo === 'salida_almuerzo'),
+    tieneRegresoAlmuerzo: data.some(r => r.tipo === 'regreso_almuerzo'),
+    tieneSalida:          data.some(r => r.tipo === 'salida'),
+    registros:            data,
+    offline:              false,
   };
 
   // Cachear 8 segundos — suficiente para evitar queries duplicadas en el mismo flujo
@@ -512,15 +525,35 @@ async function verificarDispositivoHoy(cedula) {
   return result;
 }
 
-// ── Toggle tipo (Entrada / Salida) ───────────────────────────────
+// ── Nombres legibles para cada tipo ─────────────────────────────
+const TIPO_LABEL = {
+  entrada:          'Entrada',
+  salida_almuerzo:  'Salida Almuerzo',
+  regreso_almuerzo: 'Regreso Almuerzo',
+  salida:           'Salida',
+};
+const TIPO_EMOJI = {
+  entrada:          '🟢',
+  salida_almuerzo:  '🟠',
+  regreso_almuerzo: '🔵',
+  salida:           '🔴',
+};
+
+// ── Toggle tipo ──────────────────────────────────────────────────
 async function setTipo(tipo) {
   State.tipo = tipo;
-  const be = document.getElementById('btnEntrada');
-  const bs = document.getElementById('btnSalida');
-  if (be) be.className = 'tipo-btn' + (tipo === 'entrada' ? ' active-entrada' : '');
-  if (bs) bs.className = 'tipo-btn' + (tipo === 'salida'  ? ' active-salida'  : '');
+  const ids = {
+    entrada:          'btnEntrada',
+    salida_almuerzo:  'btnSalidaAlmuerzo',
+    regreso_almuerzo: 'btnRegresoAlmuerzo',
+    salida:           'btnSalida',
+  };
+  // Quitar active de todos y poner en el seleccionado
+  Object.entries(ids).forEach(([t, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.className = 'tipo-btn' + (t === tipo ? ` active-${tipo}` : '');
+  });
 
-  // Validar si el dispositivo ya utilizó este tipo hoy
   if (State.trabajador) {
     await actualizarBotonPorEstado();
   }
@@ -546,25 +579,19 @@ async function actualizarBotonPorEstado() {
     return;
   }
 
-  // 1. Límite absoluto: este celular ya tiene 2 registros hoy (de cualquier cédula)
+  // 1. Límite absoluto: este celular ya tiene 4 registros hoy (de cualquier cédula)
   const deviceTotal = await verificarDispositivoTotal();
-  if (!deviceTotal.offline && deviceTotal.count >= 2) {
+  if (!deviceTotal.offline && deviceTotal.count >= 4) {
     btn.disabled  = true;
     btn.innerHTML = '📵 Límite de dispositivo alcanzado';
     return;
   }
 
   // 2. Si este trabajador ya registró el tipo seleccionado desde este dispositivo
-  if (State.tipo === 'entrada' && device.tieneEntrada) {
-    btn.disabled  = true;
-    btn.innerHTML = '⚠️ Ya registraste Entrada hoy';
-    return;
-  }
-  if (State.tipo === 'salida' && device.tieneSalida) {
-    btn.disabled  = true;
-    btn.innerHTML = '⚠️ Ya registraste Salida hoy';
-    return;
-  }
+  if (State.tipo === 'entrada'          && device.tieneEntrada)         { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Entrada hoy'; return; }
+  if (State.tipo === 'salida_almuerzo'  && device.tieneSalidaAlmuerzo)  { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Salida Almuerzo hoy'; return; }
+  if (State.tipo === 'regreso_almuerzo' && device.tieneRegresoAlmuerzo) { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Regreso Almuerzo hoy'; return; }
+  if (State.tipo === 'salida'           && device.tieneSalida)          { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Salida hoy'; return; }
 
   // 3. Consultar estado del trabajador (con cache 10s)
   const cacheKeyBtn = `cedula_${t.cedula}_${today()}`;
@@ -579,30 +606,28 @@ async function actualizarBotonPorEstado() {
     registrosHoyBtn = hoy || [];
     QueryCache.set(cacheKeyBtn, registrosHoyBtn, 10000);
   }
-  const registrosHoy  = registrosHoyBtn;
-  const tieneEntrada  = registrosHoy.some(r => r.tipo === 'entrada');
-  const tieneSalida   = registrosHoy.some(r => r.tipo === 'salida');
+  const registrosHoy          = registrosHoyBtn;
+  const tieneEntrada          = registrosHoy.some(r => r.tipo === 'entrada');
+  const tieneSalidaAlmuerzo   = registrosHoy.some(r => r.tipo === 'salida_almuerzo');
+  const tieneRegresoAlmuerzo  = registrosHoy.some(r => r.tipo === 'regreso_almuerzo');
+  const tieneSalida           = registrosHoy.some(r => r.tipo === 'salida');
 
+  // Jornada completada: entrada + salida como mínimo
   if (tieneEntrada && tieneSalida) {
     btn.disabled  = true;
     btn.innerHTML = '🔒 Jornada completada hoy';
     return;
   }
 
-  if (State.tipo === 'entrada' && tieneEntrada) {
-    btn.disabled  = true;
-    btn.innerHTML = '⚠️ Trabajador ya registró Entrada';
-    return;
-  }
+  if (State.tipo === 'entrada'          && tieneEntrada)        { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Entrada'; return; }
+  if (State.tipo === 'salida_almuerzo'  && tieneSalidaAlmuerzo) { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Salida Almuerzo'; return; }
+  if (State.tipo === 'regreso_almuerzo' && tieneRegresoAlmuerzo){ btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Regreso Almuerzo'; return; }
+  if (State.tipo === 'salida'           && tieneSalida)         { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Salida'; return; }
 
-  if (State.tipo === 'salida' && tieneSalida) {
-    btn.disabled  = true;
-    btn.innerHTML = '⚠️ Trabajador ya registró Salida';
-    return;
-  }
-
+  const lbl = TIPO_LABEL[State.tipo] || State.tipo;
+  const emo = TIPO_EMOJI[State.tipo] || '✅';
   btn.disabled  = false;
-  btn.innerHTML = State.tipo === 'entrada' ? '🟢 Registrar Entrada' : '🔴 Registrar Salida';
+  btn.innerHTML = `${emo} Registrar ${lbl}`;
 }
 
 // ── Búsqueda cédula en tiempo real ───────────────────────────────
@@ -639,29 +664,37 @@ async function onCedula(val) {
       registrosHoy = hoy || [];
       QueryCache.set(cacheKeyCedula, registrosHoy, 10000);
     }
-    const ultimoEntrada = registrosHoy.find(r => r.tipo === 'entrada');
-    const ultimaSalida  = registrosHoy.find(r => r.tipo === 'salida');
+    const ultimoEntrada          = registrosHoy.find(r => r.tipo === 'entrada');
+    const ultimaSalidaAlmuerzo   = registrosHoy.find(r => r.tipo === 'salida_almuerzo');
+    const ultimoRegresoAlmuerzo  = registrosHoy.find(r => r.tipo === 'regreso_almuerzo');
+    const ultimaSalida           = registrosHoy.find(r => r.tipo === 'salida');
 
     // Estado descriptivo
     let estadoTexto = [t.cargo, t.ciudad].filter(Boolean).join(' · ');
     let estadoExtra = '';
     if (registrosHoy.length > 0) {
       const partes = [];
-      if (ultimoEntrada) partes.push(`🟢 Entrada: ${fmtHora(ultimoEntrada.hora)}`);
-      if (ultimaSalida)  partes.push(`🔴 Salida: ${fmtHora(ultimaSalida.hora)}`);
+      if (ultimoEntrada)         partes.push(`🟢 Entrada: ${fmtHora(ultimoEntrada.hora)}`);
+      if (ultimaSalidaAlmuerzo)  partes.push(`🟠 S.Alm: ${fmtHora(ultimaSalidaAlmuerzo.hora)}`);
+      if (ultimoRegresoAlmuerzo) partes.push(`🔵 R.Alm: ${fmtHora(ultimoRegresoAlmuerzo.hora)}`);
+      if (ultimaSalida)          partes.push(`🔴 Salida: ${fmtHora(ultimaSalida.hora)}`);
       estadoExtra = partes.join('  ·  ');
     }
     document.getElementById('tSub').innerHTML = estadoTexto +
       (estadoExtra ? `<br><span style="font-size:11px;color:var(--accent3)">${estadoExtra}</span>` : '');
 
-    // Sugerir tipo automáticamente según lo que falta
+    // Sugerir el siguiente tipo en la secuencia lógica del día
     const device = await verificarDispositivoHoy(cedula);
-    if (ultimoEntrada && !ultimaSalida) {
+    if (!ultimoEntrada) {
+      setTipo('entrada');
+    } else if (!ultimaSalidaAlmuerzo) {
+      setTipo('salida_almuerzo');
+    } else if (!ultimoRegresoAlmuerzo) {
+      setTipo('regreso_almuerzo');
+    } else if (!ultimaSalida) {
       setTipo('salida');
-    } else if (!ultimoEntrada) {
-      setTipo('entrada');
     } else {
-      setTipo('entrada');
+      setTipo('entrada'); // jornada completa, dejar en entrada por defecto
     }
 
     card.className = 'trabajador-card show';
@@ -708,26 +741,25 @@ async function registrar(metodo = 'qr') {
     return;
   }
 
-  // Regla 1: Máximo 2 registros totales por día por dispositivo (cualquier cédula)
-  if (deviceTotal.count >= 2) {
+  // Regla 1: Máximo 4 registros totales por día por dispositivo (cualquier cédula)
+  if (deviceTotal.count >= 4) {
     mostrarBloqueo(
       'Límite de dispositivo alcanzado',
-      'Este dispositivo ya completó sus 2 registros diarios (entrada y salida). No se permiten más registros desde este teléfono.',
+      'Este dispositivo ya completó sus 4 registros diarios. No se permiten más registros desde este teléfono.',
       'device'
     );
     return;
   }
 
-  // Regla 2: Esta cédula ya registró entrada hoy en este dispositivo
-  if (tipo === 'entrada' && device.tieneEntrada) {
-    toast('⛔ Esta cédula ya tiene una Entrada registrada hoy.', 'error', 6000);
-    await actualizarBotonPorEstado();
-    return;
-  }
-
-  // Regla 3: Esta cédula ya registró salida hoy en este dispositivo
-  if (tipo === 'salida' && device.tieneSalida) {
-    toast('⛔ Esta cédula ya tiene una Salida registrada hoy.', 'error', 6000);
+  // Regla 2: Esta cédula ya registró este tipo hoy en este dispositivo
+  const tipoYaRegistrado = (
+    (tipo === 'entrada'          && device.tieneEntrada)         ||
+    (tipo === 'salida_almuerzo'  && device.tieneSalidaAlmuerzo)  ||
+    (tipo === 'regreso_almuerzo' && device.tieneRegresoAlmuerzo) ||
+    (tipo === 'salida'           && device.tieneSalida)
+  );
+  if (tipoYaRegistrado) {
+    toast(`⛔ Esta cédula ya tiene ${TIPO_LABEL[tipo] || tipo} registrada hoy.`, 'error', 6000);
     await actualizarBotonPorEstado();
     return;
   }
@@ -742,7 +774,7 @@ async function registrar(metodo = 'qr') {
 
   if (trabajadorHoy && trabajadorHoy.length > 0) {
     const yaHora = fmtHora(trabajadorHoy[0].hora);
-    toast(`⚠️ Esta cédula ya tiene una ${tipo} registrada hoy a las ${yaHora}.`, 'warning', 5000);
+    toast(`⚠️ Esta cédula ya tiene ${TIPO_LABEL[tipo] || tipo} registrada hoy a las ${yaHora}.`, 'warning', 5000);
     await actualizarBotonPorEstado();
     return;
   }
@@ -769,7 +801,7 @@ async function registrar(metodo = 'qr') {
     // Error 23505 = duplicate key: la constraint de la DB detectó un duplicado
     // (dos taps simultáneos, etc.). Tratarlo como si ya estuviera registrado.
     if (error.code === '23505') {
-      toast(`⚠️ Esta ${tipo} ya fue registrada hoy para esta cédula.`, 'warning', 5000);
+      toast(`⚠️ ${TIPO_LABEL[tipo] || tipo} ya fue registrada hoy para esta cédula.`, 'warning', 5000);
     } else {
       toast('❌ Error al guardar: ' + error.message, 'error', 6000);
     }
@@ -781,17 +813,18 @@ async function registrar(metodo = 'qr') {
   // Invalidar cache para que los datos se refresquen en el próximo uso
   QueryCache.invalidate();
 
-  const emoji = tipo === 'entrada' ? '🟢' : '🔴';
-  toast(`${emoji} ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} registrada correctamente — ${t.nombre}`, 'success', 5000);
+  const lbl = TIPO_LABEL[tipo] || tipo;
+  const emo = TIPO_EMOJI[tipo] || '✅';
+  toast(`${emo} ${lbl} registrada — ${t.nombre}`, 'success', 5000);
 
   await cargarRecientes(t.cedula);
 
-  // Si este registro completó los 2 permitidos para este dispositivo (total del día)
-  if (deviceTotal.count + 1 >= 2) {
+  // Si este registro completó los 4 permitidos para este dispositivo
+  if (deviceTotal.count + 1 >= 4) {
     setTimeout(() => {
       mostrarBloqueo(
         'Jornada registrada',
-        `¡Has completado tus 2 registros de hoy (Entrada y Salida)! Este dispositivo queda bloqueado hasta el próximo día.`,
+        '¡Has completado los 4 registros de hoy! Este dispositivo queda bloqueado hasta el próximo día.',
         'device'
       );
     }, 2500);

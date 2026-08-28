@@ -2008,18 +2008,22 @@ async function _actualizarStatsHoy() {
   const fecha = document.getElementById('asistFiltroFecha')?.value || today();
   const registros = await Asistencia.getByFecha(fecha);
 
-  const entradas = registros.filter(r => r.tipo === 'entrada').length;
-  const salidas  = registros.filter(r => r.tipo === 'salida').length;
-  const unicos   = new Set(registros.map(r => r.cedula)).size;
-  const porQR    = registros.filter(r => r.metodo === 'qr').length;
+  const entradas        = registros.filter(r => r.tipo === 'entrada').length;
+  const salidasAlmuerzo = registros.filter(r => r.tipo === 'salida_almuerzo').length;
+  const regresosAlm     = registros.filter(r => r.tipo === 'regreso_almuerzo').length;
+  const salidas         = registros.filter(r => r.tipo === 'salida').length;
+  const unicos          = new Set(registros.map(r => r.cedula)).size;
+  const porQR           = registros.filter(r => r.metodo === 'qr').length;
 
   const statsEl = document.getElementById('asistStats');
   if (!statsEl) return;
   statsEl.innerHTML = [
-    { icon: '🟢', value: entradas, label: 'Entradas',       color: 'var(--accent3)' },
-    { icon: '🔴', value: salidas,  label: 'Salidas',         color: 'var(--danger)'  },
-    { icon: '👤', value: unicos,   label: 'Trabajadores',    color: 'var(--accent)'  },
-    { icon: '📲', value: porQR,    label: 'Vía QR',          color: 'var(--accent4)' },
+    { icon: '🟢', value: entradas,        label: 'Entradas',        color: 'var(--accent3)' },
+    { icon: '🟠', value: salidasAlmuerzo, label: 'Sal. Almuerzo',   color: '#f7971e'        },
+    { icon: '🔵', value: regresosAlm,     label: 'Reg. Almuerzo',   color: '#1e90ff'        },
+    { icon: '🔴', value: salidas,         label: 'Salidas',         color: 'var(--danger)'  },
+    { icon: '👤', value: unicos,          label: 'Trabajadores',    color: 'var(--accent)'  },
+    { icon: '📲', value: porQR,           label: 'Vía QR',          color: 'var(--accent4)' },
   ].map(s => `
     <div class="stat-card" style="--card-color:${s.color}">
       <div class="stat-icon">${s.icon}</div>
@@ -2029,11 +2033,19 @@ async function _actualizarStatsHoy() {
 }
 
 // ── Render tabla ───────────────────────────────────────────────
+const _TIPO_LABEL_ASIST = {
+  entrada:          'Entrada',
+  salida_almuerzo:  'Sal. Almuerzo',
+  regreso_almuerzo: 'Reg. Almuerzo',
+  salida:           'Salida',
+};
+
 function _rowAsistHTML(r) {
   const metodoIcon = r.metodo === 'qr' ? '📲' : '🪪';
+  const tipoLabel  = _TIPO_LABEL_ASIST[r.tipo] || r.tipo;
   return `<tr>
     <td><strong>${fmtHora(r.hora)}</strong></td>
-    <td><span class="asist-log-tipo ${r.tipo}">${r.tipo}</span></td>
+    <td><span class="asist-log-tipo ${r.tipo}">${tipoLabel}</span></td>
     <td>${r.trabajador_nombre || '—'}</td>
     <td style="font-variant-numeric:tabular-nums">${r.cedula || '—'}</td>
     <td>${r.cargo   || '—'}</td>
