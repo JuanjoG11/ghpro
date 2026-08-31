@@ -3321,10 +3321,19 @@ async function guardarAprobacion() {
   Object.keys(row).forEach(k => { if (row[k] === null || row[k] === '') delete row[k]; });
 
   showLoading(true);
-  const result = await Vacaciones.update(id, row);
+  const { data: result, error: updateError } = await sb
+    .from('vacaciones')
+    .update(row)
+    .eq('id', id)
+    .select()
+    .single();
   showLoading(false);
 
-  if (!result) return; // Vacaciones.update ya muestra el error
+  if (updateError) {
+    console.error('guardarAprobacion error:', updateError);
+    toast(`❌ Error al guardar: ${updateError.message}`, 'error', 8000);
+    return;
+  }
 
   toast('✅ Aprobación guardada correctamente', 'success', 4000);
   closeModal('modalAprobarVac');
