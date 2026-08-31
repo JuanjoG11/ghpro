@@ -3301,26 +3301,30 @@ async function guardarAprobacion() {
   const row = {
     status:                   n('aprobVacStatus') || 'aprobada',
     observaciones:            n('aprobVacObs'),
-    fecha_solicitud:          n('aprobFechaSolicitud'),
-    fecha_aprobacion:         n('aprobFechaAprobacion'),
-    dias_solicitados:         n('aprobDiasSolicitados')    ? parseInt(n('aprobDiasSolicitados'))    : null,
-    dias_calendario:          n('aprobDiasCalendario')      ? parseInt(n('aprobDiasCalendario'))      : null,
-    fecha_inicio:             n('aprobFechaInicio')         || null,
-    periodo_inicio:           n('aprobPeriodoInicio')       || null,
-    periodo_fin:              n('aprobPeriodoFin')          || null,
-    firma_colaborador:        n('aprobFirmaColab'),
-    dias_dinero:              n('aprobDiasDinero')          ? parseInt(n('aprobDiasDinero'))          : 0,
-    dias_habiles_aprobados:   n('aprobDiasHabAprobados')    ? parseInt(n('aprobDiasHabAprobados'))    : null,
-    firma_jefe:               n('aprobFirmaJefe'),
-    fecha_reintegro:          n('aprobFechaReintegro')      || null,
+    fecha_solicitud:          n('aprobFechaSolicitud')        || null,
+    fecha_aprobacion:         n('aprobFechaAprobacion')       || null,
+    dias_solicitados:         n('aprobDiasSolicitados')       ? parseInt(n('aprobDiasSolicitados'))       : null,
+    dias_calendario:          n('aprobDiasCalendario')        ? parseInt(n('aprobDiasCalendario'))        : null,
+    fecha_inicio:             n('aprobFechaInicio')           || null,
+    periodo_inicio:           n('aprobPeriodoInicio')         || null,
+    periodo_fin:              n('aprobPeriodoFin')            || null,
+    firma_colaborador:        n('aprobFirmaColab')            || null,
+    dias_dinero:              n('aprobDiasDinero')            ? parseInt(n('aprobDiasDinero'))            : 0,
+    dias_habiles_aprobados:   n('aprobDiasHabAprobados')      ? parseInt(n('aprobDiasHabAprobados'))      : null,
+    firma_jefe:               n('aprobFirmaJefe')             || null,
+    fecha_reintegro:          n('aprobFechaReintegro')        || null,
     fecha_inicio_definitiva:  n('aprobFechaInicioDefinitiva') || null,
-    aprobado_por:             n('aprobFirmaJefe'),          // también guardamos en aprobado_por
+    aprobado_por:             n('aprobFirmaJefe')             || null,
   };
 
-  // Limpiar nulls para no sobreescribir con nada
-  Object.keys(row).forEach(k => { if (row[k] === null || row[k] === '') delete row[k]; });
+  // Eliminar nulls, strings vacíos y undefined para no tocar columnas que no cambian
+  // NUNCA enviar 'dias' porque es columna generada (GENERATED ALWAYS AS)
+  Object.keys(row).forEach(k => {
+    if (row[k] === null || row[k] === undefined || row[k] === '') delete row[k];
+  });
 
   showLoading(true);
+  console.log('guardarAprobacion → row:', JSON.stringify(row, null, 2));
   const { data: result, error: updateError } = await sb
     .from('vacaciones')
     .update(row)
@@ -3331,7 +3335,13 @@ async function guardarAprobacion() {
 
   if (updateError) {
     console.error('guardarAprobacion error:', updateError);
-    toast(`❌ Error al guardar: ${updateError.message}`, 'error', 8000);
+
+    // Si el error es por columna inexistente, intentar con solo los campos base
+    if (updateError.message && updateError.message.includes('column')) {
+      toast(`⚠️ Faltan columnas en la BD. Ejecuta migration_aprobacion_vac.sql en Supabase primero.\n\nError: ${updateError.message}`, 'warning', 10000);
+    } else {
+      toast(`❌ Error al guardar: ${updateError.message}`, 'error', 8000);
+    }
     return;
   }
 
