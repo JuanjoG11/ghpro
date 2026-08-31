@@ -130,14 +130,15 @@
     /* ===== MOBILE TOPBAR ===== */
     .topbar {
       display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-      background: rgba(10,10,26,0.95); backdrop-filter: blur(20px);
+      background: rgba(10,10,26,0.97); backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border); padding: 12px 16px;
       align-items: center; gap: 12px;
     }
     .topbar-logo { flex: 1; font-size: 15px; font-weight: 700; }
     .hamburger {
       background: none; border: none; cursor: pointer; color: var(--text-primary);
-      font-size: 22px; padding: 4px; border-radius: 8px;
+      font-size: 24px; padding: 6px 8px; border-radius: 8px;
+      line-height: 1; -webkit-tap-highlight-color: transparent;
     }
     .hamburger:hover { background: var(--bg-card); }
     .mobile-overlay {
@@ -378,19 +379,46 @@
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .sidebar.open { transform: translateX(0); }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        z-index: 300;
+      }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 32px rgba(0,0,0,0.5); }
       .main-content { margin-left: 0; padding: 16px; padding-top: 72px; }
       .topbar { display: flex; }
       .form-grid { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .page-title { font-size: 22px; }
-      .table-wrap { font-size: 12px; }
+      .table-wrap { font-size: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
       tbody td { padding: 10px 10px; }
+      /* Modales full width en móvil */
+      .modal { max-width: 100% !important; margin: 0; border-radius: 20px 20px 0 0; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+      /* Cards dashboard */
+      #dashCards { grid-template-columns: 1fr !important; }
+      /* Acciones en tabla */
+      .td-actions { flex-wrap: wrap; gap: 4px; }
+      /* Solic cards */
+      .solic-card { flex-direction: column; padding: 14px 16px; }
+      .solic-actions { flex-wrap: wrap; }
+      /* Ocultar columnas no esenciales en tablas */
+      .hide-mobile { display: none !important; }
+      /* Page actions */
+      .page-actions { flex-wrap: wrap; gap: 8px; }
+      /* Form rows */
+      .form-row { flex-direction: column !important; }
     }
     @media (max-width: 480px) {
-      .stats-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
       .tabs { flex-wrap: wrap; }
+      .tab-btn { font-size: 11px; padding: 6px 8px; }
+      .main-content { padding: 12px; padding-top: 68px; }
+      .page-title { font-size: 18px; }
+      .btn { font-size: 12px; padding: 8px 12px; }
+      /* Topbar mejorado */
+      .topbar { padding: 10px 14px; }
     }
 
     /* ===== SOLICITUDES — tarjeta pendiente ===== */
@@ -976,7 +1004,7 @@
                 <option value="">Todos los estados</option>
                 <option value="en_proceso">⏳ En proceso</option>
                 <option value="aprobada">✅ Aprobada</option>
-                <option value="no_aprobada">❌ No aprobada</option>
+                <option value="rechazada">❌ Rechazada</option>
               </select>
               <select class="filter-select" id="filterVacTipo" onchange="renderVacaciones()">
                 <option value="">Todos los tipos</option>
@@ -1093,12 +1121,9 @@
         </div>
         <select class="filter-select" id="filterSolicStatus" onchange="renderSolicitudes()">
           <option value="">Todos los estados</option>
-          <option value="solicitada">📥 Solicitadas</option>
           <option value="en_proceso">⏳ En proceso</option>
-          <option value="en_curso">🔄 En curso</option>
           <option value="aprobada">✅ Aprobadas</option>
           <option value="rechazada">❌ Rechazadas</option>
-          <option value="finalizada">🏁 Finalizadas</option>
         </select>
         <select class="filter-select" id="filterSolicTipo" onchange="renderSolicitudes()">
           <option value="">Todos los tipos</option>
@@ -1242,10 +1267,10 @@
               <th>Hora</th>
               <th>Tipo</th>
               <th>Trabajador</th>
-              <th>Cédula</th>
-              <th>Cargo</th>
-              <th>Ciudad</th>
-              <th>Método</th>
+              <th class="hide-mobile">Cédula</th>
+              <th class="hide-mobile">Cargo</th>
+              <th class="hide-mobile">Ciudad</th>
+              <th class="hide-mobile">Método</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -1840,7 +1865,7 @@
           <select class="form-control" id="vacStatus">
             <option value="en_proceso">⏳ En proceso</option>
             <option value="aprobada">✅ Aprobada</option>
-            <option value="no_aprobada">❌ No aprobada</option>
+            <option value="rechazada">❌ Rechazada</option>
           </select>
         </div>
         <div class="form-group" style="flex:1">

@@ -587,13 +587,18 @@ function tipoLabel(tipo) {
 
 function statusBadge(status) {
   const labels = {
-    solicitada: 'Solicitada',
-    aprobada:   'Aprobada',
-    rechazada:  'Rechazada',
-    en_curso:   'En curso',
-    finalizada: 'Finalizada',
+    en_proceso:  'En proceso',
+    solicitada:  'En proceso',
+    en_curso:    'En proceso',
+    aprobada:    'Aprobada',
+    finalizada:  'Aprobada',
+    rechazada:   'Rechazada',
+    no_aprobada: 'Rechazada',
   };
-  return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
+  const cls = (status === 'aprobada' || status === 'finalizada') ? 'aprobada'
+            : (status === 'rechazada' || status === 'no_aprobada') ? 'rechazada'
+            : 'en_curso';
+  return `<span class="badge badge-${cls}">${labels[status] || status}</span>`;
 }
 
 function setBtn(id, loading) {
@@ -796,7 +801,7 @@ async function enviarSolicitud() {
     fecha_inicio:      fechaIni,
     fecha_fin:         fechaFinFinal,
     tipo: subtipo || tipo,
-    status:            'solicitada',
+    status:            'en_proceso',
     observaciones:     obs || null,
     motivo:            motivo || null,
     hora_inicio:       tipo === 'permiso' ? horaIni : null,
@@ -967,8 +972,12 @@ function suscribirCambiosEstado() {
 function _mostrarBannerEstado(v) {
   const CONFIG = {
     aprobada:    { icon: '🎉', titulo: '¡Tu solicitud fue aprobada!',   cls: 'aprobada'    },
-    no_aprobada: { icon: '❌', titulo: 'Tu solicitud no fue aprobada',  cls: 'rechazada'   },
+    finalizada:  { icon: '🎉', titulo: '¡Tu solicitud fue aprobada!',   cls: 'aprobada'    },
+    rechazada:   { icon: '❌', titulo: 'Tu solicitud fue rechazada',    cls: 'rechazada'   },
+    no_aprobada: { icon: '❌', titulo: 'Tu solicitud fue rechazada',    cls: 'rechazada'   },
     en_proceso:  { icon: '⏳', titulo: 'Tu solicitud está en proceso',  cls: 'en_curso'    },
+    solicitada:  { icon: '⏳', titulo: 'Tu solicitud está en proceso',  cls: 'en_curso'    },
+    en_curso:    { icon: '⏳', titulo: 'Tu solicitud está en proceso',  cls: 'en_curso'    },
   };
   const cfg = CONFIG[v.status];
   if (!cfg) return;

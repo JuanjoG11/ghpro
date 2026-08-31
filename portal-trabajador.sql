@@ -21,5 +21,21 @@ comment on column vacaciones.motivo         is 'Motivo de la solicitud (obligato
 comment on column vacaciones.es_remunerado  is 'Indica si el permiso es remunerado (true) o no remunerado (false). Null = no aplica';
 comment on column vacaciones.solicitado_en  is 'Fecha/hora en que el trabajador envió la solicitud desde el portal';
 
--- Habilitar Realtime para la tabla vacaciones (para recibir solicitudes en vivo en el admin)
-alter publication supabase_realtime add table vacaciones;
+-- ============================================================
+-- UNIFICAR ESTADOS DE SOLICITUDES: en_proceso, aprobada, rechazada
+-- ============================================================
+-- 1. Eliminar constraint antiguo si existe
+alter table vacaciones drop constraint if exists vacaciones_status_check;
+
+-- 2. Migrar registros existentes a los 3 estados oficiales
+update vacaciones set status = 'en_proceso' where status in ('solicitada', 'en_curso') or status is null;
+update vacaciones set status = 'rechazada'  where status = 'no_aprobada';
+update vacaciones set status = 'aprobada'   where status = 'finalizada';
+
+-- 3. Crear constraint estricto con los 3 estados
+alter table vacaciones add constraint vacaciones_status_check
+  check (status in ('en_proceso', 'aprobada', 'rechazada'));
+
+-- 4. Valor por defecto 'en_proceso'
+alter table vacaciones alter column status set default 'en_proceso';
+

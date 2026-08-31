@@ -2047,10 +2047,10 @@ function _rowAsistHTML(r) {
     <td><strong>${fmtHora(r.hora)}</strong></td>
     <td><span class="asist-log-tipo ${r.tipo}">${tipoLabel}</span></td>
     <td>${r.trabajador_nombre || '—'}</td>
-    <td style="font-variant-numeric:tabular-nums">${r.cedula || '—'}</td>
-    <td>${r.cargo   || '—'}</td>
-    <td>${r.ciudad  || '—'}</td>
-    <td>${metodoIcon} ${r.metodo}</td>
+    <td class="hide-mobile" style="font-variant-numeric:tabular-nums">${r.cedula || '—'}</td>
+    <td class="hide-mobile">${r.cargo   || '—'}</td>
+    <td class="hide-mobile">${r.ciudad  || '—'}</td>
+    <td class="hide-mobile">${metodoIcon} ${r.metodo}</td>
     <td><button class="btn btn-danger btn-sm btn-icon"
       onclick="eliminarRegistroAsist('${r.id}')">🗑️</button></td>
   </tr>`;
@@ -2812,17 +2812,17 @@ const SOLIC_TIPO_LABEL = {
 };
 
 const SOLIC_STATUS = {
-  solicitada:  { label: 'Solicitada',   cls: 'badge-info',    icon: '📥' },
   en_proceso:  { label: 'En proceso',   cls: 'badge-warning', icon: '⏳' },
-  en_curso:    { label: 'En curso',     cls: 'badge-warning', icon: '🔄' },
   aprobada:    { label: 'Aprobada',     cls: 'badge-success', icon: '✅' },
   rechazada:   { label: 'Rechazada',   cls: 'badge-danger',  icon: '❌' },
-  finalizada:  { label: 'Finalizada',  cls: 'badge-neutral', icon: '🏁' },
-  no_aprobada: { label: 'No aprobada', cls: 'badge-danger',  icon: '❌' },
 };
 
 function _solicStatusBadge(status) {
-  const s = SOLIC_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '•' };
+  const norm = (status === 'solicitada' || status === 'en_curso') ? 'en_proceso'
+             : (status === 'no_aprobada') ? 'rechazada'
+             : (status === 'finalizada') ? 'aprobada'
+             : status;
+  const s = SOLIC_STATUS[norm] || { label: status, cls: 'badge-neutral', icon: '•' };
   return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
 }
 
@@ -2870,14 +2870,18 @@ async function renderSolicitudes() {
 
     const filtered = lista.filter(v => {
       const txt = [v.trabajador_nombre, v.motivo, v.observaciones].join(' ').toLowerCase();
+      const norm = (v.status === 'solicitada' || v.status === 'en_curso') ? 'en_proceso'
+                 : (v.status === 'no_aprobada') ? 'rechazada'
+                 : (v.status === 'finalizada') ? 'aprobada'
+                 : v.status;
       return (!q       || txt.includes(q))
-          && (!fStatus || v.status === fStatus)
+          && (!fStatus || norm === fStatus)
           && (!fTipo   || v.tipo   === fTipo);
     });
 
     // ── Stats ────────────────────────────────────────────────
-    const pendientes  = lista.filter(v => ['solicitada','en_proceso'].includes(v.status)).length;
-    const aprobadas   = lista.filter(v => v.status === 'aprobada').length;
+    const pendientes  = lista.filter(v => ['en_proceso','solicitada','en_curso'].includes(v.status)).length;
+    const aprobadas   = lista.filter(v => ['aprobada','finalizada'].includes(v.status)).length;
     const rechazadas  = lista.filter(v => ['rechazada','no_aprobada'].includes(v.status)).length;
 
     updateSolicBadge(pendientes);
@@ -2885,7 +2889,7 @@ async function renderSolicitudes() {
     const statsEl = document.getElementById('solicStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '⏳', value: pendientes,  label: 'Pendientes',   color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '⏳', value: pendientes,  label: 'En proceso',   color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
         { icon: '✅', value: aprobadas,   label: 'Aprobadas',    color: 'var(--success)' },
         { icon: '❌', value: rechazadas,  label: 'Rechazadas',   color: 'var(--danger)' },
         { icon: '📋', value: lista.length, label: 'Total',       color: 'var(--text-muted)' },
@@ -3077,15 +3081,13 @@ function abrirCambioEstadoSolic(id) {
       <div class="modal" style="max-width:360px">
         <div class="modal-header">
           <span class="modal-title">✏️ Cambiar estado</span>
-          <button class="modal-close" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open')">✕</button>
+          <button class="modal-close" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open'); document.body.style.overflow = '';">✕</button>
         </div>
         <div class="modal-body">
           <div style="font-weight:600;margin-bottom:12px" id="csNombre"></div>
           <div class="form-group">
             <label>Nuevo estado</label>
-            <select id="csStatus">
-            ${Object.entries(SOLIC_STATUS).map(([k,s]) => `<option value="${k}">${s.icon} ${s.label}</option>`).join('')}
-            </select>
+            <select id="csStatus"></select>
           </div>
           <div class="form-group" style="margin-top:12px">
             <label>Nota para el trabajador (opcional)</label>
@@ -3093,15 +3095,26 @@ function abrirCambioEstadoSolic(id) {
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open')">Cancelar</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open'); document.body.style.overflow = '';">Cancelar</button>
           <button class="btn btn-primary" onclick="_confirmarCambioEstado()">💾 Guardar</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
   }
 
+  // Siempre reconstruir las opciones con únicamente los 3 estados permitidos
+  const sel = document.getElementById('csStatus');
+  if (sel) {
+    sel.innerHTML = Object.entries(SOLIC_STATUS).map(([k,s]) => `<option value="${k}">${s.icon} ${s.label}</option>`).join('');
+  }
+
+  const currentStatus = (v.status === 'solicitada' || v.status === 'en_curso') ? 'en_proceso'
+                      : (v.status === 'no_aprobada') ? 'rechazada'
+                      : (v.status === 'finalizada') ? 'aprobada'
+                      : (v.status || 'en_proceso');
+
   document.getElementById('csNombre').textContent = `${v.trabajador_nombre} — ${SOLIC_TIPO_LABEL[v.tipo]?.label || v.tipo}`;
-  document.getElementById('csStatus').value = v.status;
+  document.getElementById('csStatus').value = currentStatus;
   document.getElementById('csNota').value   = v.aprobado_por || '';
   overlay.dataset.solicId = id;
   overlay.classList.add('open');
