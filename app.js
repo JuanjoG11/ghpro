@@ -2563,13 +2563,13 @@ Cache.prendas = null;
 async function renderDotacionPrendas() {
   showLoading(true);
   try {
-    if (!Cache.prendas) Cache.prendas = await DotacionPrendas.getAll();
+    Cache.prendas = await DotacionPrendas.getAll();   // siempre fresco
     const lista = Cache.prendas;
 
     _renderPrendasStats(lista);
 
     // Renderizar cada tipo en su tab
-    ['camisa', 'pantalon', 'chaqueta', 'calzado'].forEach(tipo => {
+    ['camisa', 'pantalon', 'chaqueta', 'calzado', 'epp'].forEach(tipo => {
       const subtipo = lista.filter(r => r.tipo === tipo);
       _renderPrendasTabla(tipo, subtipo);
     });
@@ -2582,7 +2582,7 @@ function _renderPrendasStats(lista) {
   const el = document.getElementById('prendasStats');
   if (!el) return;
 
-  const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado'];
+  const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado', 'epp'];
   const stockBajo = DotacionPrendas.stockBajo(lista).length;
 
   el.innerHTML = tipos.map(tipo => {
@@ -2672,6 +2672,18 @@ function _renderPrendasTabla(tipo, lista) {
                   <td class="prenda-total-cell"><strong>${totalRef}</strong></td>
                 </tr>`;
               }).join('')}
+              <tr style="border-top:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04)">
+                <td class="prenda-ref-cell" style="font-weight:700;color:var(--text-primary);font-size:12px;letter-spacing:.5px;text-transform:uppercase">TOTAL</td>
+                ${tallas.map(talla => {
+                  const sumTalla = refs.reduce((s, ref) => s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0), 0);
+                  return `<td class="prenda-total-cell" style="font-weight:700;color:var(--accent3)">${sumTalla}</td>`;
+                }).join('')}
+                <td class="prenda-total-cell" style="font-weight:800;color:var(--accent3);font-size:15px">${
+                  refs.reduce((total, ref) =>
+                    total + tallas.reduce((s, talla) => s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0), 0)
+                  , 0)
+                }</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -2683,6 +2695,79 @@ function _renderPrendasTabla(tipo, lista) {
     // Pantalones: géneros con tallas distintas → dos tablas separadas
     html  = generarTablaGenero('hombre', tallasDef.hombre, referencias);
     html += generarTablaGenero('mujer',  tallasDef.mujer,  referencias);
+  } else if (tipo === 'epp') {
+    // EPP: áreas (bodega / cuarto_frio) en lugar de géneros
+    const generarTablaArea = (area, tallas, refs) => {
+      const areaLabel = area === 'bodega' ? '🏭 BODEGA' : '❄️ CUARTO FRÍO';
+      const colorHeader = area === 'bodega'
+        ? 'background:linear-gradient(135deg,rgba(58,200,130,0.25),rgba(58,200,130,0.1))'
+        : 'background:linear-gradient(135deg,rgba(58,180,220,0.25),rgba(58,180,220,0.1))';
+      // Re-usar agrupado pero con el campo genero mapeado a área
+      const agrupadoArea = {};
+      lista.forEach(row => {
+        if (row.genero !== area) return;
+        if (!agrupadoArea[row.referencia]) agrupadoArea[row.referencia] = {};
+        agrupadoArea[row.referencia][row.talla] = row;
+      });
+      return `
+        <div class="prenda-tabla-wrap">
+          <div class="prenda-tabla-header" style="${colorHeader}">${areaLabel}</div>
+          <div style="overflow-x:auto">
+            <table class="prenda-tabla">
+              <thead>
+                <tr>
+                  <th style="text-align:left;min-width:180px">Artículo</th>
+                  ${tallas.map(t => `<th>${t}</th>`).join('')}
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${refs.map(ref => {
+                  const celdas = tallas.map(talla => {
+                    const row = agrupadoArea[ref]?.[talla];
+                    if (!row) return `<td class="prenda-cell">—</td>`;
+                    const bajo = row.stock <= row.stock_min;
+                    const cls  = bajo ? 'prenda-cell bajo' : 'prenda-cell';
+                    return `<td class="${cls}" id="ptd-${row.id}">
+                      <input type="number" min="0"
+                        class="prenda-stock-input${bajo ? ' bajo' : ''}"
+                        id="ps-${row.id}"
+                        value="${row.stock}"
+                        onchange="prendasSetStock('${row.id}', this.value, this)"
+                        onkeydown="if(event.key==='Enter'){this.blur()}"
+                      >
+                      <div class="prenda-btns">
+                        <button onclick="prendasAjustar('${row.id}',1)"  title="+ stock">＋</button>
+                        <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">－</button>
+                      </div>
+                    </td>`;
+                  }).join('');
+                  const totalRef = tallas.reduce((s, talla) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0);
+                  return `<tr>
+                    <td class="prenda-ref-cell" title="${ref}">${ref}</td>
+                    ${celdas}
+                    <td class="prenda-total-cell"><strong>${totalRef}</strong></td>
+                  </tr>`;
+                }).join('')}
+                <tr style="border-top:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04)">
+                  <td class="prenda-ref-cell" style="font-weight:700;color:var(--text-primary);font-size:12px;letter-spacing:.5px;text-transform:uppercase">TOTAL</td>
+                  ${tallas.map(talla => {
+                    const sumTalla = refs.reduce((s, ref) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0);
+                    return `<td class="prenda-total-cell" style="font-weight:700;color:var(--accent3)">${sumTalla}</td>`;
+                  }).join('')}
+                  <td class="prenda-total-cell" style="font-weight:800;color:var(--accent3);font-size:15px">${
+                    refs.reduce((total, ref) =>
+                      total + tallas.reduce((s, talla) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0)
+                    , 0)
+                  }</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    };
+    html  = generarTablaArea('bodega',      tallasDef.bodega,      referencias);
+    html += generarTablaArea('cuarto_frio', tallasDef.cuarto_frio, referencias);
   } else {
     // Camisas, chaquetas, calzado: mismas tallas → una tabla con sección por género
     html  = generarTablaGenero('hombre', tallasDef.hombre, referencias);

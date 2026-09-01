@@ -5,13 +5,16 @@
 -- ============================================================
 
 -- ── TABLA ÚNICA DE PRENDAS ───────────────────────────────────
--- tipo     : 'camisa' | 'pantalon' | 'chaqueta' | 'calzado'
--- genero   : 'hombre' | 'mujer'
+-- tipo     : 'camisa' | 'pantalon' | 'chaqueta' | 'calzado' | 'epp'
+-- genero   : 'hombre' | 'mujer' | 'bodega' | 'cuarto_frio'
+--            (bodega y cuarto_frio solo aplican para tipo 'epp')
 -- talla    : texto libre
 --   · camisa / chaqueta : S  M  L  XL  XXL          (ambos)
 --   · pantalon hombre   : 28 30 32 34 36 38
 --   · pantalon mujer    : 6  8  10 12 14 16 18
---   · calzado           : 35 36 37 38 39 40 41 42 43 44 45 (ambos)
+--   · calzado hombre    : 35 36 37 38 39 40 41 42 43 44 45
+--   · calzado mujer     : 34 35 36 37 38 39 40 41 42 43 44 45
+--   · epp               : M  L  (bodega y cuarto_frio)
 
 create table if not exists dotacion_prendas (
   id          uuid primary key default gen_random_uuid(),

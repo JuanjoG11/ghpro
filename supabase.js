@@ -1063,7 +1063,11 @@ const DotacionPrendas = {
     },
     calzado: {
       hombre: ['35','36','37','38','39','40','41','42','43','44','45'],
-      mujer:  ['35','36','37','38','39','40','41','42','43','44','45'],
+      mujer:  ['34','35','36','37','38','39','40','41','42','43','44','45'],
+    },
+    epp: {
+      bodega:      ['M','L'],
+      cuarto_frio: ['M','L'],
     },
   },
 
@@ -1077,6 +1081,7 @@ const DotacionPrendas = {
     pantalon: ['Jean Indigo Azul', 'Pantalon Térmico', 'Jean Elástico'],
     chaqueta: ['Chaqueta Cuarto Frío'],
     calzado:  ['Bota de Seguridad con Puntera'],
+    epp:      ['Casco', 'Barbuquejo', 'Guantes'],
   },
 
   TIPO_LABEL: {
@@ -1084,6 +1089,7 @@ const DotacionPrendas = {
     pantalon: { label: 'Pantalones', icon: '👖' },
     chaqueta: { label: 'Chaquetas', icon: '🧥' },
     calzado:  { label: 'Calzado',   icon: '🥾' },
+    epp:      { label: 'EPP',       icon: '⛑️' },
   },
 
   /* ── CRUD ── */
@@ -1125,11 +1131,12 @@ const DotacionPrendas = {
 
   /* ── Helpers de agrupación (cliente) ── */
 
-  // { referencia → { hombre: { talla: row }, mujer: { talla: row } } }
+  // { referencia → { <genero|area>: { talla: row } } }
   agrupar(lista) {
     const map = {};
     lista.forEach(row => {
-      if (!map[row.referencia]) map[row.referencia] = { hombre: {}, mujer: {} };
+      if (!map[row.referencia]) map[row.referencia] = {};
+      if (!map[row.referencia][row.genero]) map[row.referencia][row.genero] = {};
       map[row.referencia][row.genero][row.talla] = row;
     });
     return map;
