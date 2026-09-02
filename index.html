@@ -67,7 +67,7 @@
     }
 
     /* ===== LAYOUT ===== */
-    .app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+    .app-shell { display: flex; min-height: 100vh; position: relative; }
 
     /* ===== SIDEBAR ===== */
     .sidebar {
@@ -489,10 +489,10 @@
   <div class="topbar-logo">🏢 GH Pro</div>
   <div id="alertBadgeMobile" class="nav-badge danger" style="display:none">0</div>
 </div>
-<div class="mobile-overlay" id="mobileOverlay"></div>
-
 <!-- App shell -->
 <div class="app-shell">
+  <!-- Overlay móvil: antes del sidebar en el DOM -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -1536,6 +1536,7 @@
     </div><!-- /page-prendas -->
 
   </main><!-- /main-content -->
+
 </div><!-- /app-shell -->
 
 <!-- ===== MODALS ===== -->
