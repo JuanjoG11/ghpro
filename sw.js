@@ -1,10 +1,13 @@
-const CACHE_NAME = 'gh-pro-v2.0.3';
+const CACHE_NAME = 'gh-pro-v2.0.4';
 const STATIC_ASSETS = [
   '/index.html',
   '/app.js',
   '/supabase.js',
   '/manifest.json',
 ];
+
+// Archivos JS/HTML propios: siempre network-first para tener siempre la versión nueva
+const NETWORK_FIRST = ['/index.html', '/app.js', '/supabase.js'];
 
 // Install: cache static assets
 self.addEventListener('install', (event) => {
@@ -41,12 +44,13 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      // Para archivos HTML usar network-first: siempre intentar la red primero
-      // así el TV siempre carga la versión más nueva al actualizar
+      // Para archivos HTML y JS propios usar network-first
       const isHTML = event.request.headers.get('accept') &&
                      event.request.headers.get('accept').includes('text/html');
+      const reqPath = new URL(event.request.url).pathname;
+      const isNetworkFirst = isHTML || NETWORK_FIRST.includes(reqPath);
 
-      if (isHTML) {
+      if (isNetworkFirst) {
         return fetch(event.request)
           .then((response) => {
             if (response && response.status === 200) {
