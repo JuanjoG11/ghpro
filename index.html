@@ -1608,28 +1608,56 @@
 
 <!-- Modal Entrega -->
 <div class="modal-overlay" id="modalEntrega">
-  <div class="modal">
+  <div class="modal" style="max-width: 680px;">
     <div class="modal-header">
-      <div class="modal-title">📦 Registrar Entrega</div>
+      <div class="modal-title">📦 Registrar Entrega de Dotación</div>
       <button class="modal-close" onclick="closeModal('modalEntrega')">✕</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="eId">
-      <div class="form-grid">
-        <div class="form-group"><label>Trabajador *</label>
-          <select id="eTrabajador"><option value="">Seleccionar...</option></select></div>
-        <div class="form-group"><label>Artículo *</label>
-          <select id="eArticulo"><option value="">Seleccionar...</option></select></div>
-        <div class="form-group"><label>Cantidad *</label><input type="number" id="eCantidad" min="1" value="1"></div>
-        <div class="form-group"><label>Talla / Referencia</label><input type="text" id="eTalla" placeholder="M, 42, XL..."></div>
-        <div class="form-group"><label>Fecha de entrega *</label><input type="date" id="eFecha"></div>
-        <div class="form-group"><label>Entregado por</label><input type="text" id="eEntregadoPor" placeholder="Nombre responsable"></div>
-        <div class="form-group full"><label>Observaciones</label><textarea id="eObs" placeholder="Notas de la entrega..."></textarea></div>
+      
+      <!-- Datos Generales -->
+      <div class="form-grid" style="margin-bottom: 16px;">
+        <div class="form-group">
+          <label>Trabajador *</label>
+          <select id="eTrabajador"><option value="">Seleccionar trabajador...</option></select>
+        </div>
+        <div class="form-group">
+          <label>Fecha de entrega *</label>
+          <input type="date" id="eFecha">
+        </div>
+        <div class="form-group full">
+          <label>Entregado por</label>
+          <input type="text" id="eEntregadoPor" placeholder="Nombre de la persona responsable de la entrega...">
+        </div>
+      </div>
+
+      <!-- Sección de Prendas del Stock -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div>
+            <label style="color: var(--accent3); font-weight: 700; font-size: 13px;">Prendas a Entregar del Stock</label>
+            <div style="font-size: 11px; color: var(--text-muted);">Puedes entregar una o varias prendas a este trabajador (ej. 2 camisas, 2 pantalones).</div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="agregarFilaPrendaEntrega()" style="padding: 6px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+            <span>➕</span> Agregar otra prenda
+          </button>
+        </div>
+
+        <div id="contenedorPrendasEntrega" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+          <!-- Se puebla dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="form-group full">
+        <label>Observaciones</label>
+        <textarea id="eObs" placeholder="Notas de la entrega (ej. Dotación periódica, reposición por desgaste, etc.)..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalEntrega')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarEntrega()">💾 Registrar</button>
+      <button class="btn btn-primary" onclick="guardarEntrega()">💾 Registrar Entrega</button>
     </div>
   </div>
 </div>

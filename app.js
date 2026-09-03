@@ -120,18 +120,7 @@ function navigate(pageId) {
 // ═══════════════════════════════════════════
 function openModal(id) {
   if (id === 'modalEntrega') {
-    const f = document.getElementById('eFecha');
-    if (f && !f.value) f.value = today();
-    poblarSelectTrabajadores('eTrabajador');
-    // Cargar prendas si no están en cache, luego poblar el select
-    if (!Cache.prendas) {
-      DotacionPrendas.getAll().then(data => {
-        Cache.prendas = data;
-        poblarSelectDotacion('eArticulo');
-      });
-    } else {
-      poblarSelectDotacion('eArticulo');
-    }
+    iniciarModalEntrega();
   }
   if (id === 'modalBPM')          poblarSelectTrabajadores('bTrabajador');
   if (id === 'modalVehiculo')     { poblarSelectTrabajadores('vConductor'); toggleVehiculoFields(); }
@@ -554,7 +543,7 @@ function resetDotacionForm() {
 }
 
 // ═══════════════════════════════════════════
-// ENTREGAS DE DOTACION
+// ENTREGAS DE DOTACION (Prendas del Stock)
 // ═══════════════════════════════════════════
 async function renderEntregas() {
   showLoading(true);
@@ -565,7 +554,6 @@ async function renderEntregas() {
 
     poblarSelectTrabajadores('eTrabajador');
     poblarSelectTrabajadores('filterEntregaTrabajador', true);
-    poblarSelectDotacion('eArticulo');
 
     const q       = (document.getElementById('searchEntrega')?.value || '').toLowerCase();
     const filterT = document.getElementById('filterEntregaTrabajador')?.value || '';
@@ -592,73 +580,319 @@ async function renderEntregas() {
         <td>${e.articulo_nombre}</td>
         <td><strong>${e.cantidad}</strong></td>
         <td>${e.talla || '—'}</td>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs||''}">${e.obs || '—'}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs||''}">${e.obs || '—'}</td>
         <td><div class="td-actions">
-          <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntrega('${e.id}')">🗑️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntrega('${e.id}')" title="Eliminar entrega y restaurar stock">🗑️</button>
         </div></td>
       </tr>`).join('');
   } finally { showLoading(false); }
 }
 
-async function guardarEntrega() {
-  const trabajadorId  = document.getElementById('eTrabajador').value;
-  const articuloVal   = document.getElementById('eArticulo').value;  // "tipo|referencia"
-  const cantidad      = parseInt(document.getElementById('eCantidad').value) || 0;
-  const fecha         = document.getElementById('eFecha').value;
-  if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
-  if (!articuloVal)  return toast('Selecciona un artículo', 'error');
-  if (cantidad < 1)  return toast('La cantidad debe ser mayor a 0', 'error');
-  if (!fecha)        return toast('La fecha es obligatoria', 'error');
+// ── Inicializar Modal de Entrega ──────────────────────────────
+async function iniciarModalEntrega() {
+  const f = document.getElementById('eFecha');
+  if (f && !f.value) f.value = today();
+  poblarSelectTrabajadores('eTrabajador');
 
-  const [tipoPrend, ...refParts] = articuloVal.split('|');
-  const refPrend = refParts.join('|');  // por si la referencia contiene '|'
+  const contenedor = document.getElementById('contenedorPrendasEntrega');
+  if (contenedor) contenedor.innerHTML = '';
+
+  if (!Cache.prendas) {
+    showLoading(true);
+    Cache.prendas = await DotacionPrendas.getAll();
+    showLoading(false);
+  }
+
+  // Iniciar con al menos una fila de prendas
+  agregarFilaPrendaEntrega();
+}
+
+// ── Agregar fila dinámica de prenda ───────────────────────────
+function agregarFilaPrendaEntrega() {
+  const contenedor = document.getElementById('contenedorPrendasEntrega');
+  if (!contenedor) return;
+
+  const lista = Cache.prendas || [];
+  const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado', 'epp'];
+  const meta  = DotacionPrendas.TIPO_LABEL;
+
+  let optgroupsHtml = '<option value="">Seleccionar artículo...</option>';
+  tipos.forEach(tipo => {
+    const items = lista.filter(r => r.tipo === tipo);
+    if (!items.length) return;
+
+    const refs = {};
+    items.forEach(r => {
+      if (!refs[r.referencia]) refs[r.referencia] = { stockTotal: 0, tipo: r.tipo, referencia: r.referencia };
+      refs[r.referencia].stockTotal += (r.stock || 0);
+    });
+
+    const m = meta[tipo] || { icon: '📦', label: tipo };
+    optgroupsHtml += `<optgroup label="${m.icon} ${m.label}">`;
+    Object.values(refs).forEach(r => {
+      const stockBadge = r.stockTotal > 0 ? `(Stock total: ${r.stockTotal})` : '(Sin stock)';
+      optgroupsHtml += `<option value="${r.tipo}|${r.referencia}">${r.referencia} ${stockBadge}</option>`;
+    });
+    optgroupsHtml += `</optgroup>`;
+  });
+
+  const filaDiv = document.createElement('div');
+  filaDiv.className = 'entrega-prenda-fila';
+  filaDiv.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:12px 14px;';
+
+  filaDiv.innerHTML = `
+    <div style="display:grid;grid-template-columns:minmax(180px, 1.3fr) minmax(160px, 1.2fr) 95px 36px;gap:10px;align-items:end;">
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:700;">Prenda / Referencia *</label>
+        <select class="ep-prenda" onchange="entregaPrendaCambiada(this)">
+          ${optgroupsHtml}
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:700;">Género y Talla *</label>
+        <select class="ep-talla" onchange="entregaTallaCambiada(this)">
+          <option value="">Selecciona prenda primero</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:700;">Cantidad *</label>
+        <input type="number" class="ep-cantidad" min="1" value="1" oninput="entregaCantidadCambiada(this)">
+      </div>
+      <div style="padding-bottom:1px;">
+        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaPrendaEntrega(this)" title="Quitar prenda de esta entrega" style="padding:0;border-radius:8px;font-size:14px;width:100%;height:38px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+    </div>
+    <div class="ep-stock-info" style="font-size:12px;margin-top:8px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+      <span>ℹ️ Selecciona prenda y talla para consultar el stock disponible en bodega.</span>
+    </div>
+  `;
+
+  contenedor.appendChild(filaDiv);
+}
+
+// ── Cambio de prenda en una fila ──────────────────────────────
+function entregaPrendaCambiada(selPrenda) {
+  const fila = selPrenda.closest('.entrega-prenda-fila');
+  if (!fila) return;
+  const selTalla = fila.querySelector('.ep-talla');
+  const val = selPrenda.value; // "tipo|referencia"
+  if (!val) {
+    selTalla.innerHTML = '<option value="">Selecciona prenda primero</option>';
+    entregaTallaCambiada(selTalla);
+    return;
+  }
+
+  const [tipo, ...refParts] = val.split('|');
+  const ref = refParts.join('|');
+  const lista = Cache.prendas || [];
+  const variantes = lista.filter(p => p.tipo === tipo && p.referencia === ref);
+
+  let opts = '<option value="">Seleccionar género / talla...</option>';
+  variantes.forEach(p => {
+    const genLabel = p.genero === 'hombre' ? '👨 Hombre' : p.genero === 'mujer' ? '👩 Mujer' : (p.genero === 'bodega' ? '🏭 Bodega' : '❄️ Cuarto Frío');
+    const stock = p.stock || 0;
+    const stockTxt = stock > 0 ? `(Stock: ${stock})` : `(Agotado - 0)`;
+    opts += `<option value="${p.id}" data-stock="${stock}">${genLabel} · Talla ${p.talla} ${stockTxt}</option>`;
+  });
+
+  selTalla.innerHTML = opts;
+  entregaTallaCambiada(selTalla);
+}
+
+// ── Cambio de talla en una fila ───────────────────────────────
+function entregaTallaCambiada(selTalla) {
+  const fila = selTalla.closest('.entrega-prenda-fila');
+  if (!fila) return;
+  const inputCant = fila.querySelector('.ep-cantidad');
+  const infoEl    = fila.querySelector('.ep-stock-info');
+  const opt       = selTalla.selectedOptions?.[0];
+  const prendaId  = selTalla.value;
+
+  if (!prendaId || !opt) {
+    if (infoEl) infoEl.innerHTML = '<span>ℹ️ Selecciona prenda y talla para consultar el stock disponible en bodega.</span>';
+    if (inputCant) inputCant.max = '';
+    return;
+  }
+
+  const stock = parseInt(opt.getAttribute('data-stock') || 0);
+  if (inputCant) inputCant.max = stock > 0 ? stock : 1;
+
+  if (stock <= 0) {
+    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;display:flex;align-items:center;gap:4px;">⚠️ Sin stock disponible en bodega (0 unidades).</span>`;
+  } else {
+    infoEl.innerHTML = `<span style="color:var(--success);font-weight:600;display:flex;align-items:center;gap:4px;">✅ Stock disponible en bodega: ${stock} unidad(es).</span>`;
+  }
+
+  entregaCantidadCambiada(inputCant);
+}
+
+// ── Validación de cantidad en una fila ────────────────────────
+function entregaCantidadCambiada(inputCant) {
+  const fila = inputCant.closest('.entrega-prenda-fila');
+  if (!fila) return;
+  const selTalla = fila.querySelector('.ep-talla');
+  const infoEl   = fila.querySelector('.ep-stock-info');
+  const opt      = selTalla?.selectedOptions?.[0];
+  const stock    = parseInt(opt?.getAttribute('data-stock') || 0);
+  const cant     = parseInt(inputCant.value) || 0;
+
+  if (!selTalla?.value) return;
+
+  if (stock <= 0) {
+    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">⚠️ Agotado: No hay stock disponible de esta talla.</span>`;
+    return;
+  }
+
+  if (cant > stock) {
+    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">❌ La cantidad solicitada (${cant}) supera el stock disponible (${stock} unid.).</span>`;
+  } else if (cant >= 1) {
+    const restante = stock - cant;
+    infoEl.innerHTML = `<span style="color:var(--success);font-weight:600;">✅ Cantidad válida. Quedarán ${restante} unidad(es) en inventario tras la entrega.</span>`;
+  }
+}
+
+// ── Quitar fila de prendas ────────────────────────────────────
+function eliminarFilaPrendaEntrega(btn) {
+  const contenedor = document.getElementById('contenedorPrendasEntrega');
+  if (!contenedor) return;
+  const filas = contenedor.querySelectorAll('.entrega-prenda-fila');
+  if (filas.length <= 1) {
+    return toast('Debes incluir al menos una prenda en la entrega', 'warning');
+  }
+  const fila = btn.closest('.entrega-prenda-fila');
+  if (fila) fila.remove();
+}
+
+// ── Guardar Entrega (Soporta 1 o múltiples prendas y cantidades)
+async function guardarEntrega() {
+  const trabajadorId = document.getElementById('eTrabajador').value;
+  const fecha        = document.getElementById('eFecha').value;
+  const entregadoPor = document.getElementById('eEntregadoPor').value.trim();
+  const obsGeneral   = document.getElementById('eObs').value.trim();
+
+  if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
+  if (!fecha)        return toast('La fecha de entrega es obligatoria', 'error');
+
+  const filas = document.querySelectorAll('#contenedorPrendasEntrega .entrega-prenda-fila');
+  if (!filas.length) return toast('Agrega al menos una prenda a la entrega', 'error');
+
+  const itemsAEntregar = [];
+  for (let i = 0; i < filas.length; i++) {
+    const fila = filas[i];
+    const selPrenda = fila.querySelector('.ep-prenda');
+    const selTalla  = fila.querySelector('.ep-talla');
+    const inputCant = fila.querySelector('.ep-cantidad');
+    const prendaId  = selTalla?.value;
+    const cantidad  = parseInt(inputCant?.value) || 0;
+
+    if (!selPrenda?.value) {
+      return toast(`En la prenda #${i + 1}: selecciona un artículo`, 'error');
+    }
+    if (!prendaId) {
+      return toast(`En la prenda #${i + 1}: selecciona el género y talla`, 'error');
+    }
+    if (cantidad < 1) {
+      return toast(`En la prenda #${i + 1}: la cantidad debe ser mayor a 0`, 'error');
+    }
+
+    const prenda = (Cache.prendas || []).find(p => p.id === prendaId);
+    if (!prenda) {
+      return toast(`No se encontró la prenda seleccionada en la fila #${i + 1}`, 'error');
+    }
+
+    itemsAEntregar.push({ prenda, cantidad });
+  }
+
+  // Validar stock total acumulado si se repite alguna prenda
+  const stockAcumulado = {};
+  for (const item of itemsAEntregar) {
+    stockAcumulado[item.prenda.id] = (stockAcumulado[item.prenda.id] || 0) + item.cantidad;
+  }
+  for (const [pId, cantTotal] of Object.entries(stockAcumulado)) {
+    const prenda = (Cache.prendas || []).find(p => p.id === pId);
+    if (prenda && (prenda.stock || 0) < cantTotal) {
+      return toast(`Stock insuficiente para ${prenda.referencia} (Talla ${prenda.talla}). Solicitado: ${cantTotal}, disponible: ${prenda.stock || 0}`, 'error');
+    }
+  }
 
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
-
-  const row = {
-    trabajador_id:     trabajadorId,
-    trabajador_nombre: trabajador?.nombre || '',
-    articulo_id:       articuloVal,          // guardamos "tipo|referencia" como id lógico
-    articulo_nombre:   `${refPrend} (${tipoPrend})`,
-    cantidad, fecha,
-    talla:         document.getElementById('eTalla').value.trim(),
-    entregado_por: document.getElementById('eEntregadoPor').value.trim(),
-    obs:           document.getElementById('eObs').value.trim(),
-  };
+  const trabajadorNombre = trabajador?.nombre || '';
 
   showLoading(true);
-  const result = await Entregas.insert(row);
+  let totalExitosos = 0;
+
+  for (let i = 0; i < itemsAEntregar.length; i++) {
+    const { prenda, cantidad } = itemsAEntregar[i];
+    const genLabel = prenda.genero === 'hombre' ? 'Hombre' : prenda.genero === 'mujer' ? 'Mujer' : (prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Frío');
+    const tipoLabel = DotacionPrendas.TIPO_LABEL[prenda.tipo]?.label || prenda.tipo;
+    const articuloNombre = `${prenda.referencia} (${tipoLabel} - ${genLabel})`;
+
+    let obsFinal = obsGeneral;
+    if (itemsAEntregar.length > 1) {
+      const sufijo = `[Ítem ${i + 1}/${itemsAEntregar.length}]`;
+      obsFinal = obsGeneral ? `${obsGeneral} ${sufijo}` : sufijo;
+    }
+
+    const row = {
+      trabajador_id:     trabajadorId,
+      trabajador_nombre: trabajadorNombre,
+      articulo_id:       prenda.id,
+      articulo_nombre:   articuloNombre,
+      cantidad:          cantidad,
+      fecha:             fecha,
+      talla:             prenda.talla,
+      entregado_por:     entregadoPor,
+      obs:               obsFinal,
+    };
+
+    const res = await Entregas.insert(row);
+    if (!res) {
+      showLoading(false);
+      return; // Error ya notificado por Entregas.insert
+    }
+    totalExitosos++;
+  }
+
   showLoading(false);
-  if (!result) return;
 
   Cache.invalidate('entregas');
-  Cache.prendas = null; // stock puede haber cambiado
+  Cache.prendas = null; // forzar recarga del inventario actualizado
   closeModal('modalEntrega');
   resetEntregaForm();
   await renderEntregas();
-  toast('Entrega registrada ✅');
+  if (document.getElementById('page-prendas')?.classList.contains('active')) {
+    await renderDotacionPrendas();
+  }
+  toast(`Entrega registrada ✅ (${totalExitosos} prenda(s) entregadas y descontadas del stock)`);
 }
 
+// ── Eliminar Entrega y Restaurar Stock ────────────────────────
 async function eliminarEntrega(id) {
-  if (!confirm('¿Eliminar este registro de entrega? El stock será restaurado.')) return;
+  const entrega = (Cache.entregas || []).find(e => e.id === id);
+  const infoExtra = entrega ? ` (${entrega.cantidad} und. de ${entrega.articulo_nombre || 'prenda'})` : '';
+  if (!confirm(`¿Eliminar este registro de entrega? El stock${infoExtra} será restaurado en el inventario.`)) return;
+
   showLoading(true);
   const ok = await Entregas.delete(id);
   showLoading(false);
   if (!ok) return;
+
   Cache.invalidate('entregas');
   Cache.prendas = null;
   await renderEntregas();
-  toast('Entrega eliminada', 'warning');
+  if (document.getElementById('page-prendas')?.classList.contains('active')) {
+    await renderDotacionPrendas();
+  }
+  toast('Entrega eliminada y stock restaurado ✅', 'warning');
 }
 
 function resetEntregaForm() {
-  ['eId','eTalla','eEntregadoPor','eObs'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  const cant = document.getElementById('eCantidad'); if (cant) cant.value = 1;
-  const f    = document.getElementById('eFecha');    if (f)    f.value = today();
+  const f = document.getElementById('eFecha'); if (f) f.value = today();
   const selT = document.getElementById('eTrabajador'); if (selT) selT.value = '';
-  const selA = document.getElementById('eArticulo');   if (selA) selA.value = '';
+  const ePor = document.getElementById('eEntregadoPor'); if (ePor) ePor.value = '';
+  const eObs = document.getElementById('eObs'); if (eObs) eObs.value = '';
+  const contenedor = document.getElementById('contenedorPrendasEntrega');
+  if (contenedor) contenedor.innerHTML = '';
 }
 
 async function exportarEntregas() {

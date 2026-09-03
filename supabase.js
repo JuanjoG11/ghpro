@@ -157,31 +157,84 @@ const Entregas = {
   },
 
   async insert(row) {
-    // Stock check before insert
-    const { data: art } = await sb
-      .from('dotacion')
-      .select('stock')
-      .eq('id', row.articulo_id)
-      .single();
-    if (!art || art.stock < row.cantidad) {
-      toast('Stock insuficiente para esta entrega', 'error');
-      return null;
+    // 1. Verificación de stock en dotacion_prendas si viene articulo_id
+    if (row.articulo_id) {
+      const { data: prenda, error: pErr } = await sb
+        .from('dotacion_prendas')
+        .select('id, stock, referencia, tipo, genero, talla')
+        .eq('id', row.articulo_id)
+        .single();
+      
+      if (pErr || !prenda) {
+        toast('No se encontró la prenda seleccionada en inventario', 'error');
+        return null;
+      }
+      if ((prenda.stock || 0) < row.cantidad) {
+        toast(`Stock insuficiente para ${prenda.referencia} (${prenda.talla}). Disponible: ${prenda.stock || 0}`, 'error');
+        return null;
+      }
     }
-    const { data, error } = await sb
+
+    // 2. Insertar en tabla entregas
+    let { data, error } = await sb
       .from('entregas')
       .insert([row])
       .select()
       .single();
+
+    // Fallback de compatibilidad: si la BD aún tiene la FK antigua apuntando a tabla 'dotacion' (código 23503)
+    if (error && error.code === '23503') {
+      console.warn('[Entregas.insert] FK a dotacion antigua detectada. Reintentando con articulo_id = null...');
+      const fallbackRow = { ...row, articulo_id: null };
+      const resFallback = await sb
+        .from('entregas')
+        .insert([fallbackRow])
+        .select()
+        .single();
+      data = resFallback.data;
+      error = resFallback.error;
+    }
+
     if (sbErr(error, 'entregas.insert')) return null;
+
+    // 3. Descontar stock directamente de dotacion_prendas
+    if (row.articulo_id) {
+      await DotacionPrendas.ajustarStock(row.articulo_id, -row.cantidad);
+    }
+
     return data;
   },
 
   async delete(id) {
+    // Obtener la entrega antes de borrarla para saber qué prenda y cantidad restaurar
+    const { data: entrega } = await sb
+      .from('entregas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     const { error } = await sb
       .from('entregas')
       .delete()
       .eq('id', id);
-    return !sbErr(error, 'entregas.delete');
+
+    if (sbErr(error, 'entregas.delete')) return false;
+
+    // Restaurar stock en dotacion_prendas
+    if (entrega && entrega.articulo_id) {
+      await DotacionPrendas.ajustarStock(entrega.articulo_id, entrega.cantidad || 1);
+    } else if (entrega && entrega.articulo_nombre && entrega.talla) {
+      // Fallback si articulo_id era null por FK antigua
+      const allPrendas = Cache.prendas || await DotacionPrendas.getAll();
+      const match = allPrendas.find(p =>
+        entrega.articulo_nombre.includes(p.referencia) && p.talla === entrega.talla
+      );
+      if (match) {
+        await DotacionPrendas.ajustarStock(match.id, entrega.cantidad || 1);
+      }
+    }
+
+    return true;
   },
 };
 
