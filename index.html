@@ -676,26 +676,37 @@
       </div>
       <div class="card">
         <div class="card-body">
-          <div class="search-bar">
-            <div class="search-input-wrap">
-              <span class="search-icon">🔍</span>
-              <input type="text" class="search-input" id="searchEntrega" placeholder="Buscar entrega..." oninput="renderEntregas()">
+          <div class="search-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px;">
+              <div class="search-input-wrap" style="flex: 1;">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchEntrega" placeholder="Buscar entrega o trabajador..." oninput="renderEntregas()">
+              </div>
+              <select class="filter-select" id="filterEntregaTrabajador" onchange="renderEntregas()" style="max-width: 220px;">
+                <option value="">Todos los trabajadores</option>
+              </select>
             </div>
-            <select class="filter-select" id="filterEntregaTrabajador" onchange="renderEntregas()">
-              <option value="">Todos los trabajadores</option>
-            </select>
+            <!-- Switch de vista: Agrupada vs Detallada -->
+            <div style="display: flex; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px;">
+              <button type="button" id="btnVistaAgrupada" class="btn btn-sm btn-primary" onclick="cambiarVistaEntregas('agrupada')" style="padding: 5px 12px; font-size: 12px; border-radius: 6px;">
+                👥 Vista Agrupada
+              </button>
+              <button type="button" id="btnVistaDetallada" class="btn btn-sm btn-secondary" onclick="cambiarVistaEntregas('detallada')" style="padding: 5px 12px; font-size: 12px; border-radius: 6px;">
+                📋 Vista Detallada
+              </button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
-              <thead>
+              <thead id="theadEntregas">
                 <tr>
                   <th>Fecha</th>
                   <th>Trabajador</th>
-                  <th>Artículo</th>
-                  <th>Cantidad</th>
-                  <th>Talla/Ref</th>
+                  <th>Prendas Entregadas</th>
+                  <th style="text-align:center;">Total</th>
+                  <th>Entregado por</th>
                   <th>Observaciones</th>
-                  <th>Acciones</th>
+                  <th style="text-align:center;">Acciones</th>
                 </tr>
               </thead>
               <tbody id="tablaEntregas"></tbody>
@@ -1658,6 +1669,61 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalEntrega')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarEntrega()">💾 Registrar Entrega</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Entrega -->
+<div class="modal-overlay" id="modalEditarEntrega">
+  <div class="modal" style="max-width: 680px;">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Editar Entrega de Dotación</div>
+      <button class="modal-close" onclick="closeModal('modalEditarEntrega')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Datos Generales -->
+      <div class="form-grid" style="margin-bottom: 16px;">
+        <div class="form-group">
+          <label>Trabajador</label>
+          <input type="text" id="eeTrabajadorNombre" disabled style="opacity: 0.85; cursor: not-allowed; font-weight: 600;">
+          <input type="hidden" id="eeTrabajadorId">
+        </div>
+        <div class="form-group">
+          <label>Fecha de entrega *</label>
+          <input type="date" id="eeFecha">
+        </div>
+        <div class="form-group full">
+          <label>Entregado por</label>
+          <input type="text" id="eeEntregadoPor" placeholder="Nombre de la persona responsable de la entrega...">
+        </div>
+      </div>
+
+      <!-- Sección de Prendas de la Entrega -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div>
+            <label style="color: var(--accent3); font-weight: 700; font-size: 13px;">Prendas Entregadas</label>
+            <div style="font-size: 11px; color: var(--text-muted);">Puedes modificar las cantidades, tallas o agregar nuevas prendas. El stock se ajustará automáticamente.</div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="agregarFilaPrendaEdicion()" style="padding: 6px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+            <span>➕</span> Agregar prenda
+          </button>
+        </div>
+
+        <div id="contenedorPrendasEdicion" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+          <!-- Filas dinámicas en edición -->
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="form-group full">
+        <label>Observaciones</label>
+        <textarea id="eeObs" placeholder="Notas de la entrega..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEditarEntrega')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionEntrega()">💾 Guardar Cambios</button>
     </div>
   </div>
 </div>

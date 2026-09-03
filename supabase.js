@@ -205,6 +205,17 @@ const Entregas = {
     return data;
   },
 
+  async update(id, row) {
+    const { data, error } = await sb
+      .from('entregas')
+      .update(row)
+      .eq('id', id)
+      .select()
+      .single();
+    if (sbErr(error, 'entregas.update')) return null;
+    return data;
+  },
+
   async delete(id) {
     // Obtener la entrega antes de borrarla para saber qué prenda y cantidad restaurar
     const { data: entrega } = await sb

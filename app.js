@@ -545,6 +545,114 @@ function resetDotacionForm() {
 // ═══════════════════════════════════════════
 // ENTREGAS DE DOTACION (Prendas del Stock)
 // ═══════════════════════════════════════════
+let vistaEntregasModo = 'agrupada'; // 'agrupada' (por entrega consolidada) o 'detallada' (por prenda)
+
+function cambiarVistaEntregas(modo) {
+  vistaEntregasModo = modo;
+  const btnAgr = document.getElementById('btnVistaAgrupada');
+  const btnDet = document.getElementById('btnVistaDetallada');
+  const thead  = document.getElementById('theadEntregas');
+
+  if (btnAgr && btnDet) {
+    if (modo === 'agrupada') {
+      btnAgr.className = 'btn btn-sm btn-primary';
+      btnDet.className = 'btn btn-sm btn-secondary';
+    } else {
+      btnAgr.className = 'btn btn-sm btn-secondary';
+      btnDet.className = 'btn btn-sm btn-primary';
+    }
+  }
+
+  if (thead) {
+    if (modo === 'agrupada') {
+      thead.innerHTML = `
+        <tr>
+          <th>Fecha</th>
+          <th>Trabajador</th>
+          <th>Prendas Entregadas</th>
+          <th style="text-align:center;">Total</th>
+          <th>Entregado por</th>
+          <th>Observaciones</th>
+          <th style="text-align:center;">Acciones</th>
+        </tr>`;
+    } else {
+      thead.innerHTML = `
+        <tr>
+          <th>Fecha</th>
+          <th>Trabajador</th>
+          <th>Artículo</th>
+          <th style="text-align:center;">Cantidad</th>
+          <th>Talla</th>
+          <th>Entregado por</th>
+          <th>Observaciones</th>
+          <th style="text-align:center;">Acciones</th>
+        </tr>`;
+    }
+  }
+
+  renderEntregas();
+}
+
+// ── Agrupador inteligente de entregas ─────────────────────────
+function agruparEntregas(lista) {
+  const grupos = {};
+  
+  // Ordenar cronológicamente descendente
+  const ordenados = [...lista].sort((a, b) => new Date(b.created_at || b.fecha) - new Date(a.created_at || a.fecha));
+  
+  ordenados.forEach(e => {
+    // Agrupar por trabajador, fecha, responsable de entrega y bloque de 10 minutos
+    const tTime = e.created_at ? Math.floor(new Date(e.created_at).getTime() / (10 * 60 * 1000)) : 0;
+    const normResp = (e.entregado_por || '').trim().toLowerCase();
+    const normTrab = (e.trabajador_id || e.trabajador_nombre || '').trim();
+    const key = `${normTrab}_${e.fecha}_${normResp}_${tTime}`;
+
+    if (!grupos[key]) {
+      const obsLimpia = (e.obs || '').replace(/\[Ítem\s+\d+\/\d+\]/g, '').trim();
+      grupos[key] = {
+        grupoId: key,
+        trabajador_id: e.trabajador_id,
+        trabajador_nombre: e.trabajador_nombre,
+        fecha: e.fecha,
+        entregado_por: e.entregado_por || '—',
+        obs: obsLimpia,
+        created_at: e.created_at,
+        totalCantidad: 0,
+        items: []
+      };
+    }
+
+    grupos[key].totalCantidad += (e.cantidad || 1);
+
+    // Icono según tipo de prenda
+    let icono = '📦';
+    const artLower = (e.articulo_nombre || '').toLowerCase();
+    if (artLower.includes('camisa') || artLower.includes('polo') || artLower.includes('oxford')) icono = '👕';
+    else if (artLower.includes('pantalon') || artLower.includes('jean')) icono = '👖';
+    else if (artLower.includes('chaqueta')) icono = '🧥';
+    else if (artLower.includes('bota') || artLower.includes('calzado')) icono = '🥾';
+    else if (artLower.includes('casco') || artLower.includes('guante') || artLower.includes('epp')) icono = '⛑️';
+
+    let nombreCorto = (e.articulo_nombre || '').split('(')[0].trim();
+    if (!nombreCorto) nombreCorto = e.articulo_nombre;
+
+    grupos[key].items.push({
+      id: e.id,
+      articulo_id: e.articulo_id,
+      articulo_nombre: e.articulo_nombre,
+      nombreCorto,
+      icono,
+      talla: e.talla || '—',
+      cantidad: e.cantidad || 1,
+      obs: e.obs || '',
+      raw: e
+    });
+  });
+
+  return Object.values(grupos);
+}
+
+// ── Render Principal de Entregas ──────────────────────────────
 async function renderEntregas() {
   showLoading(true);
   try {
@@ -559,7 +667,7 @@ async function renderEntregas() {
     const filterT = document.getElementById('filterEntregaTrabajador')?.value || '';
 
     const filtered = Cache.entregas.filter(e => {
-      const txt = [e.trabajador_nombre, e.articulo_nombre, e.talla, e.obs].join(' ').toLowerCase();
+      const txt = [e.trabajador_nombre, e.articulo_nombre, e.talla, e.entregado_por, e.obs].join(' ').toLowerCase();
       return (!q || txt.includes(q)) && (!filterT || e.trabajador_id === filterT);
     });
 
@@ -568,27 +676,90 @@ async function renderEntregas() {
     if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
     empty.style.display = 'none';
 
-    tbody.innerHTML = filtered.map(e => `
-      <tr>
-        <td>${fmtDate(e.fecha)}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:28px;height:28px;font-size:11px">${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}</div>
-            ${e.trabajador_nombre}
-          </div>
-        </td>
-        <td>${e.articulo_nombre}</td>
-        <td><strong>${e.cantidad}</strong></td>
-        <td>${e.talla || '—'}</td>
-        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs||''}">${e.obs || '—'}</td>
-        <td><div class="td-actions">
-          <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntrega('${e.id}')" title="Eliminar entrega y restaurar stock">🗑️</button>
-        </div></td>
-      </tr>`).join('');
+    // ── VISTA AGRUPADA (Por entrega consolidada) ──────────────
+    if (vistaEntregasModo === 'agrupada') {
+      const grupos = agruparEntregas(filtered);
+      window._gruposEntregasCache = grupos;
+
+      tbody.innerHTML = grupos.map(g => `
+        <tr>
+          <td style="white-space:nowrap;font-weight:600;">${fmtDate(g.fecha)}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="avatar" style="background:${avatarColor(g.trabajador_nombre)};width:32px;height:32px;font-size:12px;font-weight:700;">
+                ${(g.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style="font-weight:600;color:var(--text-primary);">${g.trabajador_nombre}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${g.items.length} tipo(s) de prenda</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;max-width:380px;">
+              ${g.items.map(it => `
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;font-size:12px;" title="${it.articulo_nombre}">
+                  <span>${it.icono}</span>
+                  <span style="color:var(--text-primary);font-weight:500;">${it.nombreCorto}</span>
+                  <span style="color:var(--accent3);font-weight:700;">(${it.talla})</span>
+                  <span style="background:rgba(58,130,200,0.22);color:var(--accent3);border-radius:4px;padding:0 5px;font-size:11px;font-weight:700;">×${it.cantidad}</span>
+                </span>
+              `).join('')}
+            </div>
+          </td>
+          <td style="text-align:center;">
+            <strong style="font-size:14px;color:var(--accent3);">${g.totalCantidad}</strong>
+            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">unds</div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:14px;">👤</span>
+              <span style="font-weight:600;color:var(--text-primary);">${g.entregado_por}</span>
+            </div>
+          </td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-muted);" title="${g.obs||''}">
+            ${g.obs || '—'}
+          </td>
+          <td>
+            <div class="td-actions" style="display:flex;gap:6px;justify-content:center;">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaGrupo('${g.grupoId}')" title="Editar esta entrega">✏️</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntregaGrupo('${g.grupoId}')" title="Eliminar entrega y restaurar stock">🗑️</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    } else {
+      // ── VISTA DETALLADA (Línea por línea de prenda) ───────────
+      tbody.innerHTML = filtered.map(e => `
+        <tr>
+          <td style="white-space:nowrap;">${fmtDate(e.fecha)}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:28px;height:28px;font-size:11px">${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}</div>
+              <span style="font-weight:600;">${e.trabajador_nombre}</span>
+            </div>
+          </td>
+          <td>${e.articulo_nombre}</td>
+          <td style="text-align:center;"><strong>${e.cantidad}</strong></td>
+          <td>${e.talla || '—'}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span>👤</span>
+              <span>${e.entregado_por || '—'}</span>
+            </div>
+          </td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs||''}">${e.obs || '—'}</td>
+          <td>
+            <div class="td-actions" style="display:flex;gap:6px;justify-content:center;">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaIndividual('${e.id}')" title="Editar esta prenda">✏️</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntrega('${e.id}')" title="Eliminar entrega y restaurar stock">🗑️</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
   } finally { showLoading(false); }
 }
 
-// ── Inicializar Modal de Entrega ──────────────────────────────
+// ── Inicializar Modal de Entrega (Nueva Entrega) ──────────────
 async function iniciarModalEntrega() {
   const f = document.getElementById('eFecha');
   if (f && !f.value) f.value = today();
@@ -607,11 +778,8 @@ async function iniciarModalEntrega() {
   agregarFilaPrendaEntrega();
 }
 
-// ── Agregar fila dinámica de prenda ───────────────────────────
-function agregarFilaPrendaEntrega() {
-  const contenedor = document.getElementById('contenedorPrendasEntrega');
-  if (!contenedor) return;
-
+// ── Generar Opciones agrupadas de Prendas ─────────────────────
+function _generarOptgroupsPrendas(prendaSelTipoRef = '') {
   const lista = Cache.prendas || [];
   const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado', 'epp'];
   const meta  = DotacionPrendas.TIPO_LABEL;
@@ -631,10 +799,21 @@ function agregarFilaPrendaEntrega() {
     optgroupsHtml += `<optgroup label="${m.icon} ${m.label}">`;
     Object.values(refs).forEach(r => {
       const stockBadge = r.stockTotal > 0 ? `(Stock total: ${r.stockTotal})` : '(Sin stock)';
-      optgroupsHtml += `<option value="${r.tipo}|${r.referencia}">${r.referencia} ${stockBadge}</option>`;
+      const val = `${r.tipo}|${r.referencia}`;
+      const isSel = val === prendaSelTipoRef ? 'selected' : '';
+      optgroupsHtml += `<option value="${val}" ${isSel}>${r.referencia} ${stockBadge}</option>`;
     });
     optgroupsHtml += `</optgroup>`;
   });
+  return optgroupsHtml;
+}
+
+// ── Agregar fila dinámica de prenda (Nueva Entrega) ───────────
+function agregarFilaPrendaEntrega() {
+  const contenedor = document.getElementById('contenedorPrendasEntrega');
+  if (!contenedor) return;
+
+  const optgroupsHtml = _generarOptgroupsPrendas();
 
   const filaDiv = document.createElement('div');
   filaDiv.className = 'entrega-prenda-fila';
@@ -751,7 +930,7 @@ function entregaCantidadCambiada(inputCant) {
   }
 }
 
-// ── Quitar fila de prendas ────────────────────────────────────
+// ── Quitar fila de prendas (Nueva Entrega) ────────────────────
 function eliminarFilaPrendaEntrega(btn) {
   const contenedor = document.getElementById('contenedorPrendasEntrega');
   if (!contenedor) return;
@@ -763,7 +942,7 @@ function eliminarFilaPrendaEntrega(btn) {
   if (fila) fila.remove();
 }
 
-// ── Guardar Entrega (Soporta 1 o múltiples prendas y cantidades)
+// ── Guardar Entrega (Nueva) ───────────────────────────────────
 async function guardarEntrega() {
   const trabajadorId = document.getElementById('eTrabajador').value;
   const fecha        = document.getElementById('eFecha').value;
@@ -827,12 +1006,6 @@ async function guardarEntrega() {
     const tipoLabel = DotacionPrendas.TIPO_LABEL[prenda.tipo]?.label || prenda.tipo;
     const articuloNombre = `${prenda.referencia} (${tipoLabel} - ${genLabel})`;
 
-    let obsFinal = obsGeneral;
-    if (itemsAEntregar.length > 1) {
-      const sufijo = `[Ítem ${i + 1}/${itemsAEntregar.length}]`;
-      obsFinal = obsGeneral ? `${obsGeneral} ${sufijo}` : sufijo;
-    }
-
     const row = {
       trabajador_id:     trabajadorId,
       trabajador_nombre: trabajadorNombre,
@@ -842,13 +1015,13 @@ async function guardarEntrega() {
       fecha:             fecha,
       talla:             prenda.talla,
       entregado_por:     entregadoPor,
-      obs:               obsFinal,
+      obs:               obsGeneral,
     };
 
     const res = await Entregas.insert(row);
     if (!res) {
       showLoading(false);
-      return; // Error ya notificado por Entregas.insert
+      return;
     }
     totalExitosos++;
   }
@@ -856,7 +1029,7 @@ async function guardarEntrega() {
   showLoading(false);
 
   Cache.invalidate('entregas');
-  Cache.prendas = null; // forzar recarga del inventario actualizado
+  Cache.prendas = null;
   closeModal('modalEntrega');
   resetEntregaForm();
   await renderEntregas();
@@ -866,7 +1039,275 @@ async function guardarEntrega() {
   toast(`Entrega registrada ✅ (${totalExitosos} prenda(s) entregadas y descontadas del stock)`);
 }
 
-// ── Eliminar Entrega y Restaurar Stock ────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// EDICIÓN DE ENTREGAS
+// ═══════════════════════════════════════════════════════════════
+
+// ── Abrir Modal de Edición para una Entrega Agrupada ───────────
+function editarEntregaGrupo(grupoId) {
+  const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
+  const grupo = grupos.find(g => g.grupoId === grupoId);
+  if (!grupo) return toast('No se encontró la información de la entrega', 'error');
+
+  window._grupoEnEdicion = JSON.parse(JSON.stringify(grupo));
+
+  document.getElementById('eeTrabajadorNombre').value = grupo.trabajador_nombre;
+  document.getElementById('eeTrabajadorId').value     = grupo.trabajador_id;
+  document.getElementById('eeFecha').value            = grupo.fecha;
+  document.getElementById('eeEntregadoPor').value     = grupo.entregado_por === '—' ? '' : grupo.entregado_por;
+  document.getElementById('eeObs').value              = grupo.obs || '';
+
+  const contenedor = document.getElementById('contenedorPrendasEdicion');
+  if (contenedor) contenedor.innerHTML = '';
+
+  grupo.items.forEach(it => {
+    agregarFilaPrendaEdicion(it);
+  });
+
+  document.getElementById('modalEditarEntrega').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// ── Abrir Edición para una Fila Individual ────────────────────
+function editarEntregaIndividual(entregaId) {
+  const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
+  const grupo = grupos.find(g => g.items.some(it => it.id === entregaId));
+  if (grupo) {
+    editarEntregaGrupo(grupo.grupoId);
+  }
+}
+
+// ── Agregar Fila de Prenda en el Modal de Edición ─────────────
+function agregarFilaPrendaEdicion(itemData = null) {
+  const contenedor = document.getElementById('contenedorPrendasEdicion');
+  if (!contenedor) return;
+
+  const lista = Cache.prendas || [];
+  let prendaSelTipoRef = '';
+  let selTallaId = '';
+  let cantidadVal = itemData ? itemData.cantidad : 1;
+  let rawId = itemData ? itemData.id : '';
+
+  if (itemData) {
+    const prenda = lista.find(p => p.id === itemData.articulo_id)
+      || lista.find(p => itemData.articulo_nombre.includes(p.referencia) && p.talla === itemData.talla);
+    if (prenda) {
+      prendaSelTipoRef = `${prenda.tipo}|${prenda.referencia}`;
+      selTallaId = prenda.id;
+    }
+  }
+
+  const optgroupsHtml = _generarOptgroupsPrendas(prendaSelTipoRef);
+
+  const filaDiv = document.createElement('div');
+  filaDiv.className = 'entrega-prenda-fila';
+  filaDiv.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:12px 14px;';
+  if (rawId) filaDiv.setAttribute('data-entrega-id', rawId);
+  if (selTallaId) filaDiv.setAttribute('data-original-prenda-id', selTallaId);
+  filaDiv.setAttribute('data-original-cant', cantidadVal);
+
+  filaDiv.innerHTML = `
+    <div style="display:grid;grid-template-columns:minmax(180px, 1.3fr) minmax(160px, 1.2fr) 95px 36px;gap:10px;align-items:end;">
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:700;">Prenda / Referencia *</label>
+        <select class="ep-prenda" onchange="entregaPrendaCambiada(this)">
+          ${optgroupsHtml}
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:700;">Género y Talla *</label>
+        <select class="ep-talla" onchange="entregaTallaCambiada(this)">
+          <option value="">Selecciona prenda primero</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:700;">Cantidad *</label>
+        <input type="number" class="ep-cantidad" min="1" value="${cantidadVal}" oninput="entregaCantidadCambiada(this)">
+      </div>
+      <div style="padding-bottom:1px;">
+        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaPrendaEdicion(this)" title="Quitar prenda de esta entrega" style="padding:0;border-radius:8px;font-size:14px;width:100%;height:38px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+    </div>
+    <div class="ep-stock-info" style="font-size:12px;margin-top:8px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+      <span>ℹ️ Selecciona prenda y talla para consultar el stock disponible en bodega.</span>
+    </div>
+  `;
+
+  contenedor.appendChild(filaDiv);
+
+  // Preseleccionar si viene con datos
+  const selP = filaDiv.querySelector('.ep-prenda');
+  if (prendaSelTipoRef && selP) {
+    entregaPrendaCambiada(selP);
+    const selT = filaDiv.querySelector('.ep-talla');
+    if (selTallaId && selT) {
+      selT.value = selTallaId;
+      entregaTallaCambiada(selT);
+    }
+  }
+}
+
+// ── Quitar Fila en Edición ────────────────────────────────────
+function eliminarFilaPrendaEdicion(btn) {
+  const contenedor = document.getElementById('contenedorPrendasEdicion');
+  if (!contenedor) return;
+  const filas = contenedor.querySelectorAll('.entrega-prenda-fila');
+  if (filas.length <= 1) {
+    return toast('Debes mantener al menos una prenda en la entrega', 'warning');
+  }
+  const fila = btn.closest('.entrega-prenda-fila');
+  if (fila) fila.remove();
+}
+
+// ── Guardar Cambios de la Edición de Entrega ───────────────────
+async function guardarEdicionEntrega() {
+  const grupoOriginal = window._grupoEnEdicion;
+  if (!grupoOriginal) return toast('Error: no hay información de entrega en edición', 'error');
+
+  const fecha        = document.getElementById('eeFecha').value;
+  const entregadoPor = document.getElementById('eeEntregadoPor').value.trim();
+  const obs          = document.getElementById('eeObs').value.trim();
+
+  if (!fecha) return toast('La fecha es obligatoria', 'error');
+
+  const filas = document.querySelectorAll('#contenedorPrendasEdicion .entrega-prenda-fila');
+  if (!filas.length) return toast('Debes incluir al menos una prenda', 'error');
+
+  const itemsNuevos = [];
+  for (let i = 0; i < filas.length; i++) {
+    const fila = filas[i];
+    const entregaId    = fila.getAttribute('data-entrega-id') || null;
+    const origPrendaId = fila.getAttribute('data-original-prenda-id') || null;
+    const origCant     = parseInt(fila.getAttribute('data-original-cant')) || 0;
+    const selTalla     = fila.querySelector('.ep-talla');
+    const inputCant    = fila.querySelector('.ep-cantidad');
+    const prendaId     = selTalla?.value;
+    const cantidad     = parseInt(inputCant?.value) || 0;
+
+    if (!prendaId) return toast(`En la prenda #${i + 1}: selecciona artículo y talla`, 'error');
+    if (cantidad < 1) return toast(`En la prenda #${i + 1}: la cantidad debe ser mayor a 0`, 'error');
+
+    const prenda = (Cache.prendas || []).find(p => p.id === prendaId);
+    if (!prenda) return toast(`No se encontró la prenda seleccionada #${i + 1}`, 'error');
+
+    itemsNuevos.push({
+      entregaId,
+      origPrendaId,
+      origCant,
+      prendaId,
+      prenda,
+      cantidad
+    });
+  }
+
+  // Validar stock para incrementos
+  for (const it of itemsNuevos) {
+    const stockBodega = it.prenda.stock || 0;
+    if (it.entregaId && it.origPrendaId === it.prendaId) {
+      const delta = it.cantidad - it.origCant;
+      if (delta > 0 && stockBodega < delta) {
+        return toast(`Stock insuficiente para aumentar ${it.prenda.referencia} (${it.prenda.talla}). Disponible: ${stockBodega}, necesitas: ${delta}`, 'error');
+      }
+    } else if (!it.entregaId || it.origPrendaId !== it.prendaId) {
+      if (stockBodega < it.cantidad) {
+        return toast(`Stock insuficiente para ${it.prenda.referencia} (${it.prenda.talla}). Disponible: ${stockBodega}, necesitas: ${it.cantidad}`, 'error');
+      }
+    }
+  }
+
+  showLoading(true);
+
+  // 1. Identificar registros originales eliminados
+  const idsNuevos = itemsNuevos.map(it => it.entregaId).filter(Boolean);
+  const itemsEliminados = grupoOriginal.items.filter(it => !idsNuevos.includes(it.id));
+
+  for (const itElim of itemsEliminados) {
+    await Entregas.delete(itElim.id);
+  }
+
+  // 2. Procesar actualizaciones e inserciones
+  for (const it of itemsNuevos) {
+    const genLabel = it.prenda.genero === 'hombre' ? 'Hombre' : it.prenda.genero === 'mujer' ? 'Mujer' : (it.prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Frío');
+    const tipoLabel = DotacionPrendas.TIPO_LABEL[it.prenda.tipo]?.label || it.prenda.tipo;
+    const articuloNombre = `${it.prenda.referencia} (${tipoLabel} - ${genLabel})`;
+
+    if (it.entregaId) {
+      // Registro existente
+      if (it.origPrendaId === it.prendaId) {
+        const delta = it.cantidad - it.origCant;
+        if (delta !== 0) {
+          await DotacionPrendas.ajustarStock(it.prendaId, -delta);
+        }
+      } else {
+        if (it.origPrendaId) {
+          await DotacionPrendas.ajustarStock(it.origPrendaId, it.origCant);
+        }
+        await DotacionPrendas.ajustarStock(it.prendaId, -it.cantidad);
+      }
+
+      await Entregas.update(it.entregaId, {
+        articulo_id:     it.prendaId,
+        articulo_nombre: articuloNombre,
+        talla:           it.prenda.talla,
+        cantidad:        it.cantidad,
+        fecha:           fecha,
+        entregado_por:   entregadoPor,
+        obs:             obs
+      });
+    } else {
+      // Nueva fila agregada durante la edición
+      const newRow = {
+        trabajador_id:     grupoOriginal.trabajador_id,
+        trabajador_nombre: grupoOriginal.trabajador_nombre,
+        articulo_id:       it.prendaId,
+        articulo_nombre:   articuloNombre,
+        cantidad:          it.cantidad,
+        fecha:             fecha,
+        talla:             it.prenda.talla,
+        entregado_por:     entregadoPor,
+        obs:               obs
+      };
+      await Entregas.insert(newRow);
+    }
+  }
+
+  showLoading(false);
+
+  Cache.invalidate('entregas');
+  Cache.prendas = null;
+  closeModal('modalEditarEntrega');
+  await renderEntregas();
+  if (document.getElementById('page-prendas')?.classList.contains('active')) {
+    await renderDotacionPrendas();
+  }
+  toast('Entrega actualizada con éxito ✅');
+}
+
+// ── Eliminar Entrega Completa (Grupo) y Restaurar Stock ───────
+async function eliminarEntregaGrupo(grupoId) {
+  const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
+  const grupo = grupos.find(g => g.grupoId === grupoId);
+  if (!grupo) return toast('No se encontró la entrega', 'error');
+
+  const msg = `¿Eliminar la entrega de ${grupo.trabajador_nombre} (${grupo.items.length} prenda(s), ${grupo.totalCantidad} unidad(es) en total)? El stock de todas las prendas será restaurado en el inventario.`;
+  if (!confirm(msg)) return;
+
+  showLoading(true);
+  for (const it of grupo.items) {
+    await Entregas.delete(it.id);
+  }
+  showLoading(false);
+
+  Cache.invalidate('entregas');
+  Cache.prendas = null;
+  await renderEntregas();
+  if (document.getElementById('page-prendas')?.classList.contains('active')) {
+    await renderDotacionPrendas();
+  }
+  toast('Entrega eliminada y stock restaurado en el inventario ✅', 'warning');
+}
+
+// ── Eliminar Entrega Individual ───────────────────────────────
 async function eliminarEntrega(id) {
   const entrega = (Cache.entregas || []).find(e => e.id === id);
   const infoExtra = entrega ? ` (${entrega.cantidad} und. de ${entrega.articulo_nombre || 'prenda'})` : '';
