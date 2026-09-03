@@ -1802,9 +1802,38 @@ async function solicitarNotificaciones() {
 }
 
 // ═══════════════════════════════════════════
-// CSV EXPORT
+// EXPORTACIÓN EXCEL (.XLSX) Y CSV
 // ═══════════════════════════════════════════
+function downloadExcel(name, headers, rows, sheetName = 'Datos') {
+  if (typeof XLSX !== 'undefined') {
+    const wb = XLSX.utils.book_new();
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Ajustar automáticamente el ancho de cada columna según el contenido
+    const colWidths = headers.map((h, colIdx) => {
+      const maxLen = Math.max(
+        String(h).length,
+        ...rows.map(r => String(r[colIdx] ?? '').length)
+      );
+      return { wch: Math.min(50, Math.max(12, maxLen + 3)) };
+    });
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `${name}_${today()}.xlsx`);
+    toast('Archivo Excel (.xlsx) descargado 📊');
+  } else {
+    // Fallback a CSV si la librería XLSX no está cargada
+    downloadCSV(name, headers, rows);
+  }
+}
+
 function downloadCSV(name, headers, rows) {
+  // Si SheetJS (XLSX) está disponible, exportar automáticamente en formato .xlsx nativo
+  if (typeof XLSX !== 'undefined') {
+    return downloadExcel(name, headers, rows, name);
+  }
   const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const csv    = [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
   const blob   = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -2789,7 +2818,7 @@ async function renderAsistencia() {
   } finally { showLoading(false); }
 }
 
-// ── Exportar CSV ───────────────────────────────────────────────
+// ── Exportar Asistencia (Excel .xlsx) ──────────────────────────
 async function exportarAsistencia() {
   showLoading(true);
   const todos = await Asistencia.getAll();
@@ -2801,7 +2830,7 @@ async function exportarAsistencia() {
     r.trabajador_nombre, r.cedula,
     r.cargo || '', r.ciudad || '', r.metodo,
   ]);
-  downloadCSV('asistencia', headers, rows);
+  downloadExcel('asistencia', headers, rows, 'Asistencia');
 }
 
 // ═══════════════════════════════════════════════════════════════
