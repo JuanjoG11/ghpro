@@ -982,6 +982,8 @@ const Asistencia = {
     if (sbErr(error, 'asistencia.getByNombre')) return [];
     return data || [];
   },
+
+  async getByCedula(cedula, fecha) {
     const { data, error } = await sb
       .from('asistencia')
       .select('*')
