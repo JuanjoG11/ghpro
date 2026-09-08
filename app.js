@@ -2744,10 +2744,14 @@ const _TIPO_LABEL_ASIST = {
   salida:           'Salida',
 };
 
-function _rowAsistHTML(r) {
+function _rowAsistHTML(r, mostrarFecha = false) {
   const metodoIcon = r.metodo === 'qr' ? '📲' : '🪪';
   const tipoLabel  = _TIPO_LABEL_ASIST[r.tipo] || r.tipo;
+  const fechaCol   = mostrarFecha
+    ? `<td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${r.fecha || '—'}</td>`
+    : '';
   return `<tr>
+    ${fechaCol}
     <td><strong>${fmtHora(r.hora)}</strong></td>
     <td><span class="asist-log-tipo ${r.tipo}">${tipoLabel}</span></td>
     <td>${r.trabajador_nombre || '—'}</td>
@@ -2762,27 +2766,43 @@ function _rowAsistHTML(r) {
 
 async function renderTablaAsistencia() {
   const fecha  = document.getElementById('asistFiltroFecha')?.value || today();
-  const q      = (document.getElementById('asistSearch')?.value     || '').toLowerCase();
+  const q      = (document.getElementById('asistSearch')?.value     || '').trim();
   const fTipo  = document.getElementById('asistFiltroTipo')?.value  || '';
   const tbody  = document.getElementById('asistTbody');
   const empty  = document.getElementById('asistLogEmpty');
   if (!tbody) return;
 
-  const todos = await Asistencia.getByFecha(fecha);
+  // Si hay texto de búsqueda → traer TODO el historial del trabajador (sin filtro de fecha)
+  // Si no hay texto → mostrar solo el día seleccionado (comportamiento original)
+  let todos;
+  const buscandoPorNombre = q.length > 0;
+  if (buscandoPorNombre) {
+    todos = await Asistencia.getByNombre(q);
+  } else {
+    todos = await Asistencia.getByFecha(fecha);
+  }
 
   const filtrados = todos.filter(r => {
     const txt = [(r.trabajador_nombre || ''), (r.cedula || '')].join(' ').toLowerCase();
-    return (!q     || txt.includes(q))
+    return (!q     || txt.includes(q.toLowerCase()))
         && (!fTipo || r.tipo === fTipo);
   });
 
+  // Mostrar columna Fecha solo cuando se busca por nombre
+  const thFecha = document.getElementById('asistThFecha');
+  if (thFecha) thFecha.style.display = buscandoPorNombre ? '' : 'none';
+
   if (!filtrados.length) {
     tbody.innerHTML = '';
-    if (empty) empty.style.display = '';
+    if (empty) {
+      empty.querySelector('.empty-state-text').textContent =
+        buscandoPorNombre ? `Sin registros para "${q}"` : 'Sin registros para esta fecha';
+      empty.style.display = '';
+    }
     return;
   }
   if (empty) empty.style.display = 'none';
-  tbody.innerHTML = filtrados.map(_rowAsistHTML).join('');
+  tbody.innerHTML = filtrados.map(r => _rowAsistHTML(r, buscandoPorNombre)).join('');
 }
 
 // ── Eliminar registro ──────────────────────────────────────────

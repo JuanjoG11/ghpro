@@ -972,7 +972,16 @@ const Asistencia = {
     return data;
   },
 
-  async getByCedula(cedula, fecha) {
+  async getByNombre(q) {
+    const { data, error } = await sb
+      .from('asistencia')
+      .select('*')
+      .ilike('trabajador_nombre', `%${q}%`)
+      .order('fecha', { ascending: false })
+      .order('hora',  { ascending: false });
+    if (sbErr(error, 'asistencia.getByNombre')) return [];
+    return data || [];
+  },
     const { data, error } = await sb
       .from('asistencia')
       .select('*')
