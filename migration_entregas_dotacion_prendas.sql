@@ -22,7 +22,7 @@ DROP FUNCTION IF EXISTS fn_restaurar_stock();
 -- 4. Asegurar permisos en Supabase para dotacion_prendas y entregas
 GRANT ALL ON TABLE dotacion_prendas TO anon, authenticated, service_role;
 GRANT ALL ON TABLE entregas TO anon, authenticated, service_role;
-
+  
 -- 5. Consulta de verificación
 SELECT 
   tc.table_name, 
