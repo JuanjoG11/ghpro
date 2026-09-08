@@ -2772,25 +2772,25 @@ async function renderTablaAsistencia() {
   const empty  = document.getElementById('asistLogEmpty');
   if (!tbody) return;
 
-  // Si hay texto de búsqueda → traer TODO el historial del trabajador (sin filtro de fecha)
-  // Si no hay texto → mostrar solo el día seleccionado (comportamiento original)
-  let todos;
+  // Si hay texto → traer todo el historial (sin filtro de fecha en BD)
+  // Si no hay texto → solo el día seleccionado
   const buscandoPorNombre = q.length > 0;
-  if (buscandoPorNombre) {
-    todos = await Asistencia.getByNombre(q);
-  } else {
-    todos = await Asistencia.getByFecha(fecha);
-  }
+  const todos = buscandoPorNombre
+    ? await Asistencia.getByNombre(q)
+    : await Asistencia.getByFecha(fecha);
 
   const filtrados = todos.filter(r => {
     const txt = [(r.trabajador_nombre || ''), (r.cedula || '')].join(' ').toLowerCase();
-    return (!q     || txt.includes(q.toLowerCase()))
-        && (!fTipo || r.tipo === fTipo);
+    const coincideTexto = !q     || txt.includes(q.toLowerCase());
+    const coincideFecha = !buscandoPorNombre || !fecha || r.fecha === fecha;
+    const coincideTipo  = !fTipo || r.tipo === fTipo;
+    return coincideTexto && coincideFecha && coincideTipo;
   });
 
-  // Mostrar columna Fecha solo cuando se busca por nombre
+  // Mostrar columna Fecha solo cuando se busca por nombre sin filtrar una fecha específica
   const thFecha = document.getElementById('asistThFecha');
-  if (thFecha) thFecha.style.display = buscandoPorNombre ? '' : 'none';
+  const mostrarFecha = buscandoPorNombre;
+  if (thFecha) thFecha.style.display = mostrarFecha ? '' : 'none';
 
   if (!filtrados.length) {
     tbody.innerHTML = '';
@@ -2802,7 +2802,7 @@ async function renderTablaAsistencia() {
     return;
   }
   if (empty) empty.style.display = 'none';
-  tbody.innerHTML = filtrados.map(r => _rowAsistHTML(r, buscandoPorNombre)).join('');
+  tbody.innerHTML = filtrados.map(r => _rowAsistHTML(r, mostrarFecha)).join('');
 }
 
 // ── Eliminar registro ──────────────────────────────────────────

@@ -1257,7 +1257,7 @@
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="asistSearch"
             placeholder="Buscar nombre o cédula..."
-            oninput="renderTablaAsistencia()">
+            oninput="renderTablaAsistencia();if(!this.value.trim())_actualizarStatsHoy();">
         </div>
         <select id="asistFiltroTipo" onchange="renderTablaAsistencia()"
           style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
