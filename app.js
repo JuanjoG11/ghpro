@@ -2765,23 +2765,31 @@ function _rowAsistHTML(r, mostrarFecha = false) {
 }
 
 async function renderTablaAsistencia() {
-  const fecha  = document.getElementById('asistFiltroFecha')?.value || today();
+  const fecha  = document.getElementById('asistFiltroFecha')?.value || '';
   const q      = (document.getElementById('asistSearch')?.value     || '').trim();
   const fTipo  = document.getElementById('asistFiltroTipo')?.value  || '';
   const tbody  = document.getElementById('asistTbody');
   const empty  = document.getElementById('asistLogEmpty');
   if (!tbody) return;
 
-  // Si hay texto → traer todo el historial (sin filtro de fecha en BD)
-  // Si no hay texto → solo el día seleccionado
   const buscandoPorNombre = q.length > 0;
-  const todos = buscandoPorNombre
-    ? await Asistencia.getByNombre(q)
-    : await Asistencia.getByFecha(fecha);
+
+  let todos;
+  if (buscandoPorNombre) {
+    // Hay nombre: traer TODO sin importar la fecha
+    todos = await Asistencia.getByNombre(q);
+  } else if (fecha) {
+    // Solo fecha: ese día exacto
+    todos = await Asistencia.getByFecha(fecha);
+  } else {
+    // Sin nada: mostrar hoy
+    todos = await Asistencia.getByFecha(today());
+  }
 
   const filtrados = todos.filter(r => {
     const txt = [(r.trabajador_nombre || ''), (r.cedula || '')].join(' ').toLowerCase();
     const coincideTexto = !q     || txt.includes(q.toLowerCase());
+    // Si busca por nombre Y además eligió una fecha, aplicar ese filtro extra
     const coincideFecha = !buscandoPorNombre || !fecha || r.fecha === fecha;
     const coincideTipo  = !fTipo || r.tipo === fTipo;
     return coincideTexto && coincideFecha && coincideTipo;
@@ -2822,8 +2830,10 @@ async function eliminarRegistroAsist(id) {
 async function renderAsistencia() {
   showLoading(true);
   try {
+    // No pre-llenar la fecha: el usuario puede buscar por nombre (historial global)
+    // o elegir una fecha para filtrar por día. Las stats sí muestran hoy por defecto.
     const fechaInput = document.getElementById('asistFiltroFecha');
-    if (fechaInput && !fechaInput.value) fechaInput.value = today();
+    if (fechaInput) fechaInput.value = '';
 
     const subtitleEl = document.getElementById('asistFecha');
     if (subtitleEl) {
