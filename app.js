@@ -4810,25 +4810,27 @@ async function generarActaEntregaPDF(datos) {
     opacity:.85;
     margin-top:4px;
   }
-  .hdr-meta{
+  .hdr-table-doc{
     flex-shrink:0;
-    background:rgba(0,0,0,0.22);
-    border:1px solid rgba(255,255,255,0.25);
-    border-radius:8px;
-    padding:8px 12px;
-    text-align:right;
-    font-size:9px;
+    border-collapse:collapse;
+    background:#fff;
+    border:1.5px solid #0f172a;
+    font-size:9.5px;
+    color:#0f172a;
+    box-shadow:0 2px 5px rgba(0,0,0,0.15);
   }
-  .hdr-meta-cod{
+  .hdr-table-doc td{
+    border:1px solid #0f172a;
+    padding:3.5px 12px;
+    white-space:nowrap;
+    font-weight:600;
+    text-align:left;
+  }
+  .hdr-table-doc tr.shaded td{
+    background:#e2e8f0;
+  }
+  .hdr-table-doc strong{
     font-weight:800;
-    color:#fff;
-    font-size:10px;
-    margin-bottom:2px;
-  }
-  .hdr-meta-lbl{
-    color:rgba(255,255,255,0.75);
-    font-size:8px;
-    text-transform:uppercase;
   }
 
   /* ── Secciones ── */
@@ -5115,11 +5117,17 @@ async function generarActaEntregaPDF(datos) {
       <div class="hdr-doc">Acta de Entrega de Dotación y EPP</div>
       <div class="hdr-subdoc">Conforme al Art. 230 del Código Sustantivo del Trabajo & Sistema SG-SST</div>
     </div>
-    <div class="hdr-meta">
-      <div class="hdr-meta-cod">${consecutivo}</div>
-      <div class="hdr-meta-lbl">Formato GH-FOR-DOT-01 v.02</div>
-      <div class="hdr-meta-lbl" style="margin-top:2px;">Fecha: ${fechaRaw}</div>
-    </div>
+    <table class="hdr-table-doc">
+      <tr>
+        <td><strong>Código:</strong> FOR-SST-023</td>
+      </tr>
+      <tr class="shaded">
+        <td><strong>Versión:</strong> 4</td>
+      </tr>
+      <tr>
+        <td><strong>Fecha de Versión:</strong> 10/10/2023</td>
+      </tr>
+    </table>
   </div>
 
   <!-- ── 1. Datos del Colaborador ── -->
@@ -5245,7 +5253,7 @@ async function generarActaEntregaPDF(datos) {
   <div class="seccion">
     <div class="clausula-box">
       <p>
-        <strong>DECLARACIÓN DE RECIBIDO Y COMPROMISO LABORAL:</strong> En constancia de lo anterior, el trabajador declara haber recibido a entera satisfacción, en perfecto estado de conservación, higiene y confección, y en su talla adecuada, los elementos de calzado, vestido de labor y/o elementos de protección personal (EPP) descritos en la presente acta.
+        <strong>DECLARACIÓN DE RECIBIDO Y COMPROMISO LABORAL:</strong> Expresamente declaro que he recibido a mi entera satisfacción, en perfecto estado de conservación, higiene y confección, y en mi talla adecuada, los elementos de calzado, vestido de labor y/o elementos de protección personal (EPP) asignados al cargo que desempeño, descritos en la presente acta.
       </p>
       <p>
         De conformidad con los <strong>Artículos 230, 232 y 233 del Código Sustantivo del Trabajo (CST)</strong> y los lineamientos del <strong>SG-SST (Decreto 1072 de 2015)</strong>, el trabajador se compromete formalmente a: <strong>1)</strong> Destinar la dotación recibida de manera <em>exclusiva y obligatoria</em> al desempeño de sus funciones en la empresa durante la jornada de trabajo; <strong>2)</strong> Velar por su adecuado cuidado, limpieza y presentación personal; <strong>3)</strong> Abstenerse de ceder, transferir o comercializar estos elementos. El trabajador reconoce que el no uso de la dotación suministrada exime al empleador de las sanciones de ley y constituye falta a sus obligaciones laborales.
@@ -5278,7 +5286,7 @@ async function generarActaEntregaPDF(datos) {
       <span>Tiendas y Marcas Eje Cafetero S.A.S. &nbsp;·&nbsp; NIT 900.973.929-0 &nbsp;·&nbsp; GH Pro</span>
     </div>
     <div style="text-align:right;">
-      <span>Consecutivo: ${consecutivo} &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span>
+      <span>Código: FOR-SST-023 (v.4) &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span>
     </div>
   </div>
 
