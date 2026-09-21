@@ -4810,27 +4810,40 @@ async function generarActaEntregaPDF(datos) {
     opacity:.85;
     margin-top:4px;
   }
-  .hdr-table-doc{
+  .hdr-doc-tag{
     flex-shrink:0;
-    border-collapse:collapse;
-    background:#fff;
-    border:1.5px solid #0f172a;
-    font-size:9.5px;
-    color:#0f172a;
-    box-shadow:0 2px 5px rgba(0,0,0,0.15);
+    background:#ffffff;
+    border:1px solid #d0e4f4;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 3px 10px rgba(0,0,0,0.12);
+    min-width:175px;
   }
-  .hdr-table-doc td{
-    border:1px solid #0f172a;
-    padding:3.5px 12px;
-    white-space:nowrap;
-    font-weight:600;
-    text-align:left;
+  .tag-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:4px 11px;
+    border-bottom:1px solid #edf2f7;
+    font-size:9px;
   }
-  .hdr-table-doc tr.shaded td{
-    background:#e2e8f0;
+  .tag-row:last-child{
+    border-bottom:none;
   }
-  .hdr-table-doc strong{
+  .tag-row.shaded{
+    background:#f8fafc;
+  }
+  .tag-lbl{
+    font-weight:700;
+    color:#64748b;
+    font-size:8px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+  }
+  .tag-val{
     font-weight:800;
+    color:#1a3a5c;
+    font-size:9.5px;
   }
 
   /* ── Secciones ── */
@@ -5117,17 +5130,20 @@ async function generarActaEntregaPDF(datos) {
       <div class="hdr-doc">Acta de Entrega de Dotación y EPP</div>
       <div class="hdr-subdoc">Conforme al Art. 230 del Código Sustantivo del Trabajo & Sistema SG-SST</div>
     </div>
-    <table class="hdr-table-doc">
-      <tr>
-        <td><strong>Código:</strong> FOR-SST-023</td>
-      </tr>
-      <tr class="shaded">
-        <td><strong>Versión:</strong> 4</td>
-      </tr>
-      <tr>
-        <td><strong>Fecha de Versión:</strong> 10/10/2023</td>
-      </tr>
-    </table>
+    <div class="hdr-doc-tag">
+      <div class="tag-row">
+        <span class="tag-lbl">Código:</span>
+        <span class="tag-val">FOR-SST-023</span>
+      </div>
+      <div class="tag-row shaded">
+        <span class="tag-lbl">Versión:</span>
+        <span class="tag-val">4</span>
+      </div>
+      <div class="tag-row">
+        <span class="tag-lbl">Fecha Versión:</span>
+        <span class="tag-val">10/10/2023</span>
+      </div>
+    </div>
   </div>
 
   <!-- ── 1. Datos del Colaborador ── -->
