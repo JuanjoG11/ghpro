@@ -722,6 +722,7 @@ async function renderEntregas() {
           </td>
           <td>
             <div class="td-actions" style="display:flex;gap:6px;justify-content:center;">
+              <button class="btn btn-primary btn-sm btn-icon" onclick="imprimirActaEntregaGrupo('${g.grupoId}')" title="Imprimir Acta de Entrega (PDF)" style="background:linear-gradient(135deg,#1a5c99,#2a8a6e);border:none;color:#fff;">🖨️</button>
               <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaGrupo('${g.grupoId}')" title="Editar esta entrega">✏️</button>
               <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntregaGrupo('${g.grupoId}')" title="Eliminar entrega y restaurar stock">🗑️</button>
             </div>
@@ -750,6 +751,7 @@ async function renderEntregas() {
           <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs||''}">${e.obs || '—'}</td>
           <td>
             <div class="td-actions" style="display:flex;gap:6px;justify-content:center;">
+              <button class="btn btn-primary btn-sm btn-icon" onclick="imprimirActaEntregaIndividual('${e.id}')" title="Imprimir Acta de Entrega (PDF)" style="background:linear-gradient(135deg,#1a5c99,#2a8a6e);border:none;color:#fff;">🖨️</button>
               <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaIndividual('${e.id}')" title="Editar esta prenda">✏️</button>
               <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntrega('${e.id}')" title="Eliminar entrega y restaurar stock">🗑️</button>
             </div>
@@ -1037,6 +1039,31 @@ async function guardarEntrega() {
     await renderDotacionPrendas();
   }
   toast(`Entrega registrada ✅ (${totalExitosos} prenda(s) entregadas y descontadas del stock)`);
+
+  // 🖨️ Generar e imprimir automáticamente el Acta de Entrega en PDF
+  try {
+    generarActaEntregaPDF({
+      trabajadorId: trabajadorId,
+      trabajadorNombre: trabajadorNombre,
+      fecha: fecha,
+      entregadoPor: entregadoPor,
+      obs: obsGeneral,
+      items: itemsAEntregar.map(it => {
+        const genLabel = it.prenda.genero === 'hombre' ? 'Hombre' : it.prenda.genero === 'mujer' ? 'Mujer' : (it.prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Frío');
+        const tipoLabel = DotacionPrendas.TIPO_LABEL[it.prenda.tipo]?.label || it.prenda.tipo;
+        return {
+          referencia: it.prenda.referencia,
+          tipoLabel: tipoLabel,
+          generoLabel: genLabel,
+          articulo_nombre: `${it.prenda.referencia} (${tipoLabel} - ${genLabel})`,
+          talla: it.prenda.talla,
+          cantidad: it.cantidad
+        };
+      })
+    });
+  } catch (errPdf) {
+    console.error('Error al generar Acta de Entrega en PDF:', errPdf);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4529,3 +4556,800 @@ function generarPDFVacaciones() {
   win.document.write(html);
   win.document.close();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// GENERADOR DE PDF — ACTA DE ENTREGA DE DOTACIÓN Y EPP
+// Genera e imprime un acta corporativa formal con logo, datos del
+// trabajador, responsable, tabla de prendas, compromiso y firmas con huella.
+// ═══════════════════════════════════════════════════════════════
+
+function _iconoPrendaEntrega(nombre) {
+  const n = (nombre || '').toLowerCase();
+  if (n.includes('camisa') || n.includes('polo') || n.includes('oxford') || n.includes('camiseta')) return '👕';
+  if (n.includes('pantalon') || n.includes('jean') || n.includes('drill')) return '👖';
+  if (n.includes('chaqueta') || n.includes('chaleco') || n.includes('buzo') || n.includes('impermeable')) return '🧥';
+  if (n.includes('bota') || n.includes('calzado') || n.includes('zapato')) return '🥾';
+  if (n.includes('casco') || n.includes('guante') || n.includes('gorra') || n.includes('monogafa') || n.includes('tapaoído') || n.includes('epp')) return '⛑️';
+  return '📦';
+}
+
+async function generarActaEntregaPDF(datos) {
+  if (!datos) return;
+
+  // Asegurar caché de trabajadores para datos completos (cédula, cargo, ciudad, etc.)
+  if (!Cache.trabajadores || !Cache.trabajadores.length) {
+    try {
+      Cache.trabajadores = await Trabajadores.getAll();
+    } catch (e) {
+      console.warn('[generarActaEntregaPDF] No se pudieron cargar trabajadores:', e);
+    }
+  }
+
+  const listaTrabajadores = Cache.trabajadores || [];
+  const trabId  = datos.trabajadorId || '';
+  const trabNom = (datos.trabajadorNombre || '').trim().toLowerCase();
+
+  const trabajador = listaTrabajadores.find(t =>
+    (trabId && t.id === trabId) ||
+    (t.nombre && t.nombre.trim().toLowerCase() === trabNom)
+  ) || {};
+
+  const nombreTrabajador   = trabajador.nombre || datos.trabajadorNombre || 'Colaborador';
+  const cedulaTrabajador   = trabajador.cedula || '—';
+  const cargoTrabajador    = trabajador.cargo  || '—';
+  const ciudadTrabajador   = trabajador.ciudad || '—';
+  const marcaTrabajador    = trabajador.marca  || trabajador.unidad_organizacional || '—';
+  const ingresoTrabajador  = trabajador.fecha_ingreso ? fmtDate(trabajador.fecha_ingreso) : '—';
+  const telefonoTrabajador = trabajador.telefono || '—';
+
+  const entregadoPor = (datos.entregadoPor && datos.entregadoPor !== '—') ? datos.entregadoPor : 'Gestión Humana';
+  const obsEntrega   = datos.obs || 'Entrega regular de dotación de trabajo en óptimas condiciones.';
+  const fechaRaw     = datos.fecha || today();
+
+  let fechaFormateada = fechaRaw;
+  try {
+    const d = new Date(fechaRaw + 'T12:00:00');
+    fechaFormateada = d.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    fechaFormateada = fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1);
+  } catch (e) {
+    fechaFormateada = fechaRaw;
+  }
+
+  // Consecutivo único institucional
+  const numCed = (cedulaTrabajador || '0000').replace(/[^0-9]/g, '').slice(-4) || '0001';
+  const numFmt = fechaRaw.replace(/[^0-9]/g, '') || '2026';
+  const consecutivo = `ACT-DOT-${numFmt}-${numCed}`;
+
+  // Normalizar prendas
+  const rawItems = Array.isArray(datos.items) && datos.items.length ? datos.items : [];
+  let totalUnidades = 0;
+
+  const itemsProcesados = rawItems.map((it, idx) => {
+    const cant = parseInt(it.cantidad) || 1;
+    totalUnidades += cant;
+    const desc = it.articulo_nombre || it.referencia || 'Prenda de Dotación';
+    const icono = it.icono || _iconoPrendaEntrega(desc);
+    const talla = it.talla || '—';
+    return {
+      index: idx + 1,
+      icono,
+      descripcion: desc,
+      talla,
+      cantidad: cant,
+      estado: 'Nuevo / Conforme'
+    };
+  });
+
+  const logoUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/logo_tym.png';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Acta de Entrega de Dotación — ${nombreTrabajador}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:10.5px;
+    color:#1e293b;
+    background:#e2e8f0;
+    padding:0;
+    margin:0;
+    line-height:1.45;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  /* ── Barra de acciones en pantalla ── */
+  .preview-bar{
+    position:sticky;
+    top:0;
+    z-index:9999;
+    background:#0f172a;
+    color:#fff;
+    padding:12px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    border-bottom:1px solid rgba(255,255,255,0.1);
+  }
+  .preview-bar-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .preview-bar-badge{
+    background:linear-gradient(135deg,#1a5c99,#2a8a6e);
+    color:#fff;
+    padding:4px 10px;
+    border-radius:6px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+  }
+  .preview-bar-title{
+    font-size:13px;
+    font-weight:600;
+    color:#f8fafc;
+  }
+  .preview-bar-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .btn-print{
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+    color:#fff;
+    border:none;
+    padding:8px 18px;
+    border-radius:8px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    box-shadow:0 2px 6px rgba(37,99,235,0.35);
+    transition:all .15s ease;
+  }
+  .btn-print:hover{
+    background:linear-gradient(135deg,#1d4ed8,#1e40af);
+    transform:translateY(-1px);
+  }
+  .btn-close{
+    background:rgba(255,255,255,0.12);
+    color:#e2e8f0;
+    border:1px solid rgba(255,255,255,0.2);
+    padding:8px 14px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:12px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .btn-close:hover{
+    background:rgba(255,255,255,0.2);
+    color:#fff;
+  }
+
+  /* ── Contenedor de la hoja ── */
+  .hoja{
+    width:215.9mm;
+    min-height:279.4mm;
+    margin:20px auto;
+    background:#fff;
+    padding:24px 30px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.12);
+    border-radius:4px;
+    position:relative;
+  }
+
+  /* ── Encabezado Corporativo ── */
+  .hdr{
+    display:flex;
+    align-items:center;
+    background:linear-gradient(135deg,#1a3a5c 0%,#1a5c99 55%,#2a8a6e 100%);
+    border-radius:12px;
+    padding:16px 20px;
+    margin-bottom:16px;
+    gap:16px;
+    color:#fff;
+  }
+  .hdr-logo-box{
+    width:70px;
+    height:70px;
+    background:#fff;
+    border-radius:10px;
+    padding:5px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    box-shadow:0 4px 10px rgba(0,0,0,0.15);
+  }
+  .hdr-logo-box img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+  }
+  .hdr-centro{
+    flex:1;
+    text-align:center;
+  }
+  .hdr-empresa{
+    font-size:16px;
+    font-weight:900;
+    letter-spacing:.6px;
+    text-transform:uppercase;
+    margin-bottom:2px;
+    text-shadow:0 1px 2px rgba(0,0,0,0.2);
+  }
+  .hdr-nit{
+    font-size:11px;
+    font-weight:500;
+    opacity:.9;
+    margin-bottom:6px;
+  }
+  .hdr-doc{
+    display:inline-block;
+    background:rgba(255,255,255,0.22);
+    border:1px solid rgba(255,255,255,0.4);
+    border-radius:20px;
+    padding:4px 18px;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:1px;
+    text-transform:uppercase;
+  }
+  .hdr-subdoc{
+    font-size:9.5px;
+    opacity:.85;
+    margin-top:4px;
+  }
+  .hdr-meta{
+    flex-shrink:0;
+    background:rgba(0,0,0,0.22);
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:8px;
+    padding:8px 12px;
+    text-align:right;
+    font-size:9px;
+  }
+  .hdr-meta-cod{
+    font-weight:800;
+    color:#fff;
+    font-size:10px;
+    margin-bottom:2px;
+  }
+  .hdr-meta-lbl{
+    color:rgba(255,255,255,0.75);
+    font-size:8px;
+    text-transform:uppercase;
+  }
+
+  /* ── Secciones ── */
+  .seccion{
+    margin-bottom:12px;
+  }
+  .sec-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:2px solid #1a5c99;
+    padding-bottom:3px;
+    margin-bottom:8px;
+  }
+  .sec-titulo{
+    font-size:9.5px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:#1a5c99;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .sec-badge{
+    font-size:8.5px;
+    font-weight:700;
+    background:#e0f2fe;
+    color:#0369a1;
+    padding:2px 8px;
+    border-radius:12px;
+  }
+
+  /* ── Grids de Datos ── */
+  .campos-grid{
+    display:grid;
+    gap:6px;
+  }
+  .grid-4{ grid-template-columns:repeat(4,1fr); }
+  .grid-3{ grid-template-columns:repeat(3,1fr); }
+  .grid-2{ grid-template-columns:1fr 1fr; }
+
+  .campo{
+    background:#f8fafc;
+    border:1px solid #cbd5e1;
+    border-radius:6px;
+    padding:6px 10px;
+  }
+  .campo-lbl{
+    font-size:8px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:#64748b;
+    margin-bottom:2px;
+  }
+  .campo-val{
+    font-size:11px;
+    font-weight:700;
+    color:#0f172a;
+    min-height:14px;
+    word-break:break-word;
+  }
+  .campo-val.accent{
+    color:#1a5c99;
+  }
+
+  /* ── Tabla de Prendas ── */
+  .tabla-prendas{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:4px;
+    font-size:10px;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid #cbd5e1;
+  }
+  .tabla-prendas thead th{
+    background:#1a3a5c;
+    color:#fff;
+    padding:7px 10px;
+    text-align:left;
+    font-weight:800;
+    font-size:8.5px;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+    border-right:1px solid rgba(255,255,255,0.12);
+  }
+  .tabla-prendas thead th:last-child{
+    border-right:none;
+  }
+  .tabla-prendas tbody td{
+    padding:7px 10px;
+    border-bottom:1px solid #e2e8f0;
+    border-right:1px solid #e2e8f0;
+    vertical-align:middle;
+  }
+  .tabla-prendas tbody td:last-child{
+    border-right:none;
+  }
+  .tabla-prendas tbody tr:nth-child(even){
+    background:#f8fafc;
+  }
+  .badge-talla{
+    display:inline-block;
+    background:#eff6ff;
+    color:#1d4ed8;
+    border:1px solid #bfdbfe;
+    font-weight:800;
+    font-size:10px;
+    padding:2px 8px;
+    border-radius:4px;
+    text-align:center;
+  }
+  .badge-cant{
+    display:inline-block;
+    background:#dcfce7;
+    color:#15803d;
+    border:1px solid #bbf7d0;
+    font-weight:900;
+    font-size:11px;
+    padding:2px 10px;
+    border-radius:4px;
+    text-align:center;
+  }
+  .badge-estado{
+    display:inline-block;
+    background:#f1f5f9;
+    color:#334155;
+    font-weight:600;
+    font-size:8.5px;
+    padding:2px 6px;
+    border-radius:4px;
+  }
+  .tabla-prendas tfoot td{
+    background:#f1f5f9;
+    padding:8px 10px;
+    font-weight:800;
+    border-top:2px solid #cbd5e1;
+  }
+
+  /* ── Cláusula Legal CST ── */
+  .clausula-box{
+    background:#f8fafc;
+    border:1px solid #cbd5e1;
+    border-left:4px solid #1a5c99;
+    border-radius:6px;
+    padding:8px 12px;
+    font-size:8.5px;
+    color:#334155;
+    text-align:justify;
+    line-height:1.45;
+  }
+  .clausula-box p{
+    margin-bottom:4px;
+  }
+  .clausula-box p:last-child{
+    margin-bottom:0;
+  }
+  .clausula-box strong{
+    color:#0f172a;
+  }
+
+  /* ── Sección de Firma del Trabajador ── */
+  .firmas-container{
+    margin-top:14px;
+    display:flex;
+    justify-content:center;
+  }
+  .firma-card{
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    overflow:hidden;
+    background:#fff;
+    width:100%;
+    max-width:440px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  }
+  .firma-card-header{
+    background:linear-gradient(135deg,#1a3a5c,#1a5c99);
+    color:#fff;
+    font-size:9px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    padding:7px 12px;
+    text-align:center;
+  }
+  .firma-card-body{
+    padding:16px 24px 14px;
+    background:#fafcff;
+    text-align:center;
+  }
+  .firma-espacio{
+    height:55px;
+  }
+  .firma-linea{
+    border-bottom:1.5px solid #475569;
+    margin-bottom:6px;
+  }
+  .firma-nombre-tit{
+    font-size:11px;
+    font-weight:800;
+    color:#0f172a;
+    line-height:1.3;
+  }
+  .firma-subtit{
+    font-size:9px;
+    color:#64748b;
+    line-height:1.3;
+  }
+
+  /* ── Pie de documento ── */
+  .doc-pie{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-top:1px solid #cbd5e1;
+    padding-top:8px;
+    font-size:8.5px;
+    color:#64748b;
+  }
+  .doc-pie-logo{
+    width:20px;
+    height:20px;
+    object-fit:contain;
+    opacity:.5;
+  }
+
+  /* ── Reglas de Impresión ── */
+  @media print{
+    body{
+      background:#fff;
+      padding:0;
+    }
+    .preview-bar{
+      display:none !important;
+    }
+    .hoja{
+      width:100%;
+      min-height:auto;
+      margin:0;
+      padding:0;
+      box-shadow:none;
+      border-radius:0;
+    }
+    .seccion, .firmas-grid, .tabla-prendas, .hdr{
+      page-break-inside:avoid;
+    }
+    @page{
+      size:letter portrait;
+      margin:10mm 12mm 10mm 12mm;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Barra flotante de acciones para pantalla ── -->
+<div class="preview-bar">
+  <div class="preview-bar-left">
+    <span class="preview-bar-badge">Oficial</span>
+    <span class="preview-bar-title">Acta de Entrega de Dotación — ${nombreTrabajador}</span>
+  </div>
+  <div class="preview-bar-actions">
+    <button class="btn-print" onclick="window.print()">
+      <span>🖨️</span> Imprimir / Guardar como PDF
+    </button>
+    <button class="btn-close" onclick="window.close()">✕ Cerrar</button>
+  </div>
+</div>
+
+<div class="hoja">
+
+  <!-- ── Encabezado Corporativo ── -->
+  <div class="hdr">
+    <div class="hdr-logo-box">
+      <img src="${logoUrl}" alt="Logo Tiendas y Marcas" onerror="this.style.display='none'">
+    </div>
+    <div class="hdr-centro">
+      <div class="hdr-empresa">Tiendas y Marcas Eje Cafetero S.A.S.</div>
+      <div class="hdr-nit">NIT 900.973.929-0</div>
+      <div class="hdr-doc">Acta de Entrega de Dotación y EPP</div>
+      <div class="hdr-subdoc">Conforme al Art. 230 del Código Sustantivo del Trabajo & Sistema SG-SST</div>
+    </div>
+    <div class="hdr-meta">
+      <div class="hdr-meta-cod">${consecutivo}</div>
+      <div class="hdr-meta-lbl">Formato GH-FOR-DOT-01 v.02</div>
+      <div class="hdr-meta-lbl" style="margin-top:2px;">Fecha: ${fechaRaw}</div>
+    </div>
+  </div>
+
+  <!-- ── 1. Datos del Colaborador ── -->
+  <div class="seccion">
+    <div class="sec-header">
+      <div class="sec-titulo">👤 1. Información del Colaborador Beneficiario</div>
+      <span class="sec-badge">Personal Activo</span>
+    </div>
+    <div class="campos-grid grid-4">
+      <div class="campo" style="grid-column:span 2">
+        <div class="campo-lbl">Nombre Completo</div>
+        <div class="campo-val accent">${nombreTrabajador}</div>
+      </div>
+      <div class="campo">
+        <div class="campo-lbl">Identificación (C.C.)</div>
+        <div class="campo-val">${cedulaTrabajador}</div>
+      </div>
+      <div class="campo">
+        <div class="campo-lbl">Cargo / Puesto</div>
+        <div class="campo-val">${cargoTrabajador}</div>
+      </div>
+      <div class="campo">
+        <div class="campo-lbl">Ciudad / Sede</div>
+        <div class="campo-val">${ciudadTrabajador}</div>
+      </div>
+      <div class="campo">
+        <div class="campo-lbl">Marca / Área</div>
+        <div class="campo-val">${marcaTrabajador}</div>
+      </div>
+      <div class="campo">
+        <div class="campo-lbl">Fecha de Ingreso</div>
+        <div class="campo-val">${ingresoTrabajador}</div>
+      </div>
+      <div class="campo">
+        <div class="campo-lbl">Teléfono</div>
+        <div class="campo-val">${telefonoTrabajador}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. Datos de la Entrega ── -->
+  <div class="seccion">
+    <div class="sec-header">
+      <div class="sec-titulo">📦 2. Datos de la Entrega y Asignación</div>
+      <span class="sec-badge">Dotación Legal</span>
+    </div>
+    <div class="campos-grid grid-3">
+      <div class="campo">
+        <div class="campo-lbl">Fecha de Entrega</div>
+        <div class="campo-val accent">${fechaFormateada}</div>
+      </div>
+      <div class="campo" style="background:#eff6ff;border-color:#bfdbfe;">
+        <div class="campo-lbl" style="color:#1d4ed8;font-weight:800;">Entregado Por (Responsable)</div>
+        <div class="campo-val" style="color:#1e40af;font-size:12px;">👤 ${entregadoPor}</div>
+      </div>
+      <div class="campo">
+        <div class="campo-lbl">Motivo de Asignación</div>
+        <div class="campo-val">Dotación Periódica Legal (CST Art. 230)</div>
+      </div>
+      <div class="campo" style="grid-column:span 3">
+        <div class="campo-lbl">Observaciones / Justificación</div>
+        <div class="campo-val" style="font-weight:500;">${obsEntrega}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. Detalle de Prendas Entregadas ── -->
+  <div class="seccion">
+    <div class="sec-header">
+      <div class="sec-titulo">👔 3. Relación de Prendas y Elementos Entregados</div>
+      <span class="sec-badge">${totalUnidades} Unidad(es) en Total</span>
+    </div>
+
+    <table class="tabla-prendas">
+      <thead>
+        <tr>
+          <th style="width:30px;text-align:center;">#</th>
+          <th style="width:130px;">Elemento</th>
+          <th>Descripción / Referencia</th>
+          <th style="width:75px;text-align:center;">Talla</th>
+          <th style="width:80px;text-align:center;">Cantidad</th>
+          <th style="width:110px;text-align:center;">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsProcesados.length ? itemsProcesados.map(it => `
+          <tr>
+            <td style="text-align:center;font-weight:700;color:#64748b;">${it.index}</td>
+            <td>
+              <span style="font-size:13px;margin-right:4px;">${it.icono}</span>
+              <strong style="color:#0f172a;">${it.descripcion.split('(')[0].trim()}</strong>
+            </td>
+            <td style="color:#334155;">${it.descripcion}</td>
+            <td style="text-align:center;"><span class="badge-talla">${it.talla}</span></td>
+            <td style="text-align:center;"><span class="badge-cant">${it.cantidad} und</span></td>
+            <td style="text-align:center;"><span class="badge-estado">✅ ${it.estado}</span></td>
+          </tr>
+        `).join('') : `
+          <tr>
+            <td colspan="6" style="text-align:center;padding:16px;color:#94a3b8;">No se registraron prendas en esta entrega.</td>
+          </tr>
+        `}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="text-align:right;text-transform:uppercase;letter-spacing:.6px;font-size:9px;">
+            Total de Elementos de Dotación Entregados:
+          </td>
+          <td style="text-align:center;">
+            <span class="badge-cant" style="font-size:12px;background:#22c55e;color:#fff;border-color:#16a34a;">
+              ${totalUnidades} unds
+            </span>
+          </td>
+          <td style="text-align:center;font-size:8.5px;color:#15803d;font-weight:700;">
+            100% Conforme
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- ── 4. Compromiso Legal CST y SG-SST ── -->
+  <div class="seccion">
+    <div class="clausula-box">
+      <p>
+        <strong>DECLARACIÓN DE RECIBIDO Y COMPROMISO LABORAL:</strong> En constancia de lo anterior, el trabajador declara haber recibido a entera satisfacción, en perfecto estado de conservación, higiene y confección, y en su talla adecuada, los elementos de calzado, vestido de labor y/o elementos de protección personal (EPP) descritos en la presente acta.
+      </p>
+      <p>
+        De conformidad con los <strong>Artículos 230, 232 y 233 del Código Sustantivo del Trabajo (CST)</strong> y los lineamientos del <strong>SG-SST (Decreto 1072 de 2015)</strong>, el trabajador se compromete formalmente a: <strong>1)</strong> Destinar la dotación recibida de manera <em>exclusiva y obligatoria</em> al desempeño de sus funciones en la empresa durante la jornada de trabajo; <strong>2)</strong> Velar por su adecuado cuidado, limpieza y presentación personal; <strong>3)</strong> Abstenerse de ceder, transferir o comercializar estos elementos. El trabajador reconoce que el no uso de la dotación suministrada exime al empleador de las sanciones de ley y constituye falta a sus obligaciones laborales.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 5. Firma de Recibido del Trabajador ── -->
+  <div class="seccion">
+    <div class="firmas-container">
+      <div class="firma-card">
+        <div class="firma-card-header">✍️ Firma del Trabajador / Colaborador (Recibí Conforme)</div>
+        <div class="firma-card-body">
+          <div class="firma-espacio"></div>
+          <div>
+            <div class="firma-linea"></div>
+            <div class="firma-nombre-tit">${nombreTrabajador}</div>
+            <div class="firma-subtit">C.C. ${cedulaTrabajador} &nbsp;·&nbsp; ${cargoTrabajador}</div>
+            <div class="firma-subtit" style="margin-top:4px;color:#64748b;font-size:8.5px;">Fecha de recibido: ${fechaRaw} &nbsp;·&nbsp; Dotación entregada por: <strong>${entregadoPor}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Pie de Documento ── -->
+  <div class="doc-pie">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <img class="doc-pie-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
+      <span>Tiendas y Marcas Eje Cafetero S.A.S. &nbsp;·&nbsp; NIT 900.973.929-0 &nbsp;·&nbsp; GH Pro</span>
+    </div>
+    <div style="text-align:right;">
+      <span>Consecutivo: ${consecutivo} &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  window.onload = function() {
+    window.print();
+  };
+<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=950,height=750');
+  if (!win) {
+    toast('Por favor permite las ventanas emergentes en tu navegador para generar el PDF del Acta.', 'warning', 7000);
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+}
+
+// ── Funciones auxiliares para reimpresión de actas ─────────────
+async function imprimirActaEntregaGrupo(grupoId) {
+  const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
+  const grupo = grupos.find(g => g.grupoId === grupoId);
+  if (!grupo) return toast('No se encontró la información de la entrega', 'error');
+
+  await generarActaEntregaPDF({
+    trabajadorId:     grupo.trabajador_id,
+    trabajadorNombre: grupo.trabajador_nombre,
+    fecha:            grupo.fecha,
+    entregadoPor:     grupo.entregado_por === '—' ? '' : grupo.entregado_por,
+    obs:              grupo.obs || '',
+    items: grupo.items.map(it => ({
+      referencia:      it.nombreCorto || it.articulo_nombre,
+      articulo_nombre: it.articulo_nombre,
+      talla:           it.talla,
+      cantidad:        it.cantidad,
+      icono:           it.icono
+    }))
+  });
+}
+
+async function imprimirActaEntregaIndividual(entregaId) {
+  const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
+  const grupo = grupos.find(g => g.items && g.items.some(it => it.id === entregaId));
+  if (grupo) {
+    return imprimirActaEntregaGrupo(grupo.grupoId);
+  }
+
+  const entrega = (Cache.entregas || []).find(e => e.id === entregaId);
+  if (!entrega) return toast('No se encontró el registro de la entrega', 'error');
+
+  await generarActaEntregaPDF({
+    trabajadorId:     entrega.trabajador_id,
+    trabajadorNombre: entrega.trabajador_nombre,
+    fecha:            entrega.fecha,
+    entregadoPor:     entrega.entregado_por || '',
+    obs:              entrega.obs || '',
+    items: [{
+      referencia:      entrega.articulo_nombre,
+      articulo_nombre: entrega.articulo_nombre,
+      talla:           entrega.talla || '—',
+      cantidad:        entrega.cantidad || 1
+    }]
+  });
+}
+
+function imprimirActaDesdeEdicion() {
+  if (!window._grupoEnEdicion) return toast('No hay entrega seleccionada en edición', 'warning');
+  imprimirActaEntregaGrupo(window._grupoEnEdicion.grupoId);
+}
+

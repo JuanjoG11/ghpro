@@ -1722,9 +1722,14 @@
         <textarea id="eeObs" placeholder="Notas de la entrega..."></textarea>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modalEditarEntrega')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarEdicionEntrega()">💾 Guardar Cambios</button>
+    <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn btn-secondary" type="button" onclick="imprimirActaDesdeEdicion()" style="display:inline-flex;align-items:center;gap:6px;" title="Imprimir Acta de Entrega (PDF)">
+        <span>🖨️</span> Imprimir Acta
+      </button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary" onclick="closeModal('modalEditarEntrega')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarEdicionEntrega()">💾 Guardar Cambios</button>
+      </div>
     </div>
   </div>
 </div>
