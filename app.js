@@ -47,30 +47,30 @@ const fmtDateLong = (d) => {
 };
 
 // ── Avatar color ───────────────────────────────────────────────
-const avatarColors = ['#6c63ff','#ff6584','#43e97b','#f7971e','#1e90ff','#ff9f43','#a29bfe','#fd79a8'];
-const avatarColor  = (str) => avatarColors[(str || '').charCodeAt(0) % avatarColors.length];
+const avatarColors = ['#6c63ff', '#ff6584', '#43e97b', '#f7971e', '#1e90ff', '#ff9f43', '#a29bfe', '#fd79a8'];
+const avatarColor = (str) => avatarColors[(str || '').charCodeAt(0) % avatarColors.length];
 
 // ── Badge helpers ──────────────────────────────────────────────
 function estadoBadge(days) {
   if (days === null) return '<span class="badge badge-neutral">Sin fecha</span>';
-  if (days < 0)   return '<span class="badge badge-danger"><span class="dot"></span>Vencido</span>';
-  if (days <= 7)  return '<span class="badge badge-danger"><span class="dot"></span>Crítico</span>';
+  if (days < 0) return '<span class="badge badge-danger"><span class="dot"></span>Vencido</span>';
+  if (days <= 7) return '<span class="badge badge-danger"><span class="dot"></span>Crítico</span>';
   if (days <= 30) return '<span class="badge badge-warning"><span class="dot"></span>Por vencer</span>';
   return '<span class="badge badge-success"><span class="dot"></span>Vigente</span>';
 }
 
 function diasBadge(days) {
   if (days === null) return '—';
-  if (days < 0)   return `<span style="color:var(--danger);font-weight:700">${Math.abs(days)}d venc.</span>`;
-  if (days <= 7)  return `<span style="color:var(--danger);font-weight:700">${days}d</span>`;
+  if (days < 0) return `<span style="color:var(--danger);font-weight:700">${Math.abs(days)}d venc.</span>`;
+  if (days <= 7) return `<span style="color:var(--danger);font-weight:700">${days}d</span>`;
   if (days <= 30) return `<span style="color:var(--warning);font-weight:700">${days}d</span>`;
   return `<span style="color:var(--success)">${days}d</span>`;
 }
 
 function getDocEstado(days) {
   if (days === null) return 'sin_fecha';
-  if (days < 0)   return 'vencido';
-  if (days <= 7)  return 'critico';
+  if (days < 0) return 'vencido';
+  if (days <= 7) return 'critico';
   if (days <= 30) return 'proximo';
   return 'vigente';
 }
@@ -78,12 +78,12 @@ function getDocEstado(days) {
 // ── In-memory cache (evita refetch en cada render) ─────────────
 const Cache = {
   trabajadores: null,
-  dotacion:     null,
-  entregas:     null,
-  bpm:          null,
-  vehiculos:    null,
-  vacaciones:   null,
-  examenes:     null,
+  dotacion: null,
+  entregas: null,
+  bpm: null,
+  vehiculos: null,
+  vacaciones: null,
+  examenes: null,
   invalidate(key) { if (key) this[key] = null; else Object.keys(this).forEach(k => this[k] = null); },
 };
 
@@ -98,18 +98,18 @@ function navigate(pageId) {
   document.querySelectorAll(`[data-page="${pageId}"]`).forEach(n => n.classList.add('active'));
 
   const renders = {
-    dashboard:      renderDashboard,
-    trabajadores:   renderTrabajadores,
-    dotacion:       renderDotacion,
-    entregas:       renderEntregas,
-    documentos:     renderBPM,
-    vehiculos:      renderVehiculos,
-    incapacidades:  renderIncapacidades,
-    vacaciones:     renderVacaciones,
-    examenes:       renderExamenes,
-    alertas:        renderAlertas,
-    asistencia:     renderAsistencia,
-    prendas:        renderDotacionPrendas,
+    dashboard: renderDashboard,
+    trabajadores: renderTrabajadores,
+    dotacion: renderDotacion,
+    entregas: renderEntregas,
+    documentos: renderBPM,
+    vehiculos: renderVehiculos,
+    incapacidades: renderIncapacidades,
+    vacaciones: renderVacaciones,
+    examenes: renderExamenes,
+    alertas: renderAlertas,
+    asistencia: renderAsistencia,
+    prendas: renderDotacionPrendas,
   };
   if (renders[pageId]) renders[pageId]();
   if (window.innerWidth <= 768) closeSidebar();
@@ -122,10 +122,10 @@ function openModal(id) {
   if (id === 'modalEntrega') {
     iniciarModalEntrega();
   }
-  if (id === 'modalBPM')          poblarSelectTrabajadores('bTrabajador');
-  if (id === 'modalVehiculo')     { poblarSelectTrabajadores('vConductor'); toggleVehiculoFields(); }
-  if (id === 'modalIncapacidad')  { poblarSelectTrabajadores('iTrabajador'); }
-  if (id === 'modalVacacion')     { poblarSelectTrabajadores('vacTrabajador'); }
+  if (id === 'modalBPM') poblarSelectTrabajadores('bTrabajador');
+  if (id === 'modalVehiculo') { poblarSelectTrabajadores('vConductor'); toggleVehiculoFields(); }
+  if (id === 'modalIncapacidad') { poblarSelectTrabajadores('iTrabajador'); }
+  if (id === 'modalVacacion') { poblarSelectTrabajadores('vacTrabajador'); }
   if (id === 'modalExamenMedico') {
     poblarSelectTrabajadores('exTrabajador');
     if (!document.getElementById('exId').value) {
@@ -156,7 +156,7 @@ function toast(msg, type = 'success', duration = 3500) {
   const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
+  el.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(() => {
     el.style.opacity = '0'; el.style.transform = 'translateX(100px)'; el.style.transition = '0.3s';
@@ -174,7 +174,7 @@ function closeSidebar() {
 
 function _initSidebarAndNav() {
   const hamburger = document.getElementById('hamburgerBtn');
-  const overlay   = document.getElementById('mobileOverlay');
+  const overlay = document.getElementById('mobileOverlay');
 
   if (hamburger) {
     hamburger.addEventListener('click', () => {
@@ -211,11 +211,11 @@ async function renderDashboard() {
   showLoading(true);
   try {
     if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
-    if (!Cache.entregas)     Cache.entregas     = await Entregas.getAll();
+    if (!Cache.entregas) Cache.entregas = await Entregas.getAll();
     const alertas = await Alertas.getAll();
 
     const trabajadores = Cache.trabajadores;
-    const entregas     = Cache.entregas;
+    const entregas = Cache.entregas;
 
     const now = new Date();
     document.getElementById('dashDate').textContent = now.toLocaleDateString('es-CO', {
@@ -225,15 +225,15 @@ async function renderDashboard() {
     const alertCount = alertas.filter(a => a.days !== null && a.days <= 30).length;
     updateAlertBadge(alertCount);
 
-    const activos  = trabajadores.filter(t => t.estado === 'activo').length;
+    const activos = trabajadores.filter(t => t.estado === 'activo').length;
     const ciudades = [...new Set(trabajadores.map(t => t.ciudad).filter(Boolean))].length;
 
     document.getElementById('statsGrid').innerHTML = [
-      { icon: '👥', value: trabajadores.length, label: 'Trabajadores',   color: 'var(--accent)' },
-      { icon: '✅', value: activos,             label: 'Activos',         color: 'var(--success)' },
-      { icon: '📍', value: ciudades,            label: 'Ciudades',        color: 'var(--info)' },
-      { icon: '📦', value: entregas.length,     label: 'Entregas',        color: 'var(--accent4)' },
-      { icon: '🔔', value: alertCount,          label: 'Alertas',         color: alertCount > 0 ? 'var(--danger)' : 'var(--success)' },
+      { icon: '👥', value: trabajadores.length, label: 'Trabajadores', color: 'var(--accent)' },
+      { icon: '✅', value: activos, label: 'Activos', color: 'var(--success)' },
+      { icon: '📍', value: ciudades, label: 'Ciudades', color: 'var(--info)' },
+      { icon: '📦', value: entregas.length, label: 'Entregas', color: 'var(--accent4)' },
+      { icon: '🔔', value: alertCount, label: 'Alertas', color: alertCount > 0 ? 'var(--danger)' : 'var(--success)' },
     ].map(s => `
       <div class="stat-card" style="--card-color:${s.color}">
         <div class="stat-icon">${s.icon}</div>
@@ -282,34 +282,34 @@ async function renderTrabajadores() {
       [...vals].sort().forEach(v => sel.appendChild(new Option(v, v)));
     };
     repoblar('filterCiudad', [...new Set(trabajadores.map(t => t.ciudad).filter(Boolean))]);
-    repoblar('filterMarca',  [...new Set(trabajadores.map(t => t.marca).filter(Boolean))]);
-    repoblar('filterCargo',  [...new Set(trabajadores.map(t => t.cargo).filter(Boolean))]);
+    repoblar('filterMarca', [...new Set(trabajadores.map(t => t.marca).filter(Boolean))]);
+    repoblar('filterCargo', [...new Set(trabajadores.map(t => t.cargo).filter(Boolean))]);
 
     // Datalists for modal
     const dl = (id, arr) => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = arr.map(v => `<option value="${v}">`).join('');
     };
-    dl('marcasDatalist',  [...new Set(trabajadores.map(t => t.marca).filter(Boolean))]);
-    dl('cargosDatalist',  [...new Set(trabajadores.map(t => t.cargo).filter(Boolean))]);
-    dl('jefesDatalist',   trabajadores.map(t => t.nombre));
+    dl('marcasDatalist', [...new Set(trabajadores.map(t => t.marca).filter(Boolean))]);
+    dl('cargosDatalist', [...new Set(trabajadores.map(t => t.cargo).filter(Boolean))]);
+    dl('jefesDatalist', trabajadores.map(t => t.nombre));
 
     _renderTrabajadoresFiltered(trabajadores);
   } finally { showLoading(false); }
 }
 
 function _renderTrabajadoresFiltered(trabajadores) {
-  const q           = (document.getElementById('searchTrabajador')?.value || '').toLowerCase();
+  const q = (document.getElementById('searchTrabajador')?.value || '').toLowerCase();
   const filterMarca = document.getElementById('filterMarca')?.value || '';
   const filterCargo = document.getElementById('filterCargo')?.value || '';
-  const filterCiud  = document.getElementById('filterCiudad')?.value || '';
+  const filterCiud = document.getElementById('filterCiudad')?.value || '';
 
   const filtered = trabajadores.filter(t => {
     const txt = [t.nombre, t.cargo, t.marca, t.cedula, t.ciudad, t.unidad_organizacional, t.jefe].join(' ').toLowerCase();
     return (!q || txt.includes(q))
-        && (!filterMarca || t.marca  === filterMarca)
-        && (!filterCargo || t.cargo  === filterCargo)
-        && (!filterCiud  || t.ciudad === filterCiud);
+      && (!filterMarca || t.marca === filterMarca)
+      && (!filterCargo || t.cargo === filterCargo)
+      && (!filterCiud || t.ciudad === filterCiud);
   });
 
   const tbody = document.getElementById('tablaTrabajadores');
@@ -327,7 +327,7 @@ function _renderTrabajadoresFiltered(trabajadores) {
     <tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px">
-          <div class="avatar" style="background:${avatarColor(t.nombre)}">${(t.nombre||'?').slice(0,2).toUpperCase()}</div>
+          <div class="avatar" style="background:${avatarColor(t.nombre)}">${(t.nombre || '?').slice(0, 2).toUpperCase()}</div>
           <div>
             <div style="font-weight:600">${t.nombre}</div>
             <div style="font-size:11px;color:var(--text-muted)">CC ${t.cedula || ''}${t.fecha_ingreso ? ' · Ingreso: ' + fmtDate(t.fecha_ingreso) : ''}</div>
@@ -347,23 +347,23 @@ function _renderTrabajadoresFiltered(trabajadores) {
 }
 
 async function guardarTrabajador() {
-  const id     = document.getElementById('tId').value;
+  const id = document.getElementById('tId').value;
   const nombre = document.getElementById('tNombre').value.trim();
   const cedula = document.getElementById('tCedula').value.trim();
   if (!nombre) return toast('El nombre es obligatorio', 'error');
 
   const row = {
     nombre, cedula,
-    cargo:                document.getElementById('tCargo').value.trim(),
-    marca:                document.getElementById('tMarca').value.trim(),
-    ciudad:               document.getElementById('tCiudad')?.value.trim() || '',
-    jefe:                 document.getElementById('tJefe').value.trim(),
-    fecha_ingreso:        document.getElementById('tFechaIngreso').value || null,
-    telefono:             document.getElementById('tTelefono').value.trim(),
-    estado:               document.getElementById('tEstado').value,
-    obs:                  document.getElementById('tObs').value.trim(),
-    tipo_id:              'CC',
-    unidad_organizacional:'',
+    cargo: document.getElementById('tCargo').value.trim(),
+    marca: document.getElementById('tMarca').value.trim(),
+    ciudad: document.getElementById('tCiudad')?.value.trim() || '',
+    jefe: document.getElementById('tJefe').value.trim(),
+    fecha_ingreso: document.getElementById('tFechaIngreso').value || null,
+    telefono: document.getElementById('tTelefono').value.trim(),
+    estado: document.getElementById('tEstado').value,
+    obs: document.getElementById('tObs').value.trim(),
+    tipo_id: 'CC',
+    unidad_organizacional: '',
   };
 
   showLoading(true);
@@ -383,18 +383,18 @@ async function guardarTrabajador() {
 function editarTrabajador(id) {
   const t = (Cache.trabajadores || []).find(x => x.id === id);
   if (!t) return;
-  document.getElementById('tId').value          = t.id;
-  document.getElementById('tNombre').value      = t.nombre;
-  document.getElementById('tCedula').value      = t.cedula || '';
-  document.getElementById('tCargo').value       = t.cargo  || '';
-  document.getElementById('tMarca').value       = t.marca  || '';
+  document.getElementById('tId').value = t.id;
+  document.getElementById('tNombre').value = t.nombre;
+  document.getElementById('tCedula').value = t.cedula || '';
+  document.getElementById('tCargo').value = t.cargo || '';
+  document.getElementById('tMarca').value = t.marca || '';
   const tCiudad = document.getElementById('tCiudad');
-  if (tCiudad) tCiudad.value                   = t.ciudad || '';
-  document.getElementById('tJefe').value        = t.jefe   || '';
-  document.getElementById('tFechaIngreso').value= t.fecha_ingreso ? t.fecha_ingreso.split('T')[0] : '';
-  document.getElementById('tTelefono').value    = t.telefono || '';
-  document.getElementById('tEstado').value      = t.estado  || 'activo';
-  document.getElementById('tObs').value         = t.obs     || '';
+  if (tCiudad) tCiudad.value = t.ciudad || '';
+  document.getElementById('tJefe').value = t.jefe || '';
+  document.getElementById('tFechaIngreso').value = t.fecha_ingreso ? t.fecha_ingreso.split('T')[0] : '';
+  document.getElementById('tTelefono').value = t.telefono || '';
+  document.getElementById('tEstado').value = t.estado || 'activo';
+  document.getElementById('tObs').value = t.obs || '';
   document.getElementById('modalTrabajadorTitle').textContent = '✏️ Editar Trabajador';
   openModal('modalTrabajador');
 }
@@ -411,7 +411,7 @@ async function eliminarTrabajador(id) {
 }
 
 function resetTrabajadorForm() {
-  ['tId','tNombre','tCedula','tCargo','tMarca','tCiudad','tJefe','tFechaIngreso','tTelefono','tObs']
+  ['tId', 'tNombre', 'tCedula', 'tCargo', 'tMarca', 'tCiudad', 'tJefe', 'tFechaIngreso', 'tTelefono', 'tObs']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const est = document.getElementById('tEstado'); if (est) est.value = 'activo';
   document.getElementById('modalTrabajadorTitle').textContent = '👤 Nuevo Trabajador';
@@ -421,7 +421,7 @@ async function exportarTrabajadores() {
   if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
   const data = Cache.trabajadores;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Nombre','Cédula','Cargo','Proveedor','Ciudad','Jefe','Fecha Ingreso','Teléfono','Estado','Unidad Organizacional'];
+  const headers = ['Nombre', 'Cédula', 'Cargo', 'Proveedor', 'Ciudad', 'Jefe', 'Fecha Ingreso', 'Teléfono', 'Estado', 'Unidad Organizacional'];
   const rows = data.map(t => [t.nombre, t.cedula, t.cargo, t.marca, t.ciudad, t.jefe, t.fecha_ingreso, t.telefono, t.estado, t.unidad_organizacional]);
   downloadCSV('trabajadores', headers, rows);
 }
@@ -429,21 +429,21 @@ async function exportarTrabajadores() {
 // ═══════════════════════════════════════════
 // DOTACION — INVENTARIO
 // ═══════════════════════════════════════════
-const dotacionIcons = { ropa:'👕', calzado:'👟', epp:'⛑️', accesorio:'🎒', otro:'📦' };
+const dotacionIcons = { ropa: '👕', calzado: '👟', epp: '⛑️', accesorio: '🎒', otro: '📦' };
 
 async function renderDotacion() {
   showLoading(true);
   try {
     if (!Cache.dotacion) Cache.dotacion = await Dotacion.getAll();
     const items = Cache.dotacion;
-    const grid  = document.getElementById('gridDotacion');
+    const grid = document.getElementById('gridDotacion');
     const empty = document.getElementById('emptyDotacion');
 
     if (!items.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
     empty.style.display = 'none';
 
     grid.innerHTML = items.map(d => {
-      const pct      = d.stock_min > 0 ? Math.min(100, Math.round((d.stock / d.stock_min) * 50)) : 80;
+      const pct = d.stock_min > 0 ? Math.min(100, Math.round((d.stock / d.stock_min) * 50)) : 80;
       const lowStock = d.stock <= (d.stock_min || 5);
       return `
       <div class="dotacion-card" style="${lowStock ? 'border-color:rgba(255,165,2,0.4)' : ''}">
@@ -474,17 +474,17 @@ async function renderDotacion() {
 }
 
 async function guardarDotacion() {
-  const id     = document.getElementById('dId').value;
+  const id = document.getElementById('dId').value;
   const nombre = document.getElementById('dNombre').value.trim();
   if (!nombre) return toast('El nombre es obligatorio', 'error');
 
   const row = {
     nombre,
-    categoria:   document.getElementById('dCategoria').value,
-    stock:       parseInt(document.getElementById('dStock').value)    || 0,
-    stock_min:   parseInt(document.getElementById('dStockMin').value) || 0,
-    unidad:      document.getElementById('dUnidad').value.trim() || 'und',
-    emoji:       document.getElementById('dEmoji').value.trim(),
+    categoria: document.getElementById('dCategoria').value,
+    stock: parseInt(document.getElementById('dStock').value) || 0,
+    stock_min: parseInt(document.getElementById('dStockMin').value) || 0,
+    unidad: document.getElementById('dUnidad').value.trim() || 'und',
+    emoji: document.getElementById('dEmoji').value.trim(),
     descripcion: document.getElementById('dDesc').value.trim(),
   };
 
@@ -511,14 +511,14 @@ async function ajustarStock(id, delta) {
 function editarDotacion(id) {
   const d = (Cache.dotacion || []).find(x => x.id === id);
   if (!d) return;
-  document.getElementById('dId').value       = d.id;
-  document.getElementById('dNombre').value   = d.nombre;
-  document.getElementById('dCategoria').value= d.categoria || 'ropa';
-  document.getElementById('dStock').value    = d.stock;
+  document.getElementById('dId').value = d.id;
+  document.getElementById('dNombre').value = d.nombre;
+  document.getElementById('dCategoria').value = d.categoria || 'ropa';
+  document.getElementById('dStock').value = d.stock;
   document.getElementById('dStockMin').value = d.stock_min || '';
-  document.getElementById('dUnidad').value   = d.unidad   || '';
-  document.getElementById('dEmoji').value    = d.emoji    || '';
-  document.getElementById('dDesc').value     = d.descripcion || '';
+  document.getElementById('dUnidad').value = d.unidad || '';
+  document.getElementById('dEmoji').value = d.emoji || '';
+  document.getElementById('dDesc').value = d.descripcion || '';
   document.getElementById('modalDotacionTitle').textContent = '✏️ Editar Ítem';
   openModal('modalDotacion');
 }
@@ -535,7 +535,7 @@ async function eliminarDotacion(id) {
 }
 
 function resetDotacionForm() {
-  ['dId','dNombre','dStock','dStockMin','dUnidad','dEmoji','dDesc'].forEach(id => {
+  ['dId', 'dNombre', 'dStock', 'dStockMin', 'dUnidad', 'dEmoji', 'dDesc'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const cat = document.getElementById('dCategoria'); if (cat) cat.value = 'ropa';
@@ -551,7 +551,7 @@ function cambiarVistaEntregas(modo) {
   vistaEntregasModo = modo;
   const btnAgr = document.getElementById('btnVistaAgrupada');
   const btnDet = document.getElementById('btnVistaDetallada');
-  const thead  = document.getElementById('theadEntregas');
+  const thead = document.getElementById('theadEntregas');
 
   if (btnAgr && btnDet) {
     if (modo === 'agrupada') {
@@ -596,10 +596,10 @@ function cambiarVistaEntregas(modo) {
 // ── Agrupador inteligente de entregas ─────────────────────────
 function agruparEntregas(lista) {
   const grupos = {};
-  
+
   // Ordenar cronológicamente descendente
   const ordenados = [...lista].sort((a, b) => new Date(b.created_at || b.fecha) - new Date(a.created_at || a.fecha));
-  
+
   ordenados.forEach(e => {
     // Agrupar por trabajador, fecha, responsable de entrega y bloque de 10 minutos
     const tTime = e.created_at ? Math.floor(new Date(e.created_at).getTime() / (10 * 60 * 1000)) : 0;
@@ -656,14 +656,14 @@ function agruparEntregas(lista) {
 async function renderEntregas() {
   showLoading(true);
   try {
-    if (!Cache.entregas)     Cache.entregas     = await Entregas.getAll();
+    if (!Cache.entregas) Cache.entregas = await Entregas.getAll();
     if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
-    if (!Cache.prendas)      Cache.prendas      = await DotacionPrendas.getAll();
+    if (!Cache.prendas) Cache.prendas = await DotacionPrendas.getAll();
 
     poblarSelectTrabajadores('eTrabajador');
     poblarSelectTrabajadores('filterEntregaTrabajador', true);
 
-    const q       = (document.getElementById('searchEntrega')?.value || '').toLowerCase();
+    const q = (document.getElementById('searchEntrega')?.value || '').toLowerCase();
     const filterT = document.getElementById('filterEntregaTrabajador')?.value || '';
 
     const filtered = Cache.entregas.filter(e => {
@@ -687,7 +687,7 @@ async function renderEntregas() {
           <td>
             <div style="display:flex;align-items:center;gap:10px">
               <div class="avatar" style="background:${avatarColor(g.trabajador_nombre)};width:32px;height:32px;font-size:12px;font-weight:700;">
-                ${(g.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+                ${(g.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <div style="font-weight:600;color:var(--text-primary);">${g.trabajador_nombre}</div>
@@ -717,7 +717,7 @@ async function renderEntregas() {
               <span style="font-weight:600;color:var(--text-primary);">${g.entregado_por}</span>
             </div>
           </td>
-          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-muted);" title="${g.obs||''}">
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-muted);" title="${g.obs || ''}">
             ${g.obs || '—'}
           </td>
           <td>
@@ -735,7 +735,7 @@ async function renderEntregas() {
           <td style="white-space:nowrap;">${fmtDate(e.fecha)}</td>
           <td>
             <div style="display:flex;align-items:center;gap:8px">
-              <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:28px;height:28px;font-size:11px">${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}</div>
+              <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:28px;height:28px;font-size:11px">${(e.trabajador_nombre || '?').slice(0, 2).toUpperCase()}</div>
               <span style="font-weight:600;">${e.trabajador_nombre}</span>
             </div>
           </td>
@@ -748,7 +748,7 @@ async function renderEntregas() {
               <span>${e.entregado_por || '—'}</span>
             </div>
           </td>
-          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs||''}">${e.obs || '—'}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs || ''}">${e.obs || '—'}</td>
           <td>
             <div class="td-actions" style="display:flex;gap:6px;justify-content:center;">
               <button class="btn btn-primary btn-sm btn-icon" onclick="imprimirActaEntregaIndividual('${e.id}')" title="Imprimir Acta de Entrega (PDF)" style="background:linear-gradient(135deg,#1a5c99,#2a8a6e);border:none;color:#fff;">🖨️</button>
@@ -784,7 +784,7 @@ async function iniciarModalEntrega() {
 function _generarOptgroupsPrendas(prendaSelTipoRef = '') {
   const lista = Cache.prendas || [];
   const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado', 'epp'];
-  const meta  = DotacionPrendas.TIPO_LABEL;
+  const meta = DotacionPrendas.TIPO_LABEL;
 
   let optgroupsHtml = '<option value="">Seleccionar artículo...</option>';
   tipos.forEach(tipo => {
@@ -885,9 +885,9 @@ function entregaTallaCambiada(selTalla) {
   const fila = selTalla.closest('.entrega-prenda-fila');
   if (!fila) return;
   const inputCant = fila.querySelector('.ep-cantidad');
-  const infoEl    = fila.querySelector('.ep-stock-info');
-  const opt       = selTalla.selectedOptions?.[0];
-  const prendaId  = selTalla.value;
+  const infoEl = fila.querySelector('.ep-stock-info');
+  const opt = selTalla.selectedOptions?.[0];
+  const prendaId = selTalla.value;
 
   if (!prendaId || !opt) {
     if (infoEl) infoEl.innerHTML = '<span>ℹ️ Selecciona prenda y talla para consultar el stock disponible en bodega.</span>';
@@ -912,10 +912,10 @@ function entregaCantidadCambiada(inputCant) {
   const fila = inputCant.closest('.entrega-prenda-fila');
   if (!fila) return;
   const selTalla = fila.querySelector('.ep-talla');
-  const infoEl   = fila.querySelector('.ep-stock-info');
-  const opt      = selTalla?.selectedOptions?.[0];
-  const stock    = parseInt(opt?.getAttribute('data-stock') || 0);
-  const cant     = parseInt(inputCant.value) || 0;
+  const infoEl = fila.querySelector('.ep-stock-info');
+  const opt = selTalla?.selectedOptions?.[0];
+  const stock = parseInt(opt?.getAttribute('data-stock') || 0);
+  const cant = parseInt(inputCant.value) || 0;
 
   if (!selTalla?.value) return;
 
@@ -947,12 +947,12 @@ function eliminarFilaPrendaEntrega(btn) {
 // ── Guardar Entrega (Nueva) ───────────────────────────────────
 async function guardarEntrega() {
   const trabajadorId = document.getElementById('eTrabajador').value;
-  const fecha        = document.getElementById('eFecha').value;
+  const fecha = document.getElementById('eFecha').value;
   const entregadoPor = document.getElementById('eEntregadoPor').value.trim();
-  const obsGeneral   = document.getElementById('eObs').value.trim();
+  const obsGeneral = document.getElementById('eObs').value.trim();
 
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
-  if (!fecha)        return toast('La fecha de entrega es obligatoria', 'error');
+  if (!fecha) return toast('La fecha de entrega es obligatoria', 'error');
 
   const filas = document.querySelectorAll('#contenedorPrendasEntrega .entrega-prenda-fila');
   if (!filas.length) return toast('Agrega al menos una prenda a la entrega', 'error');
@@ -961,10 +961,10 @@ async function guardarEntrega() {
   for (let i = 0; i < filas.length; i++) {
     const fila = filas[i];
     const selPrenda = fila.querySelector('.ep-prenda');
-    const selTalla  = fila.querySelector('.ep-talla');
+    const selTalla = fila.querySelector('.ep-talla');
     const inputCant = fila.querySelector('.ep-cantidad');
-    const prendaId  = selTalla?.value;
-    const cantidad  = parseInt(inputCant?.value) || 0;
+    const prendaId = selTalla?.value;
+    const cantidad = parseInt(inputCant?.value) || 0;
 
     if (!selPrenda?.value) {
       return toast(`En la prenda #${i + 1}: selecciona un artículo`, 'error');
@@ -1009,15 +1009,15 @@ async function guardarEntrega() {
     const articuloNombre = `${prenda.referencia} (${tipoLabel} - ${genLabel})`;
 
     const row = {
-      trabajador_id:     trabajadorId,
+      trabajador_id: trabajadorId,
       trabajador_nombre: trabajadorNombre,
-      articulo_id:       prenda.id,
-      articulo_nombre:   articuloNombre,
-      cantidad:          cantidad,
-      fecha:             fecha,
-      talla:             prenda.talla,
-      entregado_por:     entregadoPor,
-      obs:               obsGeneral,
+      articulo_id: prenda.id,
+      articulo_nombre: articuloNombre,
+      cantidad: cantidad,
+      fecha: fecha,
+      talla: prenda.talla,
+      entregado_por: entregadoPor,
+      obs: obsGeneral,
     };
 
     const res = await Entregas.insert(row);
@@ -1079,10 +1079,10 @@ function editarEntregaGrupo(grupoId) {
   window._grupoEnEdicion = JSON.parse(JSON.stringify(grupo));
 
   document.getElementById('eeTrabajadorNombre').value = grupo.trabajador_nombre;
-  document.getElementById('eeTrabajadorId').value     = grupo.trabajador_id;
-  document.getElementById('eeFecha').value            = grupo.fecha;
-  document.getElementById('eeEntregadoPor').value     = grupo.entregado_por === '—' ? '' : grupo.entregado_por;
-  document.getElementById('eeObs').value              = grupo.obs || '';
+  document.getElementById('eeTrabajadorId').value = grupo.trabajador_id;
+  document.getElementById('eeFecha').value = grupo.fecha;
+  document.getElementById('eeEntregadoPor').value = grupo.entregado_por === '—' ? '' : grupo.entregado_por;
+  document.getElementById('eeObs').value = grupo.obs || '';
 
   const contenedor = document.getElementById('contenedorPrendasEdicion');
   if (contenedor) contenedor.innerHTML = '';
@@ -1191,9 +1191,9 @@ async function guardarEdicionEntrega() {
   const grupoOriginal = window._grupoEnEdicion;
   if (!grupoOriginal) return toast('Error: no hay información de entrega en edición', 'error');
 
-  const fecha        = document.getElementById('eeFecha').value;
+  const fecha = document.getElementById('eeFecha').value;
   const entregadoPor = document.getElementById('eeEntregadoPor').value.trim();
-  const obs          = document.getElementById('eeObs').value.trim();
+  const obs = document.getElementById('eeObs').value.trim();
 
   if (!fecha) return toast('La fecha es obligatoria', 'error');
 
@@ -1203,13 +1203,13 @@ async function guardarEdicionEntrega() {
   const itemsNuevos = [];
   for (let i = 0; i < filas.length; i++) {
     const fila = filas[i];
-    const entregaId    = fila.getAttribute('data-entrega-id') || null;
+    const entregaId = fila.getAttribute('data-entrega-id') || null;
     const origPrendaId = fila.getAttribute('data-original-prenda-id') || null;
-    const origCant     = parseInt(fila.getAttribute('data-original-cant')) || 0;
-    const selTalla     = fila.querySelector('.ep-talla');
-    const inputCant    = fila.querySelector('.ep-cantidad');
-    const prendaId     = selTalla?.value;
-    const cantidad     = parseInt(inputCant?.value) || 0;
+    const origCant = parseInt(fila.getAttribute('data-original-cant')) || 0;
+    const selTalla = fila.querySelector('.ep-talla');
+    const inputCant = fila.querySelector('.ep-cantidad');
+    const prendaId = selTalla?.value;
+    const cantidad = parseInt(inputCant?.value) || 0;
 
     if (!prendaId) return toast(`En la prenda #${i + 1}: selecciona artículo y talla`, 'error');
     if (cantidad < 1) return toast(`En la prenda #${i + 1}: la cantidad debe ser mayor a 0`, 'error');
@@ -1273,26 +1273,26 @@ async function guardarEdicionEntrega() {
       }
 
       await Entregas.update(it.entregaId, {
-        articulo_id:     it.prendaId,
+        articulo_id: it.prendaId,
         articulo_nombre: articuloNombre,
-        talla:           it.prenda.talla,
-        cantidad:        it.cantidad,
-        fecha:           fecha,
-        entregado_por:   entregadoPor,
-        obs:             obs
+        talla: it.prenda.talla,
+        cantidad: it.cantidad,
+        fecha: fecha,
+        entregado_por: entregadoPor,
+        obs: obs
       });
     } else {
       // Nueva fila agregada durante la edición
       const newRow = {
-        trabajador_id:     grupoOriginal.trabajador_id,
+        trabajador_id: grupoOriginal.trabajador_id,
         trabajador_nombre: grupoOriginal.trabajador_nombre,
-        articulo_id:       it.prendaId,
-        articulo_nombre:   articuloNombre,
-        cantidad:          it.cantidad,
-        fecha:             fecha,
-        talla:             it.prenda.talla,
-        entregado_por:     entregadoPor,
-        obs:               obs
+        articulo_id: it.prendaId,
+        articulo_nombre: articuloNombre,
+        cantidad: it.cantidad,
+        fecha: fecha,
+        talla: it.prenda.talla,
+        entregado_por: entregadoPor,
+        obs: obs
       };
       await Entregas.insert(newRow);
     }
@@ -1367,7 +1367,7 @@ async function exportarEntregas() {
   if (!Cache.entregas) Cache.entregas = await Entregas.getAll();
   const data = Cache.entregas;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Fecha','Trabajador','Artículo','Cantidad','Talla/Ref','Entregado por','Observaciones'];
+  const headers = ['Fecha', 'Trabajador', 'Artículo', 'Cantidad', 'Talla/Ref', 'Entregado por', 'Observaciones'];
   const rows = data.map(e => [e.fecha, e.trabajador_nombre, e.articulo_nombre, e.cantidad, e.talla, e.entregado_por, e.obs]);
   downloadCSV('entregas_dotacion', headers, rows);
 }
@@ -1376,7 +1376,7 @@ async function exportarEntregas() {
 function poblarSelectTrabajadores(selId, keepFirst = false) {
   const sel = document.getElementById(selId);
   if (!sel) return;
-  const val  = sel.value;
+  const val = sel.value;
   const list = Cache.trabajadores || [];
   if (!keepFirst) {
     sel.innerHTML = '<option value="">Seleccionar...</option>';
@@ -1392,14 +1392,14 @@ function poblarSelectTrabajadores(selId, keepFirst = false) {
 function poblarSelectDotacion(selId) {
   const sel = document.getElementById(selId);
   if (!sel) return;
-  const val   = sel.value;
+  const val = sel.value;
   const lista = Cache.prendas || [];
 
   sel.innerHTML = '<option value="">Seleccionar artículo...</option>';
 
   // Agrupar por tipo para mostrar optgroups
   const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado'];
-  const meta  = DotacionPrendas.TIPO_LABEL;
+  const meta = DotacionPrendas.TIPO_LABEL;
 
   tipos.forEach(tipo => {
     const items = lista.filter(r => r.tipo === tipo);
@@ -1433,17 +1433,17 @@ function poblarSelectDotacion(selId) {
 async function renderBPM() {
   showLoading(true);
   try {
-    if (!Cache.bpm)          Cache.bpm          = await BPM.getAll();
+    if (!Cache.bpm) Cache.bpm = await BPM.getAll();
     if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
     poblarSelectTrabajadores('bTrabajador');
 
-    const q         = (document.getElementById('searchBPM')?.value || '').toLowerCase();
+    const q = (document.getElementById('searchBPM')?.value || '').toLowerCase();
     const filterEst = document.getElementById('filterBPMEstado')?.value || '';
 
     const filtered = Cache.bpm.filter(b => {
-      const days   = daysUntil(b.vencimiento);
+      const days = daysUntil(b.vencimiento);
       const estado = getDocEstado(days);
-      const txt    = [b.trabajador_nombre, b.numero, b.entidad, b.capacitacion].join(' ').toLowerCase();
+      const txt = [b.trabajador_nombre, b.numero, b.entidad, b.capacitacion].join(' ').toLowerCase();
       return (!q || txt.includes(q)) && (!filterEst || estado === filterEst);
     });
 
@@ -1457,7 +1457,7 @@ async function renderBPM() {
       return `<tr>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
-            <div class="avatar" style="background:${avatarColor(b.trabajador_nombre)};width:28px;height:28px;font-size:11px">${(b.trabajador_nombre||'?').slice(0,2).toUpperCase()}</div>
+            <div class="avatar" style="background:${avatarColor(b.trabajador_nombre)};width:28px;height:28px;font-size:11px">${(b.trabajador_nombre || '?').slice(0, 2).toUpperCase()}</div>
             ${b.trabajador_nombre}
           </div>
         </td>
@@ -1476,22 +1476,22 @@ async function renderBPM() {
 }
 
 async function guardarBPM() {
-  const id           = document.getElementById('bId').value;
+  const id = document.getElementById('bId').value;
   const trabajadorId = document.getElementById('bTrabajador').value;
-  const vencimiento  = document.getElementById('bVencimiento').value;
+  const vencimiento = document.getElementById('bVencimiento').value;
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
-  if (!vencimiento)  return toast('La fecha de vencimiento es obligatoria', 'error');
+  if (!vencimiento) return toast('La fecha de vencimiento es obligatoria', 'error');
 
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
   const row = {
-    trabajador_id:     trabajadorId,
+    trabajador_id: trabajadorId,
     trabajador_nombre: trabajador?.nombre || '',
-    numero:            document.getElementById('bNumero').value.trim(),
-    emision:           document.getElementById('bEmision').value || null,
+    numero: document.getElementById('bNumero').value.trim(),
+    emision: document.getElementById('bEmision').value || null,
     vencimiento,
-    entidad:           document.getElementById('bEntidad').value.trim(),
-    capacitacion:      document.getElementById('bCapacitacion').value.trim(),
-    obs:               document.getElementById('bObs').value.trim(),
+    entidad: document.getElementById('bEntidad').value.trim(),
+    capacitacion: document.getElementById('bCapacitacion').value.trim(),
+    obs: document.getElementById('bObs').value.trim(),
   };
 
   showLoading(true);
@@ -1508,14 +1508,14 @@ async function guardarBPM() {
 function editarBPM(id) {
   const b = (Cache.bpm || []).find(x => x.id === id);
   if (!b) return;
-  document.getElementById('bId').value           = b.id;
-  document.getElementById('bTrabajador').value   = b.trabajador_id;
-  document.getElementById('bNumero').value       = b.numero       || '';
-  document.getElementById('bEmision').value      = b.emision      ? b.emision.split('T')[0]     : '';
-  document.getElementById('bVencimiento').value  = b.vencimiento  ? b.vencimiento.split('T')[0] : '';
-  document.getElementById('bEntidad').value      = b.entidad      || '';
+  document.getElementById('bId').value = b.id;
+  document.getElementById('bTrabajador').value = b.trabajador_id;
+  document.getElementById('bNumero').value = b.numero || '';
+  document.getElementById('bEmision').value = b.emision ? b.emision.split('T')[0] : '';
+  document.getElementById('bVencimiento').value = b.vencimiento ? b.vencimiento.split('T')[0] : '';
+  document.getElementById('bEntidad').value = b.entidad || '';
   document.getElementById('bCapacitacion').value = b.capacitacion || '';
-  document.getElementById('bObs').value          = b.obs          || '';
+  document.getElementById('bObs').value = b.obs || '';
   document.getElementById('modalBPMTitle').textContent = '✏️ Editar Carnet BPM';
   openModal('modalBPM');
 }
@@ -1532,7 +1532,7 @@ async function eliminarBPM(id) {
 }
 
 function resetBPMForm() {
-  ['bId','bNumero','bEmision','bVencimiento','bEntidad','bCapacitacion','bObs'].forEach(id => {
+  ['bId', 'bNumero', 'bEmision', 'bVencimiento', 'bEntidad', 'bCapacitacion', 'bObs'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const sel = document.getElementById('bTrabajador'); if (sel) sel.value = '';
@@ -1543,7 +1543,7 @@ async function exportarBPM() {
   if (!Cache.bpm) Cache.bpm = await BPM.getAll();
   const data = Cache.bpm;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Trabajador','N° Carnet','Emisión','Vencimiento','Estado','Días','Entidad','Capacitación'];
+  const headers = ['Trabajador', 'N° Carnet', 'Emisión', 'Vencimiento', 'Estado', 'Días', 'Entidad', 'Capacitación'];
   const rows = data.map(b => {
     const days = daysUntil(b.vencimiento);
     return [b.trabajador_nombre, b.numero, b.emision, b.vencimiento, getDocEstado(days), days ?? '', b.entidad, b.capacitacion];
@@ -1557,20 +1557,20 @@ async function exportarBPM() {
 async function renderVehiculos() {
   showLoading(true);
   try {
-    if (!Cache.vehiculos)    Cache.vehiculos    = await Vehiculos.getAll();
+    if (!Cache.vehiculos) Cache.vehiculos = await Vehiculos.getAll();
     if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
     poblarSelectTrabajadores('vConductor');
 
-    const veh       = Cache.vehiculos;
-    const soat      = veh.filter(v => v.tipo === 'soat');
-    const tecno     = veh.filter(v => v.tipo === 'tecno');
+    const veh = Cache.vehiculos;
+    const soat = veh.filter(v => v.tipo === 'soat');
+    const tecno = veh.filter(v => v.tipo === 'tecno');
     const propiedad = veh.filter(v => v.tipo === 'propiedad');
-    const licencia  = veh.filter(v => v.tipo === 'licencia');
+    const licencia = veh.filter(v => v.tipo === 'licencia');
 
-    _renderVehTable('tablaSOAT',      'emptySOAT',      soat);
-    _renderVehTable('tablaTecno',     'emptyTecno',     tecno);
-    _renderPropTable('tablaPropiedad','emptyPropiedad', propiedad);
-    _renderLicTable('tablaLicencia',  'emptyLicencia',  licencia);
+    _renderVehTable('tablaSOAT', 'emptySOAT', soat);
+    _renderVehTable('tablaTecno', 'emptyTecno', tecno);
+    _renderPropTable('tablaPropiedad', 'emptyPropiedad', propiedad);
+    _renderLicTable('tablaLicencia', 'emptyLicencia', licencia);
     _renderTodosTable(veh);
   } finally { showLoading(false); }
 }
@@ -1638,9 +1638,9 @@ function _renderLicTable(tbodyId, emptyId, data) {
 }
 
 function _renderTodosTable(vehiculos) {
-  const tipoLabel = { soat:'🛡️ SOAT', tecno:'🔧 TECNO', propiedad:'📄 T.Propiedad', licencia:'🪪 Licencia' };
+  const tipoLabel = { soat: '🛡️ SOAT', tecno: '🔧 TECNO', propiedad: '📄 T.Propiedad', licencia: '🪪 Licencia' };
   document.getElementById('tablaTodos').innerHTML = vehiculos.map(v => {
-    const days  = daysUntil(v.vencimiento);
+    const days = daysUntil(v.vencimiento);
     const ident = v.tipo === 'licencia' ? v.conductor_nombre : (v.placa || v.conductor_nombre);
     return `<tr>
       <td>${tipoLabel[v.tipo] || v.tipo}</td>
@@ -1653,8 +1653,8 @@ function _renderTodosTable(vehiculos) {
 }
 
 async function guardarVehiculo() {
-  const id          = document.getElementById('vId').value;
-  const tipo        = document.getElementById('vTipo').value;
+  const id = document.getElementById('vId').value;
+  const tipo = document.getElementById('vTipo').value;
   const conductorId = document.getElementById('vConductor').value;
   if (!conductorId) return toast('Selecciona un conductor/propietario', 'error');
 
@@ -1662,16 +1662,16 @@ async function guardarVehiculo() {
   const row = {
     tipo, conductor_id: conductorId,
     conductor_nombre: conductor?.nombre || '',
-    placa:       (document.getElementById('vPlaca')?.value || '').trim().toUpperCase(),
+    placa: (document.getElementById('vPlaca')?.value || '').trim().toUpperCase(),
     vencimiento: document.getElementById('vVencimiento')?.value || null,
-    poliza:      document.getElementById('vPoliza')?.value.trim()      || '',
+    poliza: document.getElementById('vPoliza')?.value.trim() || '',
     aseguradora: document.getElementById('vAseguradora')?.value.trim() || '',
-    marca_carro: document.getElementById('vMarcaCarro')?.value.trim()  || '',
-    modelo:      document.getElementById('vModelo')?.value.trim()      || '',
-    anio:        document.getElementById('vAnio')?.value               || '',
-    num_licencia:document.getElementById('vNumLicencia')?.value.trim() || '',
-    categoria:   document.getElementById('vCategoria')?.value          || '',
-    obs:         document.getElementById('vObs')?.value.trim()         || '',
+    marca_carro: document.getElementById('vMarcaCarro')?.value.trim() || '',
+    modelo: document.getElementById('vModelo')?.value.trim() || '',
+    anio: document.getElementById('vAnio')?.value || '',
+    num_licencia: document.getElementById('vNumLicencia')?.value.trim() || '',
+    categoria: document.getElementById('vCategoria')?.value || '',
+    obs: document.getElementById('vObs')?.value.trim() || '',
   };
 
   showLoading(true);
@@ -1688,20 +1688,20 @@ async function guardarVehiculo() {
 function editarVehiculo(id) {
   const v = (Cache.vehiculos || []).find(x => x.id === id);
   if (!v) return;
-  document.getElementById('vId').value           = v.id;
-  document.getElementById('vTipo').value         = v.tipo;
+  document.getElementById('vId').value = v.id;
+  document.getElementById('vTipo').value = v.tipo;
   toggleVehiculoFields();
-  document.getElementById('vConductor').value    = v.conductor_id     || '';
-  document.getElementById('vPlaca').value        = v.placa            || '';
-  document.getElementById('vVencimiento').value  = v.vencimiento      ? v.vencimiento.split('T')[0] : '';
-  document.getElementById('vPoliza').value       = v.poliza           || '';
-  document.getElementById('vAseguradora').value  = v.aseguradora      || '';
-  document.getElementById('vMarcaCarro').value   = v.marca_carro      || '';
-  document.getElementById('vModelo').value       = v.modelo           || '';
-  document.getElementById('vAnio').value         = v.anio             || '';
-  document.getElementById('vNumLicencia').value  = v.num_licencia     || '';
-  document.getElementById('vCategoria').value    = v.categoria        || 'B1';
-  document.getElementById('vObs').value          = v.obs              || '';
+  document.getElementById('vConductor').value = v.conductor_id || '';
+  document.getElementById('vPlaca').value = v.placa || '';
+  document.getElementById('vVencimiento').value = v.vencimiento ? v.vencimiento.split('T')[0] : '';
+  document.getElementById('vPoliza').value = v.poliza || '';
+  document.getElementById('vAseguradora').value = v.aseguradora || '';
+  document.getElementById('vMarcaCarro').value = v.marca_carro || '';
+  document.getElementById('vModelo').value = v.modelo || '';
+  document.getElementById('vAnio').value = v.anio || '';
+  document.getElementById('vNumLicencia').value = v.num_licencia || '';
+  document.getElementById('vCategoria').value = v.categoria || 'B1';
+  document.getElementById('vObs').value = v.obs || '';
   document.getElementById('modalVehiculoTitle').textContent = '✏️ Editar Documento';
   openModal('modalVehiculo');
 }
@@ -1718,10 +1718,10 @@ async function eliminarVehiculo(id) {
 }
 
 function resetVehiculoForm() {
-  ['vId','vPlaca','vVencimiento','vPoliza','vAseguradora','vMarcaCarro','vModelo','vAnio','vNumLicencia','vObs']
+  ['vId', 'vPlaca', 'vVencimiento', 'vPoliza', 'vAseguradora', 'vMarcaCarro', 'vModelo', 'vAnio', 'vNumLicencia', 'vObs']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const tipo = document.getElementById('vTipo'); if (tipo) tipo.value = 'soat';
-  const sel  = document.getElementById('vConductor'); if (sel) sel.value = '';
+  const sel = document.getElementById('vConductor'); if (sel) sel.value = '';
   document.getElementById('modalVehiculoTitle').textContent = '🚗 Vehículo / Documento';
   toggleVehiculoFields();
 }
@@ -1737,7 +1737,7 @@ async function exportarVehiculos() {
   if (!Cache.vehiculos) Cache.vehiculos = await Vehiculos.getAll();
   const data = Cache.vehiculos;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Tipo','Placa','Conductor/Propietario','Vencimiento','Estado','Días','N° Póliza/Licencia','Aseguradora/CDA'];
+  const headers = ['Tipo', 'Placa', 'Conductor/Propietario', 'Vencimiento', 'Estado', 'Días', 'N° Póliza/Licencia', 'Aseguradora/CDA'];
   const rows = data.map(v => {
     const days = daysUntil(v.vencimiento);
     return [v.tipo, v.placa, v.conductor_nombre, v.vencimiento, getDocEstado(days), days ?? '', v.poliza || v.num_licencia, v.aseguradora];
@@ -1749,9 +1749,9 @@ async function exportarVehiculos() {
 // ALERTAS
 // ═══════════════════════════════════════════
 function alertCard(a) {
-  const estado   = getDocEstado(a.days);
-  const classMap = { vencido:'danger', critico:'danger', proximo:'warning', vigente:'info', sin_fecha:'info' };
-  const iconMap  = { vencido:'🚨', critico:'⚠️', proximo:'⏰', vigente:'ℹ️', sin_fecha:'ℹ️' };
+  const estado = getDocEstado(a.days);
+  const classMap = { vencido: 'danger', critico: 'danger', proximo: 'warning', vigente: 'info', sin_fecha: 'info' };
+  const iconMap = { vencido: '🚨', critico: '⚠️', proximo: '⏰', vigente: 'ℹ️', sin_fecha: 'ℹ️' };
   return `<div class="alert-item ${classMap[estado] || 'info'}">
     <div class="alert-icon">${iconMap[estado]}</div>
     <div class="alert-content">
@@ -1767,9 +1767,9 @@ async function renderAlertas() {
   try {
     Cache.invalidate('bpm');
     Cache.invalidate('vehiculos');
-    const alertas   = await Alertas.getAll();
+    const alertas = await Alertas.getAll();
     const filterVal = document.getElementById('filterAlerta')?.value || '';
-    const filtered  = filterVal
+    const filtered = filterVal
       ? alertas.filter(a => getDocEstado(a.days) === filterVal)
       : alertas;
 
@@ -1783,10 +1783,10 @@ async function renderAlertas() {
     const statsEl = document.getElementById('alertStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon:'🚨', value: vencidos, label:'Vencidos',      color:'var(--danger)' },
-        { icon:'⚠️', value: criticos, label:'Críticos ≤7d',  color:'var(--warning)' },
-        { icon:'⏰', value: proximos, label:'Próximos ≤30d', color:'var(--accent4)' },
-        { icon:'✅', value: vigentes, label:'Vigentes',       color:'var(--success)' },
+        { icon: '🚨', value: vencidos, label: 'Vencidos', color: 'var(--danger)' },
+        { icon: '⚠️', value: criticos, label: 'Críticos ≤7d', color: 'var(--warning)' },
+        { icon: '⏰', value: proximos, label: 'Próximos ≤30d', color: 'var(--accent4)' },
+        { icon: '✅', value: vigentes, label: 'Vigentes', color: 'var(--success)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -1804,9 +1804,9 @@ async function renderAlertas() {
 }
 
 function updateAlertBadge(count) {
-  const badge       = document.getElementById('alertBadge');
+  const badge = document.getElementById('alertBadge');
   const badgeMobile = document.getElementById('alertBadgeMobile');
-  if (badge)       { badge.textContent       = count; badge.style.display       = count > 0 ? '' : 'none'; }
+  if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
   if (badgeMobile) { badgeMobile.textContent = count; badgeMobile.style.display = count > 0 ? '' : 'none'; }
 }
 
@@ -1879,10 +1879,10 @@ function downloadCSV(name, headers, rows) {
     return downloadExcel(name, headers, rows, name);
   }
   const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const csv    = [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
-  const blob   = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url    = URL.createObjectURL(blob);
-  const a      = document.createElement('a');
+  const csv = [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
   a.href = url; a.download = `${name}_${today()}.csv`;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
@@ -1919,7 +1919,7 @@ window.addEventListener('appinstalled', () => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    const isHttps     = location.protocol === 'https:';
+    const isHttps = location.protocol === 'https:';
     if (!isLocalhost && isHttps) {
       navigator.serviceWorker.register('./sw.js')
         .then(reg => console.log('[SW] Registrado:', reg.scope))
@@ -1973,7 +1973,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     Cache.invalidate('vehiculos');
     Cache.invalidate('incapacidades');
     const alertas = await Alertas.getAll();
-    const count   = alertas.filter(a => a.days !== null && a.days <= 30).length;
+    const count = alertas.filter(a => a.days !== null && a.days <= 30).length;
     updateAlertBadge(count);
     // Refrescar badge de incapacidades también
     const incap = Cache.incapacidades || await Incapacidades.getAll();
@@ -1988,8 +1988,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const prendas = await DotacionPrendas.getAll();
       Cache.prendas = prendas;
-      const bajo   = DotacionPrendas.stockBajo(prendas).length;
-      const badge  = document.getElementById('prendasBadge');
+      const bajo = DotacionPrendas.stockBajo(prendas).length;
+      const badge = document.getElementById('prendasBadge');
       if (badge) { badge.textContent = bajo; badge.style.display = bajo > 0 ? '' : 'none'; }
     } catch (_) { /* silencioso */ }
   })();
@@ -2003,19 +2003,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 Cache.incapacidades = null;
 
 const INCAP_STATUS = {
-  ingresada:  { label: 'Ingresada',   cls: 'badge-neutral',  icon: '📥' },
-  cobrada:    { label: 'Cobrada',     cls: 'badge-info',     icon: '📤' },
-  transcrita: { label: 'Transcrita',  cls: 'badge-warning',  icon: '📝' },
-  pagada:     { label: 'Pagada',      cls: 'badge-success',  icon: '✅' },
-  en_tramite: { label: 'En trámite',  cls: 'badge-warning',  icon: '⏳' },
-  radicada:   { label: 'Radicada',    cls: 'badge-info',     icon: '📂' },
+  ingresada: { label: 'Ingresada', cls: 'badge-neutral', icon: '📥' },
+  cobrada: { label: 'Cobrada', cls: 'badge-info', icon: '📤' },
+  transcrita: { label: 'Transcrita', cls: 'badge-warning', icon: '📝' },
+  pagada: { label: 'Pagada', cls: 'badge-success', icon: '✅' },
+  en_tramite: { label: 'En trámite', cls: 'badge-warning', icon: '⏳' },
+  radicada: { label: 'Radicada', cls: 'badge-info', icon: '📂' },
 };
 
 const INCAP_TIPO = {
-  EG: { label: 'Enfermedad General',    short: 'EG', color: '#6c63ff' },
-  EP: { label: 'Enfermedad Profesional',short: 'EP', color: '#f7971e' },
-  AT: { label: 'Accidente de Trabajo',  short: 'AT', color: '#ff6584' },
-  LM: { label: 'Licencia Maternidad',   short: 'LM', color: '#43e97b' },
+  EG: { label: 'Enfermedad General', short: 'EG', color: '#6c63ff' },
+  EP: { label: 'Enfermedad Profesional', short: 'EP', color: '#f7971e' },
+  AT: { label: 'Accidente de Trabajo', short: 'AT', color: '#ff6584' },
+  LM: { label: 'Licencia Maternidad', short: 'LM', color: '#43e97b' },
 };
 
 function statusBadgeIncap(status) {
@@ -2030,7 +2030,7 @@ function tipoBadgeIncap(tipo) {
 
 function fmtPeso(n) {
   if (!n && n !== 0) return '—';
-  return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 }).format(n);
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 }
 
 function iconCheck(val, siText = 'Sí', noText = 'No') {
@@ -2046,25 +2046,25 @@ async function renderIncapacidades() {
   showLoading(true);
   try {
     if (!Cache.incapacidades) Cache.incapacidades = await Incapacidades.getAll();
-    if (!Cache.trabajadores)  Cache.trabajadores  = await Trabajadores.getAll();
+    if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
     poblarSelectTrabajadores('iTrabajador');
 
     const lista = Cache.incapacidades;
 
     // ── Stats ───────────────────────────────
-    const totalDias   = lista.reduce((s, i) => s + (i.dias || 0), 0);
-    const sinFisico   = lista.filter(i => !i.tiene_fisico).length;
-    const sinHC       = lista.filter(i => !i.historia_clinica).length;
-    const enTramite   = lista.filter(i => i.status === 'en_tramite' || i.status === 'radicada').length;
+    const totalDias = lista.reduce((s, i) => s + (i.dias || 0), 0);
+    const sinFisico = lista.filter(i => !i.tiene_fisico).length;
+    const sinHC = lista.filter(i => !i.historia_clinica).length;
+    const enTramite = lista.filter(i => i.status === 'en_tramite' || i.status === 'radicada').length;
 
     const statsEl = document.getElementById('incapStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon:'🏥', value: lista.length, label:'Total',        color:'var(--accent)' },
-        { icon:'📅', value: totalDias,    label:'Días acum.',   color:'var(--info)' },
-        { icon:'⏳', value: enTramite,    label:'En gestión',   color:'var(--warning)' },
-        { icon:'📂', value: sinFisico,    label:'Sin físico',   color: sinFisico  > 0 ? 'var(--danger)' : 'var(--success)' },
-        { icon:'🗂️', value: sinHC,        label:'Sin HC',       color: sinHC      > 0 ? 'var(--danger)' : 'var(--success)' },
+        { icon: '🏥', value: lista.length, label: 'Total', color: 'var(--accent)' },
+        { icon: '📅', value: totalDias, label: 'Días acum.', color: 'var(--info)' },
+        { icon: '⏳', value: enTramite, label: 'En gestión', color: 'var(--warning)' },
+        { icon: '📂', value: sinFisico, label: 'Sin físico', color: sinFisico > 0 ? 'var(--danger)' : 'var(--success)' },
+        { icon: '🗂️', value: sinHC, label: 'Sin HC', color: sinHC > 0 ? 'var(--danger)' : 'var(--success)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -2079,19 +2079,19 @@ async function renderIncapacidades() {
     if (incapBadge) { incapBadge.textContent = pendientes; incapBadge.style.display = pendientes > 0 ? '' : 'none'; }
 
     // ── Aplicar filtros ─────────────────────
-    const q          = (document.getElementById('searchIncap')?.value || '').toLowerCase();
-    const fStatus    = document.getElementById('filterIncapStatus')?.value  || '';
-    const fTipo      = document.getElementById('filterIncapTipo')?.value    || '';
-    const fFisico    = document.getElementById('filterIncapFisico')?.value  || '';
-    const fHC        = document.getElementById('filterIncapHC')?.value      || '';
+    const q = (document.getElementById('searchIncap')?.value || '').toLowerCase();
+    const fStatus = document.getElementById('filterIncapStatus')?.value || '';
+    const fTipo = document.getElementById('filterIncapTipo')?.value || '';
+    const fFisico = document.getElementById('filterIncapFisico')?.value || '';
+    const fHC = document.getElementById('filterIncapHC')?.value || '';
 
     const filtered = lista.filter(i => {
       const txt = [i.trabajador_nombre, i.diagnostico, i.codigo_dx, i.radicado, i.entidad, i.observaciones].join(' ').toLowerCase();
-      return (!q       || txt.includes(q))
-          && (!fStatus || i.status        === fStatus)
-          && (!fTipo   || i.tipo          === fTipo)
-          && (!fFisico || (fFisico === 'si' ? i.tiene_fisico : !i.tiene_fisico))
-          && (!fHC     || (fHC     === 'si' ? i.historia_clinica : !i.historia_clinica));
+      return (!q || txt.includes(q))
+        && (!fStatus || i.status === fStatus)
+        && (!fTipo || i.tipo === fTipo)
+        && (!fFisico || (fFisico === 'si' ? i.tiene_fisico : !i.tiene_fisico))
+        && (!fHC || (fHC === 'si' ? i.historia_clinica : !i.historia_clinica));
     });
 
     // ── Tab listado ─────────────────────────
@@ -2117,7 +2117,7 @@ function _renderTablaIncap(filtered) {
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="avatar" style="background:${avatarColor(i.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
-            ${(i.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+            ${(i.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
           </div>
           <span style="font-weight:600;font-size:13px">${i.trabajador_nombre}</span>
         </div>
@@ -2126,8 +2126,8 @@ function _renderTablaIncap(filtered) {
       <td>${fmtDate(i.fecha_fin)}</td>
       <td>
         ${i.dias != null
-          ? `<span style="font-weight:700;color:var(--accent)">${i.dias}d</span>`
-          : '<span style="color:var(--text-muted)">—</span>'}
+      ? `<span style="font-weight:700;color:var(--accent)">${i.dias}d</span>`
+      : '<span style="color:var(--text-muted)">—</span>'}
       </td>
       <td>${tipoBadgeIncap(i.tipo)}</td>
       <td>
@@ -2141,14 +2141,14 @@ function _renderTablaIncap(filtered) {
           ${statusBadgeIncap(i.status)}
           <select class="filter-select" style="font-size:11px;padding:3px 6px;margin-top:2px"
             onchange="cambiarStatusIncap('${i.id}', this.value)">
-            ${Object.entries(INCAP_STATUS).map(([k,v]) =>
-              `<option value="${k}" ${i.status===k?'selected':''}>${v.icon} ${v.label}</option>`
-            ).join('')}
+            ${Object.entries(INCAP_STATUS).map(([k, v]) =>
+        `<option value="${k}" ${i.status === k ? 'selected' : ''}>${v.icon} ${v.label}</option>`
+      ).join('')}
           </select>
         </div>
       </td>
-      <td style="text-align:center">${iconCheck(i.tiene_fisico,'Sí','No')}</td>
-      <td style="text-align:center">${iconCheck(i.historia_clinica,'Sí','No')}</td>
+      <td style="text-align:center">${iconCheck(i.tiene_fisico, 'Sí', 'No')}</td>
+      <td style="text-align:center">${iconCheck(i.historia_clinica, 'Sí', 'No')}</td>
       <td style="font-size:12px;color:var(--text-muted)">${i.radicado || '—'}</td>
       <td>
         <div class="td-actions">
@@ -2160,8 +2160,8 @@ function _renderTablaIncap(filtered) {
 }
 
 function _renderPendientes(lista) {
-  const sinFisico  = lista.filter(i => !i.tiene_fisico);
-  const sinHC      = lista.filter(i => !i.historia_clinica);
+  const sinFisico = lista.filter(i => !i.tiene_fisico);
+  const sinHC = lista.filter(i => !i.historia_clinica);
 
   const renderMini = (arr) => arr.length === 0
     ? '<div class="empty-state" style="padding:30px"><div class="empty-state-icon">✅</div><div class="empty-state-text">Todo en orden</div></div>'
@@ -2170,7 +2170,7 @@ function _renderPendientes(lista) {
           <div class="alert-icon">🏥</div>
           <div class="alert-content" style="flex:1">
             <div class="alert-title" style="font-size:13px">${i.trabajador_nombre}</div>
-            <div class="alert-desc">${fmtDate(i.fecha_inicio)}${i.fecha_fin ? ' → '+fmtDate(i.fecha_fin) : ''} · ${tipoBadgeIncap(i.tipo)}</div>
+            <div class="alert-desc">${fmtDate(i.fecha_inicio)}${i.fecha_fin ? ' → ' + fmtDate(i.fecha_fin) : ''} · ${tipoBadgeIncap(i.tipo)}</div>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="editarIncapacidad('${i.id}')">✏️</button>
         </div>`).join('');
@@ -2187,7 +2187,7 @@ function _renderPendientes(lista) {
 
 function _renderResumenTrabajador(lista) {
   const resumen = Incapacidades.resumenPorTrabajador(lista);
-  const tbody   = document.getElementById('tablaIncapPorTrabajador');
+  const tbody = document.getElementById('tablaIncapPorTrabajador');
   if (!tbody) return;
   if (!resumen.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:30px">Sin datos</td></tr>'; return; }
 
@@ -2196,17 +2196,17 @@ function _renderResumenTrabajador(lista) {
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="avatar" style="background:${avatarColor(r.trabajador_nombre)};width:30px;height:30px;font-size:11px">
-            ${(r.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+            ${(r.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
           </div>
           <span style="font-weight:600">${r.trabajador_nombre}</span>
         </div>
       </td>
       <td><strong>${r.total}</strong></td>
       <td><span style="color:var(--accent);font-weight:700">${r.total_dias}d</span></td>
-      <td>${r.pagadas   > 0 ? `<span class="badge badge-success">${r.pagadas}</span>`   : '<span style="color:var(--text-muted)">0</span>'}</td>
-      <td>${r.en_tramite> 0 ? `<span class="badge badge-warning">${r.en_tramite}</span>`: '<span style="color:var(--text-muted)">0</span>'}</td>
-      <td>${r.sin_fisico> 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
-      <td>${r.sin_historia>0? `<span class="badge badge-danger">${r.sin_historia}</span>`:'<span style="color:var(--success)">✔</span>'}</td>
+      <td>${r.pagadas > 0 ? `<span class="badge badge-success">${r.pagadas}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
+      <td>${r.en_tramite > 0 ? `<span class="badge badge-warning">${r.en_tramite}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
+      <td>${r.sin_fisico > 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
+      <td>${r.sin_historia > 0 ? `<span class="badge badge-danger">${r.sin_historia}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
       <td style="font-size:12px;color:var(--text-muted)">${fmtDate(r.ultima_fecha)}</td>
     </tr>`).join('');
 }
@@ -2215,31 +2215,31 @@ function _renderResumenTrabajador(lista) {
 // INCAPACIDADES — CRUD
 // ═══════════════════════════════════════════
 async function guardarIncapacidad() {
-  const id           = document.getElementById('iId').value;
+  const id = document.getElementById('iId').value;
   const trabajadorId = document.getElementById('iTrabajador').value;
-  const fechaInicio  = document.getElementById('iFechaInicio').value;
+  const fechaInicio = document.getElementById('iFechaInicio').value;
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
-  if (!fechaInicio)  return toast('La fecha de inicio es obligatoria', 'error');
+  if (!fechaInicio) return toast('La fecha de inicio es obligatoria', 'error');
 
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
-  const fechaFin   = document.getElementById('iFechaFin').value || null;
-  const valor      = parseFloat(document.getElementById('iValor').value) || null;
+  const fechaFin = document.getElementById('iFechaFin').value || null;
+  const valor = parseFloat(document.getElementById('iValor').value) || null;
 
   const row = {
-    trabajador_id:     trabajadorId,
+    trabajador_id: trabajadorId,
     trabajador_nombre: trabajador?.nombre || '',
-    fecha_inicio:      fechaInicio,
-    fecha_fin:         fechaFin,
-    tipo:              document.getElementById('iTipo').value,
-    entidad:           document.getElementById('iEntidad').value.trim(),
-    codigo_dx:         document.getElementById('iCodigoDx').value.trim().toUpperCase(),
-    diagnostico:       document.getElementById('iDiagnostico').value.trim(),
-    status:            document.getElementById('iStatus').value,
-    radicado:          document.getElementById('iRadicado').value.trim(),
+    fecha_inicio: fechaInicio,
+    fecha_fin: fechaFin,
+    tipo: document.getElementById('iTipo').value,
+    entidad: document.getElementById('iEntidad').value.trim(),
+    codigo_dx: document.getElementById('iCodigoDx').value.trim().toUpperCase(),
+    diagnostico: document.getElementById('iDiagnostico').value.trim(),
+    status: document.getElementById('iStatus').value,
+    radicado: document.getElementById('iRadicado').value.trim(),
     valor,
-    tiene_fisico:      document.getElementById('iFisico').checked,
-    historia_clinica:  document.getElementById('iHistoria').checked,
-    observaciones:     document.getElementById('iObs').value.trim(),
+    tiene_fisico: document.getElementById('iFisico').checked,
+    historia_clinica: document.getElementById('iHistoria').checked,
+    observaciones: document.getElementById('iObs').value.trim(),
   };
 
   showLoading(true);
@@ -2257,20 +2257,20 @@ async function guardarIncapacidad() {
 function editarIncapacidad(id) {
   const i = (Cache.incapacidades || []).find(x => x.id === id);
   if (!i) return;
-  document.getElementById('iId').value             = i.id;
-  document.getElementById('iTrabajador').value     = i.trabajador_id;
-  document.getElementById('iFechaInicio').value    = i.fecha_inicio  ? i.fecha_inicio.split('T')[0]  : '';
-  document.getElementById('iFechaFin').value       = i.fecha_fin     ? i.fecha_fin.split('T')[0]     : '';
-  document.getElementById('iTipo').value           = i.tipo          || 'EG';
-  document.getElementById('iEntidad').value        = i.entidad       || '';
-  document.getElementById('iCodigoDx').value       = i.codigo_dx     || '';
-  document.getElementById('iDiagnostico').value    = i.diagnostico   || '';
-  document.getElementById('iStatus').value         = i.status        || 'ingresada';
-  document.getElementById('iRadicado').value       = i.radicado      || '';
-  document.getElementById('iValor').value          = i.valor         || '';
-  document.getElementById('iFisico').checked       = !!i.tiene_fisico;
-  document.getElementById('iHistoria').checked     = !!i.historia_clinica;
-  document.getElementById('iObs').value            = i.observaciones || '';
+  document.getElementById('iId').value = i.id;
+  document.getElementById('iTrabajador').value = i.trabajador_id;
+  document.getElementById('iFechaInicio').value = i.fecha_inicio ? i.fecha_inicio.split('T')[0] : '';
+  document.getElementById('iFechaFin').value = i.fecha_fin ? i.fecha_fin.split('T')[0] : '';
+  document.getElementById('iTipo').value = i.tipo || 'EG';
+  document.getElementById('iEntidad').value = i.entidad || '';
+  document.getElementById('iCodigoDx').value = i.codigo_dx || '';
+  document.getElementById('iDiagnostico').value = i.diagnostico || '';
+  document.getElementById('iStatus').value = i.status || 'ingresada';
+  document.getElementById('iRadicado').value = i.radicado || '';
+  document.getElementById('iValor').value = i.valor || '';
+  document.getElementById('iFisico').checked = !!i.tiene_fisico;
+  document.getElementById('iHistoria').checked = !!i.historia_clinica;
+  document.getElementById('iObs').value = i.observaciones || '';
   _updateFisicoLabel(); _updateHistoriaLabel();
   document.getElementById('modalIncapTitle').textContent = '✏️ Editar Incapacidad';
   openModal('modalIncapacidad');
@@ -2305,13 +2305,13 @@ async function cambiarStatusIncap(id, status) {
 }
 
 function resetIncapacidadForm() {
-  ['iId','iFechaInicio','iFechaFin','iEntidad','iCodigoDx','iDiagnostico','iRadicado','iValor','iObs']
+  ['iId', 'iFechaInicio', 'iFechaFin', 'iEntidad', 'iCodigoDx', 'iDiagnostico', 'iRadicado', 'iValor', 'iObs']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const selT = document.getElementById('iTrabajador'); if (selT) selT.value = '';
-  const tipo = document.getElementById('iTipo');       if (tipo) tipo.value = 'EG';
-  const stat = document.getElementById('iStatus');     if (stat) stat.value = 'ingresada';
-  const fis  = document.getElementById('iFisico');     if (fis)  fis.checked = false;
-  const hc   = document.getElementById('iHistoria');   if (hc)   hc.checked  = false;
+  const tipo = document.getElementById('iTipo'); if (tipo) tipo.value = 'EG';
+  const stat = document.getElementById('iStatus'); if (stat) stat.value = 'ingresada';
+  const fis = document.getElementById('iFisico'); if (fis) fis.checked = false;
+  const hc = document.getElementById('iHistoria'); if (hc) hc.checked = false;
   _updateFisicoLabel(); _updateHistoriaLabel();
   document.getElementById('modalIncapTitle').textContent = '🏥 Nueva Incapacidad';
 }
@@ -2333,7 +2333,7 @@ document.getElementById('iHistoria')?.addEventListener('change', _updateHistoria
 // Registrar incapacidades en el mapa de navegación
 // (sobreescribe el navigate existente para incluir el nuevo módulo)
 const _navigateOrig = navigate;
-window.navigate = function(pageId) {
+window.navigate = function (pageId) {
   if (pageId === 'incapacidades') {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2375,8 +2375,8 @@ async function exportarIncapacidades() {
   const data = Cache.incapacidades;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
   const headers = [
-    'Trabajador','Fecha Inicio','Fecha Fin','Días','Tipo','Diagnóstico',
-    'Código CIE-10','Entidad','Estado','Radicado','Valor','Físico','Historia Clínica','Observaciones'
+    'Trabajador', 'Fecha Inicio', 'Fecha Fin', 'Días', 'Tipo', 'Diagnóstico',
+    'Código CIE-10', 'Entidad', 'Estado', 'Radicado', 'Valor', 'Físico', 'Historia Clínica', 'Observaciones'
   ];
   const rows = data.map(i => [
     i.trabajador_nombre, i.fecha_inicio, i.fecha_fin, i.dias ?? '',
@@ -2393,18 +2393,18 @@ async function exportarIncapacidades() {
 Cache.vacaciones = null;
 
 const VAC_STATUS = {
-  en_proceso:  { label: 'En proceso',   cls: 'badge-neutral',  icon: '⏳' },
-  aprobada:    { label: 'Aprobada',     cls: 'badge-success',  icon: '✅' },
-  no_aprobada: { label: 'No aprobada',  cls: 'badge-danger',   icon: '❌' },
+  en_proceso: { label: 'En proceso', cls: 'badge-neutral', icon: '⏳' },
+  aprobada: { label: 'Aprobada', cls: 'badge-success', icon: '✅' },
+  no_aprobada: { label: 'No aprobada', cls: 'badge-danger', icon: '❌' },
 };
 
 const VAC_TIPO = {
-  vacaciones:             { label: 'Vacaciones',          color: '#6c63ff' },
-  licencia_remunerada:    { label: 'Lic. Remunerada',     color: '#43e97b' },
-  licencia_no_remunerada: { label: 'Lic. No Remunerada',  color: '#f7971e' },
-  permiso:                { label: 'Permiso',              color: '#1e90ff' },
-  calamidad:              { label: 'Calamidad',            color: '#ff6584' },
-  otro:                   { label: 'Otro',                 color: '#a0a0c0' },
+  vacaciones: { label: 'Vacaciones', color: '#6c63ff' },
+  licencia_remunerada: { label: 'Lic. Remunerada', color: '#43e97b' },
+  licencia_no_remunerada: { label: 'Lic. No Remunerada', color: '#f7971e' },
+  permiso: { label: 'Permiso', color: '#1e90ff' },
+  calamidad: { label: 'Calamidad', color: '#ff6584' },
+  otro: { label: 'Otro', color: '#a0a0c0' },
 };
 
 function statusBadgeVac(status) {
@@ -2428,28 +2428,28 @@ function updateVacBadge(count) {
 async function renderVacaciones() {
   showLoading(true);
   try {
-    if (!Cache.vacaciones)   Cache.vacaciones   = await Vacaciones.getAll();
+    if (!Cache.vacaciones) Cache.vacaciones = await Vacaciones.getAll();
     if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
     poblarSelectTrabajadores('vacTrabajador');
 
     const lista = Cache.vacaciones;
 
     // ── Stats ───────────────────────────────
-    const totalDias    = lista.reduce((s, v) => s + (v.dias || 0), 0);
-    const pendientes   = lista.filter(v => v.status === 'en_proceso').length;
-    const aprobadas    = lista.filter(v => v.status === 'aprobada').length;
-    const noAprobadas  = lista.filter(v => v.status === 'no_aprobada').length;
+    const totalDias = lista.reduce((s, v) => s + (v.dias || 0), 0);
+    const pendientes = lista.filter(v => v.status === 'en_proceso').length;
+    const aprobadas = lista.filter(v => v.status === 'aprobada').length;
+    const noAprobadas = lista.filter(v => v.status === 'no_aprobada').length;
 
     updateVacBadge(pendientes);
 
     const statsEl = document.getElementById('vacStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '🏖️', value: lista.length,  label: 'Total solicitudes', color: 'var(--accent)' },
-        { icon: '📅', value: totalDias,     label: 'Días acumulados',    color: 'var(--info)' },
-        { icon: '⏳', value: pendientes,    label: 'En proceso',         color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
-        { icon: '✅', value: aprobadas,     label: 'Aprobadas',          color: 'var(--success)' },
-        { icon: '❌', value: noAprobadas,   label: 'No aprobadas',       color: 'var(--danger)' },
+        { icon: '🏖️', value: lista.length, label: 'Total solicitudes', color: 'var(--accent)' },
+        { icon: '📅', value: totalDias, label: 'Días acumulados', color: 'var(--info)' },
+        { icon: '⏳', value: pendientes, label: 'En proceso', color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '✅', value: aprobadas, label: 'Aprobadas', color: 'var(--success)' },
+        { icon: '❌', value: noAprobadas, label: 'No aprobadas', color: 'var(--danger)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -2459,15 +2459,15 @@ async function renderVacaciones() {
     }
 
     // ── Tab: Listado con filtros ────────────
-    const q       = (document.getElementById('searchVac')?.value    || '').toLowerCase();
+    const q = (document.getElementById('searchVac')?.value || '').toLowerCase();
     const fStatus = document.getElementById('filterVacStatus')?.value || '';
-    const fTipo   = document.getElementById('filterVacTipo')?.value   || '';
+    const fTipo = document.getElementById('filterVacTipo')?.value || '';
 
     const filtered = lista.filter(v => {
       const txt = [v.trabajador_nombre, v.aprobado_por, v.observaciones].join(' ').toLowerCase();
-      return (!q       || txt.includes(q))
-          && (!fStatus || v.status === fStatus)
-          && (!fTipo   || v.tipo   === fTipo);
+      return (!q || txt.includes(q))
+        && (!fStatus || v.status === fStatus)
+        && (!fTipo || v.tipo === fTipo);
     });
 
     _renderTablaVac('tablaVacaciones', 'emptyVacaciones', filtered, true);
@@ -2496,7 +2496,7 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
     let detalleExtra = '';
     if (esPermiso) {
       const horas = (v.hora_inicio && v.hora_fin)
-        ? `<br><span style="font-size:11px;color:var(--text-muted)">🕐 ${v.hora_inicio.slice(0,5)}–${v.hora_fin.slice(0,5)}</span>`
+        ? `<br><span style="font-size:11px;color:var(--text-muted)">🕐 ${v.hora_inicio.slice(0, 5)}–${v.hora_fin.slice(0, 5)}</span>`
         : '';
       const rem = v.es_remunerado === true
         ? `<span style="font-size:10px;color:var(--success);margin-left:4px">✅ Rem.</span>`
@@ -2506,7 +2506,7 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
       detalleExtra = horas + rem;
     }
     const motivoHtml = v.motivo
-      ? `<br><span style="font-size:11px;color:var(--text-muted);font-style:italic" title="${v.motivo}">💬 ${v.motivo.length > 40 ? v.motivo.slice(0,40)+'…' : v.motivo}</span>`
+      ? `<br><span style="font-size:11px;color:var(--text-muted);font-style:italic" title="${v.motivo}">💬 ${v.motivo.length > 40 ? v.motivo.slice(0, 40) + '…' : v.motivo}</span>`
       : '';
     // Ícono si viene del portal
     const portalIcon = v.solicitado_en
@@ -2531,8 +2531,8 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
         <select class="form-control" style="padding:4px 8px;font-size:12px;width:auto"
           onchange="cambiarStatusVac('${v.id}', this.value)">
           ${Object.entries(VAC_STATUS).map(([k, s]) =>
-            `<option value="${k}" ${v.status === k ? 'selected' : ''}>${s.icon} ${s.label}</option>`
-          ).join('')}
+      `<option value="${k}" ${v.status === k ? 'selected' : ''}>${s.icon} ${s.label}</option>`
+    ).join('')}
         </select>
       </td>
       ${showAprobador ? `<td style="font-size:12px;color:var(--text-secondary)">${v.aprobado_por || '—'}</td>` : ''}
@@ -2580,37 +2580,37 @@ function _renderResumenVac(resumen) {
 // VACACIONES — CRUD
 // ═══════════════════════════════════════════
 async function guardarVacacion() {
-  const id           = document.getElementById('vacId').value;
+  const id = document.getElementById('vacId').value;
   const trabajadorId = document.getElementById('vacTrabajador').value;
-  const fechaInicio  = document.getElementById('vacInicio').value;
-  const fechaFin     = document.getElementById('vacFin').value;
-  const tipo         = document.getElementById('vacTipo').value;
+  const fechaInicio = document.getElementById('vacInicio').value;
+  const fechaFin = document.getElementById('vacFin').value;
+  const tipo = document.getElementById('vacTipo').value;
 
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
-  if (!fechaInicio)  return toast('La fecha de inicio es obligatoria', 'error');
-  if (!fechaFin)     return toast('La fecha de fin es obligatoria', 'error');
+  if (!fechaInicio) return toast('La fecha de inicio es obligatoria', 'error');
+  if (!fechaFin) return toast('La fecha de fin es obligatoria', 'error');
   if (fechaFin < fechaInicio) return toast('La fecha de fin no puede ser anterior al inicio', 'error');
 
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
 
   // Campos extra para permisos
   const esPermiso = tipo === 'permiso';
-  const remVal    = document.getElementById('vacRemunerado')?.value;
-  const esRemun   = remVal === 'true' ? true : remVal === 'false' ? false : null;
+  const remVal = document.getElementById('vacRemunerado')?.value;
+  const esRemun = remVal === 'true' ? true : remVal === 'false' ? false : null;
 
   const row = {
-    trabajador_id:     trabajadorId,
+    trabajador_id: trabajadorId,
     trabajador_nombre: trabajador?.nombre || '',
-    fecha_inicio:      fechaInicio,
-    fecha_fin:         fechaFin,
+    fecha_inicio: fechaInicio,
+    fecha_fin: fechaFin,
     tipo,
-    status:            document.getElementById('vacStatus').value,
-    aprobado_por:      document.getElementById('vacAprobadoPor').value.trim(),
-    observaciones:     document.getElementById('vacObs').value.trim() || null,
-    motivo:            document.getElementById('vacMotivo')?.value.trim() || null,
-    hora_inicio:       esPermiso ? (document.getElementById('vacHoraInicio')?.value || null) : null,
-    hora_fin:          esPermiso ? (document.getElementById('vacHoraFin')?.value    || null) : null,
-    es_remunerado:     esPermiso ? esRemun : null,
+    status: document.getElementById('vacStatus').value,
+    aprobado_por: document.getElementById('vacAprobadoPor').value.trim(),
+    observaciones: document.getElementById('vacObs').value.trim() || null,
+    motivo: document.getElementById('vacMotivo')?.value.trim() || null,
+    hora_inicio: esPermiso ? (document.getElementById('vacHoraInicio')?.value || null) : null,
+    hora_fin: esPermiso ? (document.getElementById('vacHoraFin')?.value || null) : null,
+    es_remunerado: esPermiso ? esRemun : null,
   };
 
   showLoading(true);
@@ -2638,19 +2638,19 @@ async function cambiarStatusVac(id, status) {
 function editarVacacion(id) {
   const v = (Cache.vacaciones || []).find(x => x.id === id);
   if (!v) return;
-  document.getElementById('vacId').value          = v.id;
-  document.getElementById('vacTrabajador').value  = v.trabajador_id  || '';
-  document.getElementById('vacTipo').value        = v.tipo           || 'vacaciones';
-  document.getElementById('vacInicio').value      = v.fecha_inicio   ? v.fecha_inicio.split('T')[0] : '';
-  document.getElementById('vacFin').value         = v.fecha_fin      ? v.fecha_fin.split('T')[0]    : '';
-  document.getElementById('vacStatus').value      = v.status         || 'en_proceso';
-  document.getElementById('vacAprobadoPor').value = v.aprobado_por   || '';
-  document.getElementById('vacObs').value         = v.observaciones  || '';
+  document.getElementById('vacId').value = v.id;
+  document.getElementById('vacTrabajador').value = v.trabajador_id || '';
+  document.getElementById('vacTipo').value = v.tipo || 'vacaciones';
+  document.getElementById('vacInicio').value = v.fecha_inicio ? v.fecha_inicio.split('T')[0] : '';
+  document.getElementById('vacFin').value = v.fecha_fin ? v.fecha_fin.split('T')[0] : '';
+  document.getElementById('vacStatus').value = v.status || 'en_proceso';
+  document.getElementById('vacAprobadoPor').value = v.aprobado_por || '';
+  document.getElementById('vacObs').value = v.observaciones || '';
 
   // Campos extra de permiso
-  if (document.getElementById('vacMotivo'))      document.getElementById('vacMotivo').value      = v.motivo      || '';
-  if (document.getElementById('vacHoraInicio')) document.getElementById('vacHoraInicio').value  = v.hora_inicio  || '';
-  if (document.getElementById('vacHoraFin'))    document.getElementById('vacHoraFin').value     = v.hora_fin     || '';
+  if (document.getElementById('vacMotivo')) document.getElementById('vacMotivo').value = v.motivo || '';
+  if (document.getElementById('vacHoraInicio')) document.getElementById('vacHoraInicio').value = v.hora_inicio || '';
+  if (document.getElementById('vacHoraFin')) document.getElementById('vacHoraFin').value = v.hora_fin || '';
   if (document.getElementById('vacRemunerado')) {
     const r = v.es_remunerado;
     document.getElementById('vacRemunerado').value = r === true ? 'true' : r === false ? 'false' : '';
@@ -2661,7 +2661,7 @@ function editarVacacion(id) {
   if (badge) {
     if (v.solicitado_en) {
       badge.style.display = 'block';
-      const fechaStr = new Date(v.solicitado_en).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' });
+      const fechaStr = new Date(v.solicitado_en).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
       const span = document.getElementById('vacPortalFecha');
       if (span) span.textContent = `(${fechaStr})`;
     } else {
@@ -2690,25 +2690,25 @@ function _resetVacForm() {
   ['vacId', 'vacAprobadoPor', 'vacObs'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  const sel  = document.getElementById('vacTrabajador'); if (sel)  sel.value  = '';
-  const tipo = document.getElementById('vacTipo');       if (tipo) tipo.value = 'vacaciones';
-  const stat = document.getElementById('vacStatus');     if (stat) stat.value = 'en_proceso';
-  const ini  = document.getElementById('vacInicio');     if (ini)  ini.value  = '';
-  const fin  = document.getElementById('vacFin');        if (fin)  fin.value  = '';
+  const sel = document.getElementById('vacTrabajador'); if (sel) sel.value = '';
+  const tipo = document.getElementById('vacTipo'); if (tipo) tipo.value = 'vacaciones';
+  const stat = document.getElementById('vacStatus'); if (stat) stat.value = 'en_proceso';
+  const ini = document.getElementById('vacInicio'); if (ini) ini.value = '';
+  const fin = document.getElementById('vacFin'); if (fin) fin.value = '';
   // Campos extra de permiso
-  ['vacMotivo','vacHoraInicio','vacHoraFin'].forEach(id => {
+  ['vacMotivo', 'vacHoraInicio', 'vacHoraFin'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const rem = document.getElementById('vacRemunerado'); if (rem) rem.value = '';
-  const extra = document.getElementById('vacPermisoExtra');    if (extra) extra.style.display = 'none';
-  const mg    = document.getElementById('vacMotivoGroup');     if (mg)    mg.style.display    = 'none';
-  const badge = document.getElementById('vacPortalBadge');     if (badge) badge.style.display  = 'none';
+  const extra = document.getElementById('vacPermisoExtra'); if (extra) extra.style.display = 'none';
+  const mg = document.getElementById('vacMotivoGroup'); if (mg) mg.style.display = 'none';
+  const badge = document.getElementById('vacPortalBadge'); if (badge) badge.style.display = 'none';
   document.getElementById('modalVacTitle').textContent = '🏖️ Nueva Solicitud';
 }
 
 // Abrir modal pre-cargado
 const _openModalOrig = openModal;
-window.openModal = function(id) {
+window.openModal = function (id) {
   if (id === 'modalVacacion' && !document.getElementById('vacId').value) {
     _resetVacForm();
     poblarSelectTrabajadores('vacTrabajador');
@@ -2835,12 +2835,12 @@ async function _actualizarStatsHoy() {
     console.error('Error al actualizar stats de asistencia:', err);
   }
 
-  const entradas        = registros.filter(r => r.tipo === 'entrada').length;
+  const entradas = registros.filter(r => r.tipo === 'entrada').length;
   const salidasAlmuerzo = registros.filter(r => r.tipo === 'salida_almuerzo').length;
-  const regresosAlm     = registros.filter(r => r.tipo === 'regreso_almuerzo').length;
-  const salidas         = registros.filter(r => r.tipo === 'salida').length;
-  const unicos          = new Set(registros.map(r => r.cedula)).size;
-  const porQR           = registros.filter(r => r.metodo === 'qr').length;
+  const regresosAlm = registros.filter(r => r.tipo === 'regreso_almuerzo').length;
+  const salidas = registros.filter(r => r.tipo === 'salida').length;
+  const unicos = new Set(registros.map(r => r.cedula)).size;
+  const porQR = registros.filter(r => r.metodo === 'qr').length;
 
   const subtitleEl = document.getElementById('asistFecha');
   if (subtitleEl) {
@@ -2859,12 +2859,12 @@ async function _actualizarStatsHoy() {
   const statsEl = document.getElementById('asistStats');
   if (!statsEl) return;
   statsEl.innerHTML = [
-    { icon: '🟢', value: entradas,        label: 'Entradas',        color: 'var(--accent3)' },
-    { icon: '🟠', value: salidasAlmuerzo, label: 'Sal. Almuerzo',   color: '#f7971e'        },
-    { icon: '🔵', value: regresosAlm,     label: 'Reg. Almuerzo',   color: '#1e90ff'        },
-    { icon: '🔴', value: salidas,         label: 'Salidas',         color: 'var(--danger)'  },
-    { icon: '👤', value: unicos,          label: 'Trabajadores',    color: 'var(--accent)'  },
-    { icon: '📲', value: porQR,           label: 'Vía QR',          color: 'var(--accent4)' },
+    { icon: '🟢', value: entradas, label: 'Entradas', color: 'var(--accent3)' },
+    { icon: '🟠', value: salidasAlmuerzo, label: 'Sal. Almuerzo', color: '#f7971e' },
+    { icon: '🔵', value: regresosAlm, label: 'Reg. Almuerzo', color: '#1e90ff' },
+    { icon: '🔴', value: salidas, label: 'Salidas', color: 'var(--danger)' },
+    { icon: '👤', value: unicos, label: 'Trabajadores', color: 'var(--accent)' },
+    { icon: '📲', value: porQR, label: 'Vía QR', color: 'var(--accent4)' },
   ].map(s => `
     <div class="stat-card" style="--card-color:${s.color}">
       <div class="stat-icon">${s.icon}</div>
@@ -2875,16 +2875,16 @@ async function _actualizarStatsHoy() {
 
 // ── Render tabla ───────────────────────────────────────────────
 const _TIPO_LABEL_ASIST = {
-  entrada:          'Entrada',
-  salida_almuerzo:  'Sal. Almuerzo',
+  entrada: 'Entrada',
+  salida_almuerzo: 'Sal. Almuerzo',
   regreso_almuerzo: 'Reg. Almuerzo',
-  salida:           'Salida',
+  salida: 'Salida',
 };
 
 function _rowAsistHTML(r, mostrarFecha = false) {
   const metodoIcon = r.metodo === 'qr' ? '📲' : '🪪';
-  const tipoLabel  = _TIPO_LABEL_ASIST[r.tipo] || r.tipo;
-  const fechaCol   = mostrarFecha
+  const tipoLabel = _TIPO_LABEL_ASIST[r.tipo] || r.tipo;
+  const fechaCol = mostrarFecha
     ? `<td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${r.fecha || '—'}</td>`
     : '';
   return `<tr>
@@ -2893,8 +2893,8 @@ function _rowAsistHTML(r, mostrarFecha = false) {
     <td><span class="asist-log-tipo ${r.tipo}">${tipoLabel}</span></td>
     <td>${r.trabajador_nombre || '—'}</td>
     <td class="hide-mobile" style="font-variant-numeric:tabular-nums">${r.cedula || '—'}</td>
-    <td class="hide-mobile">${r.cargo   || '—'}</td>
-    <td class="hide-mobile">${r.ciudad  || '—'}</td>
+    <td class="hide-mobile">${r.cargo || '—'}</td>
+    <td class="hide-mobile">${r.ciudad || '—'}</td>
     <td class="hide-mobile">${metodoIcon} ${r.metodo}</td>
     <td><button class="btn btn-danger btn-sm btn-icon"
       onclick="eliminarRegistroAsist('${r.id}')">🗑️</button></td>
@@ -2904,8 +2904,8 @@ function _rowAsistHTML(r, mostrarFecha = false) {
 async function renderTablaAsistencia() {
   const desde = document.getElementById('asistFiltroDesde')?.value || document.getElementById('asistFiltroFecha')?.value || '';
   const hasta = document.getElementById('asistFiltroHasta')?.value || '';
-  const q     = (document.getElementById('asistSearch')?.value     || '').trim();
-  const fTipo = document.getElementById('asistFiltroTipo')?.value  || '';
+  const q = (document.getElementById('asistSearch')?.value || '').trim();
+  const fTipo = document.getElementById('asistFiltroTipo')?.value || '';
   const tbody = document.getElementById('asistTbody');
   const empty = document.getElementById('asistLogEmpty');
   if (!tbody) return;
@@ -2928,7 +2928,7 @@ async function renderTablaAsistencia() {
     const txt = [(r.trabajador_nombre || ''), (r.cedula || ''), (r.cargo || ''), (r.ciudad || '')].join(' ').toLowerCase();
     const coincideTexto = !q || txt.includes(q.toLowerCase());
     const coincideFecha = !desde || (desde && !hasta && r.fecha === desde) || (desde && hasta && r.fecha >= desde && r.fecha <= hasta);
-    const coincideTipo  = !fTipo || r.tipo === fTipo;
+    const coincideTipo = !fTipo || r.tipo === fTipo;
     return coincideTexto && coincideFecha && coincideTipo;
   });
 
@@ -3104,19 +3104,19 @@ async function ejecutarExportarAsistencia() {
 // ═══════════════════════════════════════════════════════════════
 
 const EXAM_TIPOS = {
-  ingreso:          { label: 'Ingreso',           badge: 'badge-info',    icon: '📥' },
-  periodico:        { label: 'Periódico',         badge: 'badge-primary', icon: '🔄' },
-  egreso:           { label: 'Egreso',            badge: 'badge-neutral', icon: '📤' },
-  post_incapacidad: { label: 'Reintegro / Post',  badge: 'badge-warning', icon: '🏥' },
-  reubicacion:      { label: 'Reubicación',       badge: 'badge-warning', icon: '🔀' },
-  otro:             { label: 'Otro',              badge: 'badge-neutral', icon: '📄' },
+  ingreso: { label: 'Ingreso', badge: 'badge-info', icon: '📥' },
+  periodico: { label: 'Periódico', badge: 'badge-primary', icon: '🔄' },
+  egreso: { label: 'Egreso', badge: 'badge-neutral', icon: '📤' },
+  post_incapacidad: { label: 'Reintegro / Post', badge: 'badge-warning', icon: '🏥' },
+  reubicacion: { label: 'Reubicación', badge: 'badge-warning', icon: '🔀' },
+  otro: { label: 'Otro', badge: 'badge-neutral', icon: '📄' },
 };
 
 const EXAM_CONCEPTOS = {
-  apto:                  { label: 'Apto',                   badge: 'badge-success', icon: '🟢' },
-  apto_con_restricciones:{ label: 'Apto con restricciones', badge: 'badge-warning', icon: '🟡' },
-  no_apto:               { label: 'No apto',                badge: 'badge-danger',  icon: '🔴' },
-  aplazado:              { label: 'Aplazado',               badge: 'badge-neutral', icon: '⚪' },
+  apto: { label: 'Apto', badge: 'badge-success', icon: '🟢' },
+  apto_con_restricciones: { label: 'Apto con restricciones', badge: 'badge-warning', icon: '🟡' },
+  no_apto: { label: 'No apto', badge: 'badge-danger', icon: '🔴' },
+  aplazado: { label: 'Aplazado', badge: 'badge-neutral', icon: '⚪' },
 };
 
 function tipoBadgeExamen(tipo) {
@@ -3130,9 +3130,9 @@ function conceptoBadgeExamen(concepto) {
 }
 
 function autoCalcularVencimientoExamen() {
-  const tipo  = document.getElementById('exTipo')?.value;
+  const tipo = document.getElementById('exTipo')?.value;
   const fecha = document.getElementById('exFecha')?.value;
-  const venc  = document.getElementById('exVencimiento');
+  const venc = document.getElementById('exVencimiento');
   if (!venc) return;
 
   if (tipo === 'periodico' && fecha && !venc.value) {
@@ -3157,17 +3157,17 @@ async function renderExamenes() {
     _actualizarStatsExamenes(lista);
 
     // Filtros
-    const q          = (document.getElementById('searchExam')?.value || '').toLowerCase();
-    const fTipo      = document.getElementById('filterExamTipo')?.value || '';
-    const fConcepto  = document.getElementById('filterExamConcepto')?.value || '';
-    const fFisico    = document.getElementById('filterExamFisico')?.value || '';
+    const q = (document.getElementById('searchExam')?.value || '').toLowerCase();
+    const fTipo = document.getElementById('filterExamTipo')?.value || '';
+    const fConcepto = document.getElementById('filterExamConcepto')?.value || '';
+    const fFisico = document.getElementById('filterExamFisico')?.value || '';
 
     const filtered = lista.filter(e => {
       const txt = [e.trabajador_nombre, e.entidad, e.enfasis, e.restricciones, e.observaciones].filter(Boolean).join(' ').toLowerCase();
-      return (!q         || txt.includes(q))
-          && (!fTipo     || e.tipo_examen === fTipo)
-          && (!fConcepto || e.concepto === fConcepto)
-          && (!fFisico   || (fFisico === 'si' ? e.tiene_concepto_fisico : !e.tiene_concepto_fisico));
+      return (!q || txt.includes(q))
+        && (!fTipo || e.tipo_examen === fTipo)
+        && (!fConcepto || e.concepto === fConcepto)
+        && (!fFisico || (fFisico === 'si' ? e.tiene_concepto_fisico : !e.tiene_concepto_fisico));
     });
 
     _renderTablaExamenes(filtered);
@@ -3200,10 +3200,10 @@ function _actualizarBadgeExamenes(lista) {
 
 // ── Stats Cards ──────────────────────────────────────────────────
 function _actualizarStatsExamenes(lista) {
-  const total          = lista.length;
-  const aptos          = lista.filter(e => e.concepto === 'apto').length;
-  const restricciones  = lista.filter(e => e.concepto === 'apto_con_restricciones' || e.concepto === 'no_apto').length;
-  const vencidosOVencer= lista.filter(e => {
+  const total = lista.length;
+  const aptos = lista.filter(e => e.concepto === 'apto').length;
+  const restricciones = lista.filter(e => e.concepto === 'apto_con_restricciones' || e.concepto === 'no_apto').length;
+  const vencidosOVencer = lista.filter(e => {
     if (!e.fecha_vencimiento) return false;
     const d = daysUntil(e.fecha_vencimiento);
     return d !== null && d <= 30;
@@ -3213,9 +3213,9 @@ function _actualizarStatsExamenes(lista) {
   if (!el) return;
 
   el.innerHTML = [
-    { icon: '🩺', value: total,           label: 'Total Exámenes',        color: 'var(--accent)' },
-    { icon: '🟢', value: aptos,           label: 'Aptos',                 color: 'var(--success)' },
-    { icon: '⚠️', value: restricciones,   label: 'Con Restricciones / No', color: 'var(--warning)' },
+    { icon: '🩺', value: total, label: 'Total Exámenes', color: 'var(--accent)' },
+    { icon: '🟢', value: aptos, label: 'Aptos', color: 'var(--success)' },
+    { icon: '⚠️', value: restricciones, label: 'Con Restricciones / No', color: 'var(--warning)' },
     { icon: '⏳', value: vencidosOVencer, label: 'Por Vencer / Vencidos', color: vencidosOVencer > 0 ? 'var(--danger)' : 'var(--success)' },
   ].map(s => `
     <div class="stat-card" style="--card-color:${s.color}">
@@ -3245,7 +3245,7 @@ function _renderTablaExamenes(filtered) {
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
-              ${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+              ${(e.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
             </div>
             <span style="font-weight:600;font-size:13px">${e.trabajador_nombre}</span>
           </div>
@@ -3302,7 +3302,7 @@ function _renderVencimientosExamenes(lista) {
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
-              ${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+              ${(e.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
             </div>
             <span style="font-weight:600">${e.trabajador_nombre}</span>
           </div>
@@ -3343,7 +3343,7 @@ function _renderRestriccionesExamenes(lista) {
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
-            ${(e.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+            ${(e.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
           </div>
           <span style="font-weight:600">${e.trabajador_nombre}</span>
         </div>
@@ -3383,7 +3383,7 @@ function _renderResumenTrabajadoresExamenes(lista) {
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="avatar" style="background:${avatarColor(r.trabajador_nombre)};width:30px;height:30px;font-size:11px;flex-shrink:0">
-            ${(r.trabajador_nombre||'?').slice(0,2).toUpperCase()}
+            ${(r.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
           </div>
           <span style="font-weight:600">${r.trabajador_nombre}</span>
         </div>
@@ -3400,29 +3400,29 @@ function _renderResumenTrabajadoresExamenes(lista) {
 
 // ── Guardar / Editar Examen ──────────────────────────────────────
 async function guardarExamenMedico() {
-  const id           = document.getElementById('exId').value;
+  const id = document.getElementById('exId').value;
   const trabajadorId = document.getElementById('exTrabajador').value;
-  const fechaExamen  = document.getElementById('exFecha').value;
+  const fechaExamen = document.getElementById('exFecha').value;
 
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
-  if (!fechaExamen)  return toast('La fecha del examen es obligatoria', 'error');
+  if (!fechaExamen) return toast('La fecha del examen es obligatoria', 'error');
 
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
-  const costo      = parseFloat(document.getElementById('exCosto').value) || null;
+  const costo = parseFloat(document.getElementById('exCosto').value) || null;
 
   const row = {
-    trabajador_id:         trabajadorId,
-    trabajador_nombre:     trabajador?.nombre || '',
-    tipo_examen:           document.getElementById('exTipo').value,
-    fecha_examen:          fechaExamen,
-    fecha_vencimiento:     document.getElementById('exVencimiento').value || null,
-    entidad:               document.getElementById('exEntidad').value.trim(),
-    concepto:              document.getElementById('exConcepto').value,
-    enfasis:               document.getElementById('exEnfasis').value.trim(),
-    restricciones:         document.getElementById('exRestricciones').value.trim(),
+    trabajador_id: trabajadorId,
+    trabajador_nombre: trabajador?.nombre || '',
+    tipo_examen: document.getElementById('exTipo').value,
+    fecha_examen: fechaExamen,
+    fecha_vencimiento: document.getElementById('exVencimiento').value || null,
+    entidad: document.getElementById('exEntidad').value.trim(),
+    concepto: document.getElementById('exConcepto').value,
+    enfasis: document.getElementById('exEnfasis').value.trim(),
+    restricciones: document.getElementById('exRestricciones').value.trim(),
     tiene_concepto_fisico: document.getElementById('exFisico').checked,
     costo,
-    observaciones:         document.getElementById('exObs').value.trim(),
+    observaciones: document.getElementById('exObs').value.trim(),
   };
 
   showLoading(true);
@@ -3445,19 +3445,19 @@ function editarExamenMedico(id) {
 
   poblarSelectTrabajadores('exTrabajador');
 
-  document.getElementById('modalExamTitle').textContent  = '✏️ Editar Examen Médico';
-  document.getElementById('exId').value                  = exam.id;
-  document.getElementById('exTrabajador').value          = exam.trabajador_id || '';
-  document.getElementById('exTipo').value                = exam.tipo_examen || 'periodico';
-  document.getElementById('exFecha').value               = exam.fecha_examen || '';
-  document.getElementById('exVencimiento').value         = exam.fecha_vencimiento || '';
-  document.getElementById('exEntidad').value             = exam.entidad || '';
-  document.getElementById('exConcepto').value            = exam.concepto || 'apto';
-  document.getElementById('exEnfasis').value             = exam.enfasis || '';
-  document.getElementById('exRestricciones').value       = exam.restricciones || '';
-  document.getElementById('exCosto').value               = exam.costo || '';
-  document.getElementById('exFisico').checked            = !!exam.tiene_concepto_fisico;
-  document.getElementById('exObs').value                 = exam.observaciones || '';
+  document.getElementById('modalExamTitle').textContent = '✏️ Editar Examen Médico';
+  document.getElementById('exId').value = exam.id;
+  document.getElementById('exTrabajador').value = exam.trabajador_id || '';
+  document.getElementById('exTipo').value = exam.tipo_examen || 'periodico';
+  document.getElementById('exFecha').value = exam.fecha_examen || '';
+  document.getElementById('exVencimiento').value = exam.fecha_vencimiento || '';
+  document.getElementById('exEntidad').value = exam.entidad || '';
+  document.getElementById('exConcepto').value = exam.concepto || 'apto';
+  document.getElementById('exEnfasis').value = exam.enfasis || '';
+  document.getElementById('exRestricciones').value = exam.restricciones || '';
+  document.getElementById('exCosto').value = exam.costo || '';
+  document.getElementById('exFisico').checked = !!exam.tiene_concepto_fisico;
+  document.getElementById('exObs').value = exam.observaciones || '';
 
   openModal('modalExamenMedico');
 }
@@ -3476,18 +3476,18 @@ async function eliminarExamenMedico(id) {
 
 function resetExamenForm() {
   document.getElementById('modalExamTitle').textContent = '🩺 Nuevo Examen Médico';
-  document.getElementById('exId').value                 = '';
+  document.getElementById('exId').value = '';
   const selT = document.getElementById('exTrabajador'); if (selT) selT.value = '';
-  document.getElementById('exTipo').value               = 'periodico';
-  document.getElementById('exFecha').value              = today();
-  document.getElementById('exVencimiento').value        = '';
-  document.getElementById('exEntidad').value            = '';
-  document.getElementById('exConcepto').value           = 'apto';
-  document.getElementById('exEnfasis').value            = '';
-  document.getElementById('exRestricciones').value      = '';
-  document.getElementById('exCosto').value              = '';
-  document.getElementById('exFisico').checked           = false;
-  document.getElementById('exObs').value                = '';
+  document.getElementById('exTipo').value = 'periodico';
+  document.getElementById('exFecha').value = today();
+  document.getElementById('exVencimiento').value = '';
+  document.getElementById('exEntidad').value = '';
+  document.getElementById('exConcepto').value = 'apto';
+  document.getElementById('exEnfasis').value = '';
+  document.getElementById('exRestricciones').value = '';
+  document.getElementById('exCosto').value = '';
+  document.getElementById('exFisico').checked = false;
+  document.getElementById('exObs').value = '';
   autoCalcularVencimientoExamen();
 }
 
@@ -3556,9 +3556,9 @@ function _renderPrendasStats(lista) {
   const stockBajo = DotacionPrendas.stockBajo(lista).length;
 
   el.innerHTML = tipos.map(tipo => {
-    const sub   = lista.filter(r => r.tipo === tipo);
+    const sub = lista.filter(r => r.tipo === tipo);
     const total = sub.reduce((s, r) => s + r.stock, 0);
-    const meta  = DotacionPrendas.TIPO_LABEL[tipo];
+    const meta = DotacionPrendas.TIPO_LABEL[tipo];
     return `
       <div class="stat-card" style="--card-color:var(--accent)">
         <div class="stat-icon">${meta.icon}</div>
@@ -3576,7 +3576,7 @@ function _renderPrendasStats(lista) {
 // ── Tabla tipo matriz: refs × tallas, separada por género ──────
 function _renderPrendasTabla(tipo, lista) {
   const contenedor = document.getElementById(`prendas-grid-${tipo}`);
-  const empty      = document.getElementById(`prendas-empty-${tipo}`);
+  const empty = document.getElementById(`prendas-empty-${tipo}`);
   if (!contenedor) return;
 
   if (!lista.length) {
@@ -3586,8 +3586,8 @@ function _renderPrendasTabla(tipo, lista) {
   }
   if (empty) empty.style.display = 'none';
 
-  const tallasDef  = DotacionPrendas.TALLAS[tipo];
-  const agrupado   = DotacionPrendas.agrupar(lista);
+  const tallasDef = DotacionPrendas.TALLAS[tipo];
+  const agrupado = DotacionPrendas.agrupar(lista);
   const referencias = [...new Set(lista.map(r => r.referencia))];
 
   // Para pantalones los géneros tienen tallas distintas → tabla separada por género
@@ -3613,12 +3613,12 @@ function _renderPrendasTabla(tipo, lista) {
             </thead>
             <tbody>
               ${refs.map(ref => {
-                const celdas = tallas.map(talla => {
-                  const row = agrupado[ref]?.[genero]?.[talla];
-                  if (!row) return `<td class="prenda-cell">—</td>`;
-                  const bajo  = row.stock <= row.stock_min;
-                  const cls   = bajo ? 'prenda-cell bajo' : 'prenda-cell';
-                  return `<td class="${cls}" id="ptd-${row.id}">
+      const celdas = tallas.map(talla => {
+        const row = agrupado[ref]?.[genero]?.[talla];
+        if (!row) return `<td class="prenda-cell">—</td>`;
+        const bajo = row.stock <= row.stock_min;
+        const cls = bajo ? 'prenda-cell bajo' : 'prenda-cell';
+        return `<td class="${cls}" id="ptd-${row.id}">
                     <input
                       type="number" min="0"
                       class="prenda-stock-input${bajo ? ' bajo' : ''}"
@@ -3632,27 +3632,26 @@ function _renderPrendasTabla(tipo, lista) {
                       <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">－</button>
                     </div>
                   </td>`;
-                }).join('');
-                const totalRef = tallas.reduce((s, talla) => {
-                  return s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0);
-                }, 0);
-                return `<tr>
+      }).join('');
+      const totalRef = tallas.reduce((s, talla) => {
+        return s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0);
+      }, 0);
+      return `<tr>
                   <td class="prenda-ref-cell" title="${ref}">${ref}</td>
                   ${celdas}
                   <td class="prenda-total-cell"><strong>${totalRef}</strong></td>
                 </tr>`;
-              }).join('')}
+    }).join('')}
               <tr style="border-top:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04)">
                 <td class="prenda-ref-cell" style="font-weight:700;color:var(--text-primary);font-size:12px;letter-spacing:.5px;text-transform:uppercase">TOTAL</td>
                 ${tallas.map(talla => {
-                  const sumTalla = refs.reduce((s, ref) => s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0), 0);
-                  return `<td class="prenda-total-cell" style="font-weight:700;color:var(--accent3)">${sumTalla}</td>`;
-                }).join('')}
-                <td class="prenda-total-cell" style="font-weight:800;color:var(--accent3);font-size:15px">${
-                  refs.reduce((total, ref) =>
-                    total + tallas.reduce((s, talla) => s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0), 0)
-                  , 0)
-                }</td>
+      const sumTalla = refs.reduce((s, ref) => s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0), 0);
+      return `<td class="prenda-total-cell" style="font-weight:700;color:var(--accent3)">${sumTalla}</td>`;
+    }).join('')}
+                <td class="prenda-total-cell" style="font-weight:800;color:var(--accent3);font-size:15px">${refs.reduce((total, ref) =>
+      total + tallas.reduce((s, talla) => s + (agrupado[ref]?.[genero]?.[talla]?.stock || 0), 0)
+      , 0)
+      }</td>
               </tr>
             </tbody>
           </table>
@@ -3663,8 +3662,8 @@ function _renderPrendasTabla(tipo, lista) {
   let html = '';
   if (tipo === 'pantalon') {
     // Pantalones: géneros con tallas distintas → dos tablas separadas
-    html  = generarTablaGenero('hombre', tallasDef.hombre, referencias);
-    html += generarTablaGenero('mujer',  tallasDef.mujer,  referencias);
+    html = generarTablaGenero('hombre', tallasDef.hombre, referencias);
+    html += generarTablaGenero('mujer', tallasDef.mujer, referencias);
   } else if (tipo === 'epp') {
     // EPP: áreas (bodega / cuarto_frio) en lugar de géneros
     const generarTablaArea = (area, tallas, refs) => {
@@ -3693,12 +3692,12 @@ function _renderPrendasTabla(tipo, lista) {
               </thead>
               <tbody>
                 ${refs.map(ref => {
-                  const celdas = tallas.map(talla => {
-                    const row = agrupadoArea[ref]?.[talla];
-                    if (!row) return `<td class="prenda-cell">—</td>`;
-                    const bajo = row.stock <= row.stock_min;
-                    const cls  = bajo ? 'prenda-cell bajo' : 'prenda-cell';
-                    return `<td class="${cls}" id="ptd-${row.id}">
+        const celdas = tallas.map(talla => {
+          const row = agrupadoArea[ref]?.[talla];
+          if (!row) return `<td class="prenda-cell">—</td>`;
+          const bajo = row.stock <= row.stock_min;
+          const cls = bajo ? 'prenda-cell bajo' : 'prenda-cell';
+          return `<td class="${cls}" id="ptd-${row.id}">
                       <input type="number" min="0"
                         class="prenda-stock-input${bajo ? ' bajo' : ''}"
                         id="ps-${row.id}"
@@ -3711,37 +3710,36 @@ function _renderPrendasTabla(tipo, lista) {
                         <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">－</button>
                       </div>
                     </td>`;
-                  }).join('');
-                  const totalRef = tallas.reduce((s, talla) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0);
-                  return `<tr>
+        }).join('');
+        const totalRef = tallas.reduce((s, talla) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0);
+        return `<tr>
                     <td class="prenda-ref-cell" title="${ref}">${ref}</td>
                     ${celdas}
                     <td class="prenda-total-cell"><strong>${totalRef}</strong></td>
                   </tr>`;
-                }).join('')}
+      }).join('')}
                 <tr style="border-top:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04)">
                   <td class="prenda-ref-cell" style="font-weight:700;color:var(--text-primary);font-size:12px;letter-spacing:.5px;text-transform:uppercase">TOTAL</td>
                   ${tallas.map(talla => {
-                    const sumTalla = refs.reduce((s, ref) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0);
-                    return `<td class="prenda-total-cell" style="font-weight:700;color:var(--accent3)">${sumTalla}</td>`;
-                  }).join('')}
-                  <td class="prenda-total-cell" style="font-weight:800;color:var(--accent3);font-size:15px">${
-                    refs.reduce((total, ref) =>
-                      total + tallas.reduce((s, talla) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0)
-                    , 0)
-                  }</td>
+        const sumTalla = refs.reduce((s, ref) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0);
+        return `<td class="prenda-total-cell" style="font-weight:700;color:var(--accent3)">${sumTalla}</td>`;
+      }).join('')}
+                  <td class="prenda-total-cell" style="font-weight:800;color:var(--accent3);font-size:15px">${refs.reduce((total, ref) =>
+        total + tallas.reduce((s, talla) => s + (agrupadoArea[ref]?.[talla]?.stock || 0), 0)
+        , 0)
+        }</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>`;
     };
-    html  = generarTablaArea('bodega',      tallasDef.bodega,      referencias);
+    html = generarTablaArea('bodega', tallasDef.bodega, referencias);
     html += generarTablaArea('cuarto_frio', tallasDef.cuarto_frio, referencias);
   } else {
     // Camisas, chaquetas, calzado: mismas tallas → una tabla con sección por género
-    html  = generarTablaGenero('hombre', tallasDef.hombre, referencias);
-    html += generarTablaGenero('mujer',  tallasDef.mujer,  referencias);
+    html = generarTablaGenero('hombre', tallasDef.hombre, referencias);
+    html += generarTablaGenero('mujer', tallasDef.mujer, referencias);
   }
 
   contenedor.innerHTML = html;
@@ -3801,22 +3799,22 @@ function prendasEditar(id) {
   const row = (Cache.prendas || []).find(r => r.id === id);
   if (!row) return;
 
-  document.getElementById('peId').value       = row.id;
+  document.getElementById('peId').value = row.id;
   document.getElementById('peInfo').textContent =
     `${DotacionPrendas.TIPO_LABEL[row.tipo]?.icon || ''} ${row.referencia} · ${row.genero === 'hombre' ? '👨 Hombre' : '👩 Mujer'} · Talla ${row.talla}`;
-  document.getElementById('peStock').value    = row.stock;
+  document.getElementById('peStock').value = row.stock;
   document.getElementById('peStockMin').value = row.stock_min;
-  document.getElementById('peObs').value      = row.obs || '';
+  document.getElementById('peObs').value = row.obs || '';
 
   document.getElementById('modalPrendaEdit').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 async function prendasGuardarEdicion() {
-  const id       = document.getElementById('peId').value;
-  const stock    = parseInt(document.getElementById('peStock').value)    || 0;
+  const id = document.getElementById('peId').value;
+  const stock = parseInt(document.getElementById('peStock').value) || 0;
   const stockMin = parseInt(document.getElementById('peStockMin').value) || 2;
-  const obs      = document.getElementById('peObs').value.trim();
+  const obs = document.getElementById('peObs').value.trim();
 
   showLoading(true);
   const result = await DotacionPrendas.updateStock(id, stock);
@@ -3858,25 +3856,25 @@ async function exportarPrendas() {
 Cache.solicitudes = null;
 
 const SOLIC_TIPO_LABEL = {
-  vacaciones:             { icon: '🏖️', label: 'Vacaciones' },
-  permiso:                { icon: '🕐', label: 'Permiso' },
-  licencia_remunerada:    { icon: '✅', label: 'Lic. Remunerada' },
+  vacaciones: { icon: '🏖️', label: 'Vacaciones' },
+  permiso: { icon: '🕐', label: 'Permiso' },
+  licencia_remunerada: { icon: '✅', label: 'Lic. Remunerada' },
   licencia_no_remunerada: { icon: '📋', label: 'Lic. No Remunerada' },
-  calamidad:              { icon: '🚨', label: 'Calamidad' },
-  otro:                   { icon: '📄', label: 'Otro' },
+  calamidad: { icon: '🚨', label: 'Calamidad' },
+  otro: { icon: '📄', label: 'Otro' },
 };
 
 const SOLIC_STATUS = {
-  en_proceso:  { label: 'En proceso',   cls: 'badge-warning', icon: '⏳' },
-  aprobada:    { label: 'Aprobada',     cls: 'badge-success', icon: '✅' },
-  rechazada:   { label: 'Rechazada',   cls: 'badge-danger',  icon: '❌' },
+  en_proceso: { label: 'En proceso', cls: 'badge-warning', icon: '⏳' },
+  aprobada: { label: 'Aprobada', cls: 'badge-success', icon: '✅' },
+  rechazada: { label: 'Rechazada', cls: 'badge-danger', icon: '❌' },
 };
 
 function _solicStatusBadge(status) {
   const norm = (status === 'solicitada' || status === 'en_curso') ? 'en_proceso'
-             : (status === 'no_aprobada') ? 'rechazada'
-             : (status === 'finalizada') ? 'aprobada'
-             : status;
+    : (status === 'no_aprobada') ? 'rechazada'
+      : (status === 'finalizada') ? 'aprobada'
+        : status;
   const s = SOLIC_STATUS[norm] || { label: status, cls: 'badge-neutral', icon: '•' };
   return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
 }
@@ -3891,7 +3889,7 @@ function _solicFmtFechas(v) {
   const fin = fmtDate(v.fecha_fin);
   if (v.tipo === 'permiso') {
     const horas = (v.hora_inicio && v.hora_fin)
-      ? ` · ${v.hora_inicio.slice(0,5)}–${v.hora_fin.slice(0,5)}`
+      ? ` · ${v.hora_inicio.slice(0, 5)}–${v.hora_fin.slice(0, 5)}`
       : '';
     return `${ini}${horas}`;
   }
@@ -3919,35 +3917,35 @@ async function renderSolicitudes() {
     const lista = Cache.solicitudes;
 
     // Aplicar filtros de búsqueda / tipo / estado
-    const q       = (document.getElementById('searchSolic')?.value || '').toLowerCase();
+    const q = (document.getElementById('searchSolic')?.value || '').toLowerCase();
     const fStatus = document.getElementById('filterSolicStatus')?.value || '';
-    const fTipo   = document.getElementById('filterSolicTipo')?.value   || '';
+    const fTipo = document.getElementById('filterSolicTipo')?.value || '';
 
     const filtered = lista.filter(v => {
       const txt = [v.trabajador_nombre, v.motivo, v.observaciones].join(' ').toLowerCase();
       const norm = (v.status === 'solicitada' || v.status === 'en_curso') ? 'en_proceso'
-                 : (v.status === 'no_aprobada') ? 'rechazada'
-                 : (v.status === 'finalizada') ? 'aprobada'
-                 : v.status;
-      return (!q       || txt.includes(q))
-          && (!fStatus || norm === fStatus)
-          && (!fTipo   || v.tipo   === fTipo);
+        : (v.status === 'no_aprobada') ? 'rechazada'
+          : (v.status === 'finalizada') ? 'aprobada'
+            : v.status;
+      return (!q || txt.includes(q))
+        && (!fStatus || norm === fStatus)
+        && (!fTipo || v.tipo === fTipo);
     });
 
     // ── Stats ────────────────────────────────────────────────
-    const pendientes  = lista.filter(v => ['en_proceso','solicitada','en_curso'].includes(v.status)).length;
-    const aprobadas   = lista.filter(v => ['aprobada','finalizada'].includes(v.status)).length;
-    const rechazadas  = lista.filter(v => ['rechazada','no_aprobada'].includes(v.status)).length;
+    const pendientes = lista.filter(v => ['en_proceso', 'solicitada', 'en_curso'].includes(v.status)).length;
+    const aprobadas = lista.filter(v => ['aprobada', 'finalizada'].includes(v.status)).length;
+    const rechazadas = lista.filter(v => ['rechazada', 'no_aprobada'].includes(v.status)).length;
 
     updateSolicBadge(pendientes);
 
     const statsEl = document.getElementById('solicStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '⏳', value: pendientes,  label: 'En proceso',   color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
-        { icon: '✅', value: aprobadas,   label: 'Aprobadas',    color: 'var(--success)' },
-        { icon: '❌', value: rechazadas,  label: 'Rechazadas',   color: 'var(--danger)' },
-        { icon: '📋', value: lista.length, label: 'Total',       color: 'var(--text-muted)' },
+        { icon: '⏳', value: pendientes, label: 'En proceso', color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '✅', value: aprobadas, label: 'Aprobadas', color: 'var(--success)' },
+        { icon: '❌', value: rechazadas, label: 'Rechazadas', color: 'var(--danger)' },
+        { icon: '📋', value: lista.length, label: 'Total', color: 'var(--text-muted)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -3961,7 +3959,7 @@ async function renderSolicitudes() {
     if (countEl) countEl.textContent = pendientes > 0 ? `(${pendientes})` : '';
 
     // ── Tab pendientes ────────────────────────────────────────
-    const pendList  = lista.filter(v => ['solicitada','en_proceso'].includes(v.status));
+    const pendList = lista.filter(v => ['solicitada', 'en_proceso'].includes(v.status));
     const listaPend = document.getElementById('listaSolicPendientes');
     const emptyPend = document.getElementById('emptySolicPendientes');
 
@@ -3981,14 +3979,14 @@ async function renderSolicitudes() {
 
 // ── Tarjeta de solicitud pendiente ─────────────────────────────
 function _solicCardHTML(v) {
-  const tipo   = SOLIC_TIPO_LABEL[v.tipo] || { icon: '📄', label: v.tipo };
+  const tipo = SOLIC_TIPO_LABEL[v.tipo] || { icon: '📄', label: v.tipo };
   const fechas = _solicFmtFechas(v);
-  const dias   = v.dias != null ? `${v.dias} día${v.dias !== 1 ? 's' : ''}` : '';
-  const solEn  = v.solicitado_en || v.created_at
+  const dias = v.dias != null ? `${v.dias} día${v.dias !== 1 ? 's' : ''}` : '';
+  const solEn = v.solicitado_en || v.created_at
     ? new Date(v.solicitado_en || v.created_at).toLocaleDateString('es-CO', {
-        day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-      })
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    })
     : '';
 
   const rem = v.tipo === 'permiso' && v.es_remunerado != null
@@ -4006,7 +4004,7 @@ function _solicCardHTML(v) {
   return `
     <div class="solic-card ${v.status}" id="solic-card-${v.id}">
       <div class="solic-avatar" style="background:${avatarColor(v.trabajador_nombre)};color:#fff">
-        ${(v.trabajador_nombre || '?').slice(0,2).toUpperCase()}
+        ${(v.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
       </div>
       <div class="solic-body">
         <div class="solic-top">
@@ -4060,30 +4058,30 @@ function _renderTablaSolicTodas(lista) {
 
   tbody.innerHTML = lista.map(v => {
     const fechas = _solicFmtFechas(v);
-    const dias   = v.dias != null ? `<strong>${v.dias}d</strong>` : '—';
-    const solEn  = v.solicitado_en || v.created_at
+    const dias = v.dias != null ? `<strong>${v.dias}d</strong>` : '—';
+    const solEn = v.solicitado_en || v.created_at
       ? new Date(v.solicitado_en || v.created_at).toLocaleDateString('es-CO', {
-          day: '2-digit', month: 'short', year: 'numeric',
-        })
+        day: '2-digit', month: 'short', year: 'numeric',
+      })
       : '—';
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
-          <div class="avatar" style="background:${avatarColor(v.trabajador_nombre)}">${(v.trabajador_nombre||'?').slice(0,2).toUpperCase()}</div>
+          <div class="avatar" style="background:${avatarColor(v.trabajador_nombre)}">${(v.trabajador_nombre || '?').slice(0, 2).toUpperCase()}</div>
           <span style="font-weight:600">${v.trabajador_nombre}</span>
         </div>
       </td>
       <td>${_solicTipoBadge(v.tipo)}</td>
       <td style="font-size:12px">${fechas}</td>
       <td>${dias}</td>
-      <td style="max-width:160px;font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.motivo||''}">
+      <td style="max-width:160px;font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.motivo || ''}">
         ${v.motivo || '—'}
       </td>
       <td>${_solicStatusBadge(v.status)}</td>
       <td style="font-size:12px;color:var(--text-muted)">${solEn}</td>
       <td>
         <div class="td-actions">
-          ${['solicitada','en_proceso','en_curso'].includes(v.status) ? `
+          ${['solicitada', 'en_proceso', 'en_curso'].includes(v.status) ? `
             <button class="btn btn-success btn-sm btn-icon" title="Aprobar"    onclick="abrirAprobacion('${v.id}')">✅</button>
             <button class="btn btn-danger  btn-sm btn-icon" title="Rechazar"   onclick="gestionarSolicitud('${v.id}','rechazada')">❌</button>
           ` : ''}
@@ -4160,17 +4158,17 @@ function abrirCambioEstadoSolic(id) {
   // Siempre reconstruir las opciones con únicamente los 3 estados permitidos
   const sel = document.getElementById('csStatus');
   if (sel) {
-    sel.innerHTML = Object.entries(SOLIC_STATUS).map(([k,s]) => `<option value="${k}">${s.icon} ${s.label}</option>`).join('');
+    sel.innerHTML = Object.entries(SOLIC_STATUS).map(([k, s]) => `<option value="${k}">${s.icon} ${s.label}</option>`).join('');
   }
 
   const currentStatus = (v.status === 'solicitada' || v.status === 'en_curso') ? 'en_proceso'
-                      : (v.status === 'no_aprobada') ? 'rechazada'
-                      : (v.status === 'finalizada') ? 'aprobada'
-                      : (v.status || 'en_proceso');
+    : (v.status === 'no_aprobada') ? 'rechazada'
+      : (v.status === 'finalizada') ? 'aprobada'
+        : (v.status || 'en_proceso');
 
   document.getElementById('csNombre').textContent = `${v.trabajador_nombre} — ${SOLIC_TIPO_LABEL[v.tipo]?.label || v.tipo}`;
   document.getElementById('csStatus').value = currentStatus;
-  document.getElementById('csNota').value   = v.aprobado_por || '';
+  document.getElementById('csNota').value = v.aprobado_por || '';
   overlay.dataset.solicId = id;
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -4182,9 +4180,9 @@ function abrirCambioEstadoSolic(id) {
 
 async function _confirmarCambioEstado() {
   const overlay = document.getElementById('modalCambioEstadoSolic');
-  const id      = overlay?.dataset.solicId;
-  const status  = document.getElementById('csStatus').value;
-  const nota    = document.getElementById('csNota').value.trim();
+  const id = overlay?.dataset.solicId;
+  const status = document.getElementById('csStatus').value;
+  const nota = document.getElementById('csNota').value.trim();
   if (!id) return;
 
   showLoading(true);
@@ -4219,7 +4217,7 @@ async function _confirmarCambioEstado() {
         Cache.solicitudes = null;
         await renderSolicitudes();
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Cargar badge al arrancar
@@ -4234,9 +4232,9 @@ async function _confirmarCambioEstado() {
   // Suscripción Realtime: actualizar en vivo cuando llegan nuevas solicitudes
   sb.channel('solicitudes-realtime')
     .on('postgres_changes', {
-      event:  '*',
+      event: '*',
       schema: 'public',
-      table:  'vacaciones',
+      table: 'vacaciones',
     }, async () => {
       await _refrescarBadgeYVista();
     })
@@ -4266,7 +4264,7 @@ function _splitNombre(nombreCompleto) {
   if (parts.length === 2) return { nombres: parts[0], apellidos: parts[1] };
   // 3+ palabras: últimas 2 como apellidos
   const apellidos = parts.slice(-2).join(' ');
-  const nombres   = parts.slice(0, -2).join(' ');
+  const nombres = parts.slice(0, -2).join(' ');
   return { nombres, apellidos };
 }
 
@@ -4274,7 +4272,7 @@ function _splitNombre(nombreCompleto) {
 async function abrirAprobacion(id) {
   // Buscar en cache o cargar
   let v = (Cache.vacaciones || []).find(x => x.id === id)
-       || (Cache.solicitudes || []).find(x => x.id === id);
+    || (Cache.solicitudes || []).find(x => x.id === id);
 
   if (!v) {
     showLoading(true);
@@ -4291,21 +4289,21 @@ async function abrirAprobacion(id) {
   const { nombres, apellidos } = _splitNombre(v.trabajador_nombre);
 
   // Poblar campos de solo lectura
-  document.getElementById('aprobVacId').value         = v.id;
-  document.getElementById('aprobVacCiudad').textContent   = trabajador.ciudad || '—';
-  document.getElementById('aprobVacNombres').textContent  = nombres  || '—';
-  document.getElementById('aprobVacApellidos').textContent= apellidos || '—';
-  document.getElementById('aprobVacCedula').textContent   = trabajador.cedula || v.cedula || '—';
-  document.getElementById('aprobVacCargo').textContent    = trabajador.cargo  || v.cargo  || '—';
+  document.getElementById('aprobVacId').value = v.id;
+  document.getElementById('aprobVacCiudad').textContent = trabajador.ciudad || '—';
+  document.getElementById('aprobVacNombres').textContent = nombres || '—';
+  document.getElementById('aprobVacApellidos').textContent = apellidos || '—';
+  document.getElementById('aprobVacCedula').textContent = trabajador.cedula || v.cedula || '—';
+  document.getElementById('aprobVacCargo').textContent = trabajador.cargo || v.cargo || '—';
 
   // Subtitle
   const VAC_TIPO_MAP = {
-    vacaciones:              'Vacaciones',
-    licencia_remunerada:     'Licencia Remunerada',
-    licencia_no_remunerada:  'Licencia No Remunerada',
-    permiso:                 'Permiso',
-    calamidad:               'Calamidad',
-    otro:                    'Otro',
+    vacaciones: 'Vacaciones',
+    licencia_remunerada: 'Licencia Remunerada',
+    licencia_no_remunerada: 'Licencia No Remunerada',
+    permiso: 'Permiso',
+    calamidad: 'Calamidad',
+    otro: 'Otro',
   };
   const sub = document.getElementById('aprobVacSubtitle');
   if (sub) sub.textContent = VAC_TIPO_MAP[v.tipo] || v.tipo || '';
@@ -4313,25 +4311,25 @@ async function abrirAprobacion(id) {
   // Poblar inputs editables con datos ya guardados o valores por defecto
   const hoy = _fmtDateInput(new Date());
 
-  document.getElementById('aprobFechaSolicitud').value     = _fmtDateInput(v.fecha_solicitud)   || _fmtDateInput(v.created_at) || hoy;
-  document.getElementById('aprobFechaAprobacion').value    = _fmtDateInput(v.fecha_aprobacion)  || hoy;
-  document.getElementById('aprobDiasSolicitados').value    = v.dias_solicitados ?? v.dias ?? '';
-  document.getElementById('aprobDiasCalendario').value     = v.dias_calendario  ?? '';
-  document.getElementById('aprobFechaInicio').value        = _fmtDateInput(v.fecha_inicio);
-  document.getElementById('aprobPeriodoInicio').value      = _fmtDateInput(v.periodo_inicio)    || '';
-  document.getElementById('aprobPeriodoFin').value         = _fmtDateInput(v.periodo_fin)       || '';
-  document.getElementById('aprobFirmaColab').value         = v.firma_colaborador || v.trabajador_nombre || '';
-  document.getElementById('aprobDiasDinero').value         = v.dias_dinero ?? 0;
-  document.getElementById('aprobDiasHabAprobados').value   = v.dias_habiles_aprobados ?? v.dias ?? '';
-  document.getElementById('aprobFirmaJefe').value          = v.firma_jefe     || v.aprobado_por || '';
-  document.getElementById('aprobFechaReintegro').value     = _fmtDateInput(v.fecha_reintegro)   || '';
+  document.getElementById('aprobFechaSolicitud').value = _fmtDateInput(v.fecha_solicitud) || _fmtDateInput(v.created_at) || hoy;
+  document.getElementById('aprobFechaAprobacion').value = _fmtDateInput(v.fecha_aprobacion) || hoy;
+  document.getElementById('aprobDiasSolicitados').value = v.dias_solicitados ?? v.dias ?? '';
+  document.getElementById('aprobDiasCalendario').value = v.dias_calendario ?? '';
+  document.getElementById('aprobFechaInicio').value = _fmtDateInput(v.fecha_inicio);
+  document.getElementById('aprobPeriodoInicio').value = _fmtDateInput(v.periodo_inicio) || '';
+  document.getElementById('aprobPeriodoFin').value = _fmtDateInput(v.periodo_fin) || '';
+  document.getElementById('aprobFirmaColab').value = v.firma_colaborador || v.trabajador_nombre || '';
+  document.getElementById('aprobDiasDinero').value = v.dias_dinero ?? 0;
+  document.getElementById('aprobDiasHabAprobados').value = v.dias_habiles_aprobados ?? v.dias ?? '';
+  document.getElementById('aprobFirmaJefe').value = v.firma_jefe || v.aprobado_por || '';
+  document.getElementById('aprobFechaReintegro').value = _fmtDateInput(v.fecha_reintegro) || '';
   document.getElementById('aprobFechaInicioDefinitiva').value = _fmtDateInput(v.fecha_inicio_definitiva) || _fmtDateInput(v.fecha_inicio) || '';
 
   // Espejo de días hábiles aprobados y fecha reintegro (fila 5)
   _actualizarEspejos();
 
   document.getElementById('aprobVacStatus').value = v.status === 'aprobada' ? 'aprobada' : 'aprobada';
-  document.getElementById('aprobVacObs').value    = v.observaciones || '';
+  document.getElementById('aprobVacObs').value = v.observaciones || '';
 
   // Listeners para el espejo en tiempo real
   ['aprobDiasHabAprobados', 'aprobFechaReintegro'].forEach(elId => {
@@ -4347,15 +4345,15 @@ async function abrirAprobacion(id) {
 
 // ── Actualizar los campos espejo de la fila 5 ─────────────────
 function _actualizarEspejos() {
-  const dias      = document.getElementById('aprobDiasHabAprobados')?.value  || '—';
+  const dias = document.getElementById('aprobDiasHabAprobados')?.value || '—';
   const reintegro = document.getElementById('aprobFechaReintegro')?.value;
 
   const elDias = document.getElementById('aprobDiasHabAprobadosRepeat');
-  const elRei  = document.getElementById('aprobFechaReintegroRepeat');
+  const elRei = document.getElementById('aprobFechaReintegroRepeat');
 
   if (elDias) elDias.textContent = dias || '—';
-  if (elRei)  elRei.textContent  = reintegro
-    ? new Date(reintegro + 'T12:00:00').toLocaleDateString('es-CO', { day:'2-digit', month:'2-digit', year:'numeric' })
+  if (elRei) elRei.textContent = reintegro
+    ? new Date(reintegro + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : '—';
 }
 
@@ -4367,22 +4365,22 @@ async function guardarAprobacion() {
   const n = (sel) => document.getElementById(sel)?.value || null;
 
   const row = {
-    status:                   n('aprobVacStatus') || 'aprobada',
-    observaciones:            n('aprobVacObs'),
-    fecha_solicitud:          n('aprobFechaSolicitud')        || null,
-    fecha_aprobacion:         n('aprobFechaAprobacion')       || null,
-    dias_solicitados:         n('aprobDiasSolicitados')       ? parseInt(n('aprobDiasSolicitados'))       : null,
-    dias_calendario:          n('aprobDiasCalendario')        ? parseInt(n('aprobDiasCalendario'))        : null,
-    fecha_inicio:             n('aprobFechaInicio')           || null,
-    periodo_inicio:           n('aprobPeriodoInicio')         || null,
-    periodo_fin:              n('aprobPeriodoFin')            || null,
-    firma_colaborador:        n('aprobFirmaColab')            || null,
-    dias_dinero:              n('aprobDiasDinero')            ? parseInt(n('aprobDiasDinero'))            : 0,
-    dias_habiles_aprobados:   n('aprobDiasHabAprobados')      ? parseInt(n('aprobDiasHabAprobados'))      : null,
-    firma_jefe:               n('aprobFirmaJefe')             || null,
-    fecha_reintegro:          n('aprobFechaReintegro')        || null,
-    fecha_inicio_definitiva:  n('aprobFechaInicioDefinitiva') || null,
-    aprobado_por:             n('aprobFirmaJefe')             || null,
+    status: n('aprobVacStatus') || 'aprobada',
+    observaciones: n('aprobVacObs'),
+    fecha_solicitud: n('aprobFechaSolicitud') || null,
+    fecha_aprobacion: n('aprobFechaAprobacion') || null,
+    dias_solicitados: n('aprobDiasSolicitados') ? parseInt(n('aprobDiasSolicitados')) : null,
+    dias_calendario: n('aprobDiasCalendario') ? parseInt(n('aprobDiasCalendario')) : null,
+    fecha_inicio: n('aprobFechaInicio') || null,
+    periodo_inicio: n('aprobPeriodoInicio') || null,
+    periodo_fin: n('aprobPeriodoFin') || null,
+    firma_colaborador: n('aprobFirmaColab') || null,
+    dias_dinero: n('aprobDiasDinero') ? parseInt(n('aprobDiasDinero')) : 0,
+    dias_habiles_aprobados: n('aprobDiasHabAprobados') ? parseInt(n('aprobDiasHabAprobados')) : null,
+    firma_jefe: n('aprobFirmaJefe') || null,
+    fecha_reintegro: n('aprobFechaReintegro') || null,
+    fecha_inicio_definitiva: n('aprobFechaInicioDefinitiva') || null,
+    aprobado_por: n('aprobFirmaJefe') || null,
   };
 
   // Eliminar nulls, strings vacíos y undefined para no tocar columnas que no cambian
@@ -4430,15 +4428,15 @@ async function guardarAprobacion() {
 // ═══════════════════════════════════════════════════════════════
 function generarPDFVacaciones() {
 
-  const v  = (id) => document.getElementById(id)?.value?.trim() || '';
+  const v = (id) => document.getElementById(id)?.value?.trim() || '';
   const tx = (id) => document.getElementById(id)?.textContent?.trim() || '';
 
-  const ciudad    = tx('aprobVacCiudad');
-  const nombres   = tx('aprobVacNombres');
+  const ciudad = tx('aprobVacCiudad');
+  const nombres = tx('aprobVacNombres');
   const apellidos = tx('aprobVacApellidos');
-  const cedula    = tx('aprobVacCedula');
-  const cargo     = tx('aprobVacCargo');
-  const tipoDoc   = document.getElementById('aprobVacSubtitle')?.textContent?.trim() || 'Vacaciones';
+  const cedula = tx('aprobVacCedula');
+  const cargo = tx('aprobVacCargo');
+  const tipoDoc = document.getElementById('aprobVacSubtitle')?.textContent?.trim() || 'Vacaciones';
 
   const fmtD = (val) => {
     if (!val) return '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
@@ -4446,19 +4444,19 @@ function generarPDFVacaciones() {
     return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const fechaSolic   = fmtD(v('aprobFechaSolicitud'));
-  const fechaAprob   = fmtD(v('aprobFechaAprobacion'));
-  const diasHabSol   = v('aprobDiasSolicitados')     || '&mdash;';
-  const diasCal      = v('aprobDiasCalendario')       || '&mdash;';
-  const fechaInicio  = fmtD(v('aprobFechaInicio'));
-  const periodoIni   = fmtD(v('aprobPeriodoInicio'));
-  const periodoFin   = fmtD(v('aprobPeriodoFin'));
-  const firmaColab   = v('aprobFirmaColab')           || '&nbsp;';
-  const diasDinero   = v('aprobDiasDinero')           || '0';
-  const diasHabAprob = v('aprobDiasHabAprobados')     || '&mdash;';
-  const firmaJefe    = v('aprobFirmaJefe')            || '&nbsp;';
-  const fechaReint   = fmtD(v('aprobFechaReintegro'));
-  const fechaIniDef  = fmtD(v('aprobFechaInicioDefinitiva'));
+  const fechaSolic = fmtD(v('aprobFechaSolicitud'));
+  const fechaAprob = fmtD(v('aprobFechaAprobacion'));
+  const diasHabSol = v('aprobDiasSolicitados') || '&mdash;';
+  const diasCal = v('aprobDiasCalendario') || '&mdash;';
+  const fechaInicio = fmtD(v('aprobFechaInicio'));
+  const periodoIni = fmtD(v('aprobPeriodoInicio'));
+  const periodoFin = fmtD(v('aprobPeriodoFin'));
+  const firmaColab = v('aprobFirmaColab') || '&nbsp;';
+  const diasDinero = v('aprobDiasDinero') || '0';
+  const diasHabAprob = v('aprobDiasHabAprobados') || '&mdash;';
+  const firmaJefe = v('aprobFirmaJefe') || '&nbsp;';
+  const fechaReint = fmtD(v('aprobFechaReintegro'));
+  const fechaIniDef = fmtD(v('aprobFechaInicioDefinitiva'));
 
   const logoUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/logo_tym.png';
 
@@ -4795,7 +4793,7 @@ async function generarActaEntregaPDF(datos) {
   }
 
   const listaTrabajadores = Cache.trabajadores || [];
-  const trabId  = datos.trabajadorId || '';
+  const trabId = datos.trabajadorId || '';
   const trabNom = (datos.trabajadorNombre || '').trim().toLowerCase();
 
   const trabajador = listaTrabajadores.find(t =>
@@ -4803,17 +4801,17 @@ async function generarActaEntregaPDF(datos) {
     (t.nombre && t.nombre.trim().toLowerCase() === trabNom)
   ) || {};
 
-  const nombreTrabajador   = trabajador.nombre || datos.trabajadorNombre || 'Colaborador';
-  const cedulaTrabajador   = trabajador.cedula || '—';
-  const cargoTrabajador    = trabajador.cargo  || '—';
-  const ciudadTrabajador   = trabajador.ciudad || '—';
-  const marcaTrabajador    = trabajador.marca  || trabajador.unidad_organizacional || '—';
-  const ingresoTrabajador  = trabajador.fecha_ingreso ? fmtDate(trabajador.fecha_ingreso) : '—';
+  const nombreTrabajador = trabajador.nombre || datos.trabajadorNombre || 'Colaborador';
+  const cedulaTrabajador = trabajador.cedula || '—';
+  const cargoTrabajador = trabajador.cargo || '—';
+  const ciudadTrabajador = trabajador.ciudad || '—';
+  const marcaTrabajador = trabajador.marca || trabajador.unidad_organizacional || '—';
+  const ingresoTrabajador = trabajador.fecha_ingreso ? fmtDate(trabajador.fecha_ingreso) : '—';
   const telefonoTrabajador = trabajador.telefono || '—';
 
   const entregadoPor = (datos.entregadoPor && datos.entregadoPor !== '—') ? datos.entregadoPor : 'Gestión Humana';
-  const obsEntrega   = datos.obs || 'Entrega regular de dotación de trabajo en óptimas condiciones.';
-  const fechaRaw     = datos.fecha || today();
+  const obsEntrega = datos.obs || 'Entrega regular de dotación de trabajo en óptimas condiciones.';
+  const fechaRaw = datos.fecha || today();
 
   let fechaFormateada = fechaRaw;
   try {
@@ -5342,7 +5340,7 @@ async function generarActaEntregaPDF(datos) {
     <div class="hdr-doc-tag">
       <div class="tag-row">
         <span class="tag-lbl">Código:</span>
-        <span class="tag-val">FOR-SST-023</span>
+        <span class="tag-val">FOR-SST-024</span>
       </div>
       <div class="tag-row shaded">
         <span class="tag-lbl">Versión:</span>
@@ -5511,7 +5509,7 @@ async function generarActaEntregaPDF(datos) {
       <span>Tiendas y Marcas Eje Cafetero S.A.S. &nbsp;·&nbsp; NIT 900.973.932-9 &nbsp;·&nbsp; GH Pro</span>
     </div>
     <div style="text-align:right;">
-      <span>Código: FOR-SST-023 (v.4) &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span>
+      <span>Código: FOR-SST-024 (v.4) &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
     </div>
   </div>
 
@@ -5541,17 +5539,17 @@ async function imprimirActaEntregaGrupo(grupoId) {
   if (!grupo) return toast('No se encontró la información de la entrega', 'error');
 
   await generarActaEntregaPDF({
-    trabajadorId:     grupo.trabajador_id,
+    trabajadorId: grupo.trabajador_id,
     trabajadorNombre: grupo.trabajador_nombre,
-    fecha:            grupo.fecha,
-    entregadoPor:     grupo.entregado_por === '—' ? '' : grupo.entregado_por,
-    obs:              grupo.obs || '',
+    fecha: grupo.fecha,
+    entregadoPor: grupo.entregado_por === '—' ? '' : grupo.entregado_por,
+    obs: grupo.obs || '',
     items: grupo.items.map(it => ({
-      referencia:      it.nombreCorto || it.articulo_nombre,
+      referencia: it.nombreCorto || it.articulo_nombre,
       articulo_nombre: it.articulo_nombre,
-      talla:           it.talla,
-      cantidad:        it.cantidad,
-      icono:           it.icono
+      talla: it.talla,
+      cantidad: it.cantidad,
+      icono: it.icono
     }))
   });
 }
@@ -5567,16 +5565,16 @@ async function imprimirActaEntregaIndividual(entregaId) {
   if (!entrega) return toast('No se encontró el registro de la entrega', 'error');
 
   await generarActaEntregaPDF({
-    trabajadorId:     entrega.trabajador_id,
+    trabajadorId: entrega.trabajador_id,
     trabajadorNombre: entrega.trabajador_nombre,
-    fecha:            entrega.fecha,
-    entregadoPor:     entrega.entregado_por || '',
-    obs:              entrega.obs || '',
+    fecha: entrega.fecha,
+    entregadoPor: entrega.entregado_por || '',
+    obs: entrega.obs || '',
     items: [{
-      referencia:      entrega.articulo_nombre,
+      referencia: entrega.articulo_nombre,
       articulo_nombre: entrega.articulo_nombre,
-      talla:           entrega.talla || '—',
-      cantidad:        entrega.cantidad || 1
+      talla: entrega.talla || '—',
+      cantidad: entrega.cantidad || 1
     }]
   });
 }
