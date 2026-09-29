@@ -954,33 +954,84 @@ const Vacaciones = {
 const Asistencia = {
 
   async getAll() {
-    const { data, error } = await sb
-      .from('asistencia')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (sbErr(error, 'asistencia.getAll')) return [];
-    return data;
+    let todos = [];
+    let from = 0;
+    const step = 1000;
+    while (true) {
+      const { data, error } = await sb
+        .from('asistencia')
+        .select('*')
+        .order('fecha', { ascending: false })
+        .order('hora', { ascending: false })
+        .range(from, from + step - 1);
+      if (sbErr(error, 'asistencia.getAll')) break;
+      if (!data || data.length === 0) break;
+      todos = todos.concat(data);
+      if (data.length < step) break;
+      from += step;
+    }
+    return todos;
+  },
+
+  async getByRango(desde, hasta) {
+    let query = sb.from('asistencia').select('*');
+    if (desde) query = query.gte('fecha', desde);
+    if (hasta) query = query.lte('fecha', hasta);
+    query = query.order('fecha', { ascending: false }).order('hora', { ascending: false });
+
+    let todos = [];
+    let from = 0;
+    const step = 1000;
+    while (true) {
+      const { data, error } = await query.range(from, from + step - 1);
+      if (sbErr(error, 'asistencia.getByRango')) break;
+      if (!data || data.length === 0) break;
+      todos = todos.concat(data);
+      if (data.length < step) break;
+      from += step;
+    }
+    return todos;
   },
 
   async getByFecha(fecha) {
-    const { data, error } = await sb
-      .from('asistencia')
-      .select('*')
-      .eq('fecha', fecha)
-      .order('hora', { ascending: false });
-    if (sbErr(error, 'asistencia.getByFecha')) return [];
-    return data;
+    let todos = [];
+    let from = 0;
+    const step = 1000;
+    while (true) {
+      const { data, error } = await sb
+        .from('asistencia')
+        .select('*')
+        .eq('fecha', fecha)
+        .order('hora', { ascending: false })
+        .range(from, from + step - 1);
+      if (sbErr(error, 'asistencia.getByFecha')) break;
+      if (!data || data.length === 0) break;
+      todos = todos.concat(data);
+      if (data.length < step) break;
+      from += step;
+    }
+    return todos;
   },
 
   async getByNombre(q) {
-    const { data, error } = await sb
-      .from('asistencia')
-      .select('*')
-      .ilike('trabajador_nombre', `%${q}%`)
-      .order('fecha', { ascending: false })
-      .order('hora',  { ascending: false });
-    if (sbErr(error, 'asistencia.getByNombre')) return [];
-    return data || [];
+    let todos = [];
+    let from = 0;
+    const step = 1000;
+    while (true) {
+      const { data, error } = await sb
+        .from('asistencia')
+        .select('*')
+        .ilike('trabajador_nombre', `%${q}%`)
+        .order('fecha', { ascending: false })
+        .order('hora',  { ascending: false })
+        .range(from, from + step - 1);
+      if (sbErr(error, 'asistencia.getByNombre')) break;
+      if (!data || data.length === 0) break;
+      todos = todos.concat(data);
+      if (data.length < step) break;
+      from += step;
+    }
+    return todos;
   },
 
   async getByCedula(cedula, fecha) {

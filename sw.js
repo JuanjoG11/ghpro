@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gh-pro-v2.0.4';
+const CACHE_NAME = 'gh-pro-v2.0.5';
 const STATIC_ASSETS = [
   '/index.html',
   '/app.js',

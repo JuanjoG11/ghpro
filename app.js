@@ -1848,8 +1848,25 @@ function downloadExcel(name, headers, rows, sheetName = 'Datos') {
     ws['!cols'] = colWidths;
 
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, `${name}_${today()}.xlsx`);
-    toast('Archivo Excel (.xlsx) descargado 📊');
+
+    const baseName = name.replace(/\.xlsx$/i, '');
+    const fileName = baseName.includes(today()) ? `${baseName}.xlsx` : `${baseName}_${today()}.xlsx`;
+    const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+    // Usar File y application/octet-stream para evitar que Edge/Chrome intercepten
+    // el archivo con el visor de Office y le asignen un UUID sin extensión
+    const file = new File([wbOut], fileName, { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.setAttribute('download', fileName);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Esperar 60 segundos antes de revocar para no interrumpir la descarga en segundo plano
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast(`Archivo Excel descargado: ${fileName} 📊`);
   } else {
     // Fallback a CSV si la librería XLSX no está cargada
     downloadCSV(name, headers, rows);
@@ -2734,10 +2751,89 @@ function fmtHora(h) {
   return h.slice(0, 5); // HH:MM
 }
 
-// ── Stats del día ──────────────────────────────────────────────
+// ── Helpers de Fechas y Rangos ─────────────────────────────────
+function _calcularFechasRango(preset) {
+  const hoyStr = today();
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = d.getDate();
+
+  switch (preset) {
+    case 'hoy':
+      return { desde: hoyStr, hasta: hoyStr };
+    case 'quincena': {
+      if (dia <= 15) {
+        return { desde: `${yyyy}-${mm}-01`, hasta: `${yyyy}-${mm}-15` };
+      } else {
+        const ultDia = new Date(yyyy, d.getMonth() + 1, 0).getDate();
+        return { desde: `${yyyy}-${mm}-16`, hasta: `${yyyy}-${mm}-${ultDia}` };
+      }
+    }
+    case 'quincena_ant': {
+      if (dia <= 15) {
+        const prevMonthDate = new Date(yyyy, d.getMonth(), 0);
+        const pYear = prevMonthDate.getFullYear();
+        const pMm = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
+        const pUlt = prevMonthDate.getDate();
+        return { desde: `${pYear}-${pMm}-16`, hasta: `${pYear}-${pMm}-${pUlt}` };
+      } else {
+        return { desde: `${yyyy}-${mm}-01`, hasta: `${yyyy}-${mm}-15` };
+      }
+    }
+    case 'mes': {
+      const ultDia = new Date(yyyy, d.getMonth() + 1, 0).getDate();
+      return { desde: `${yyyy}-${mm}-01`, hasta: `${yyyy}-${mm}-${ultDia}` };
+    }
+    case 'mes_ant': {
+      const prevMonthDate = new Date(yyyy, d.getMonth(), 0);
+      const pYear = prevMonthDate.getFullYear();
+      const pMm = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
+      const pUlt = prevMonthDate.getDate();
+      return { desde: `${pYear}-${pMm}-01`, hasta: `${pYear}-${pMm}-${pUlt}` };
+    }
+    case 'todos':
+      return { desde: '2024-01-01', hasta: hoyStr };
+    default:
+      return { desde: hoyStr, hasta: hoyStr };
+  }
+}
+
+function setRangoAsistenciaRapido(preset) {
+  const { desde, hasta } = _calcularFechasRango(preset);
+  const elD = document.getElementById('asistFiltroDesde');
+  const elH = document.getElementById('asistFiltroHasta');
+  if (elD) elD.value = desde;
+  if (elH) elH.value = hasta;
+  renderTablaAsistencia();
+  _actualizarStatsHoy();
+}
+
+function setRangoExportAsist(preset) {
+  const { desde, hasta } = _calcularFechasRango(preset);
+  const elD = document.getElementById('exportAsistDesde');
+  const elH = document.getElementById('exportAsistHasta');
+  if (elD) elD.value = desde;
+  if (elH) elH.value = hasta;
+}
+
+// ── Stats del día / rango ──────────────────────────────────────
 async function _actualizarStatsHoy() {
-  const fecha = document.getElementById('asistFiltroFecha')?.value || today();
-  const registros = await Asistencia.getByFecha(fecha);
+  const desde = document.getElementById('asistFiltroDesde')?.value || document.getElementById('asistFiltroFecha')?.value || '';
+  const hasta = document.getElementById('asistFiltroHasta')?.value || desde || today();
+  const fDesde = desde || today();
+  const fHasta = hasta || today();
+
+  let registros = [];
+  try {
+    if (fDesde === fHasta) {
+      registros = await Asistencia.getByFecha(fDesde);
+    } else {
+      registros = await Asistencia.getByRango(fDesde, fHasta);
+    }
+  } catch (err) {
+    console.error('Error al actualizar stats de asistencia:', err);
+  }
 
   const entradas        = registros.filter(r => r.tipo === 'entrada').length;
   const salidasAlmuerzo = registros.filter(r => r.tipo === 'salida_almuerzo').length;
@@ -2745,6 +2841,20 @@ async function _actualizarStatsHoy() {
   const salidas         = registros.filter(r => r.tipo === 'salida').length;
   const unicos          = new Set(registros.map(r => r.cedula)).size;
   const porQR           = registros.filter(r => r.metodo === 'qr').length;
+
+  const subtitleEl = document.getElementById('asistFecha');
+  if (subtitleEl) {
+    if (fDesde === fHasta && fDesde === today()) {
+      subtitleEl.textContent = new Date().toLocaleDateString('es-CO', {
+        timeZone: 'America/Bogota',
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      });
+    } else if (fDesde === fHasta) {
+      subtitleEl.textContent = `Registros del ${fDesde}`;
+    } else {
+      subtitleEl.textContent = `Registros del ${fDesde} al ${fHasta} (${registros.length} marcas)`;
+    }
+  }
 
   const statsEl = document.getElementById('asistStats');
   if (!statsEl) return;
@@ -2792,46 +2902,45 @@ function _rowAsistHTML(r, mostrarFecha = false) {
 }
 
 async function renderTablaAsistencia() {
-  const fecha  = document.getElementById('asistFiltroFecha')?.value || '';
-  const q      = (document.getElementById('asistSearch')?.value     || '').trim();
-  const fTipo  = document.getElementById('asistFiltroTipo')?.value  || '';
-  const tbody  = document.getElementById('asistTbody');
-  const empty  = document.getElementById('asistLogEmpty');
+  const desde = document.getElementById('asistFiltroDesde')?.value || document.getElementById('asistFiltroFecha')?.value || '';
+  const hasta = document.getElementById('asistFiltroHasta')?.value || '';
+  const q     = (document.getElementById('asistSearch')?.value     || '').trim();
+  const fTipo = document.getElementById('asistFiltroTipo')?.value  || '';
+  const tbody = document.getElementById('asistTbody');
+  const empty = document.getElementById('asistLogEmpty');
   if (!tbody) return;
 
   const buscandoPorNombre = q.length > 0;
+  const tieneRango = Boolean(desde && hasta && desde !== hasta);
 
-  let todos;
-  if (buscandoPorNombre) {
-    // Hay nombre: traer TODO sin importar la fecha
+  let todos = [];
+  if (tieneRango) {
+    todos = await Asistencia.getByRango(desde, hasta);
+  } else if (desde) {
+    todos = await Asistencia.getByFecha(desde);
+  } else if (buscandoPorNombre) {
     todos = await Asistencia.getByNombre(q);
-  } else if (fecha) {
-    // Solo fecha: ese día exacto
-    todos = await Asistencia.getByFecha(fecha);
   } else {
-    // Sin nada: mostrar hoy
     todos = await Asistencia.getByFecha(today());
   }
 
   const filtrados = todos.filter(r => {
-    const txt = [(r.trabajador_nombre || ''), (r.cedula || '')].join(' ').toLowerCase();
-    const coincideTexto = !q     || txt.includes(q.toLowerCase());
-    // Si busca por nombre Y además eligió una fecha, aplicar ese filtro extra
-    const coincideFecha = !buscandoPorNombre || !fecha || r.fecha === fecha;
+    const txt = [(r.trabajador_nombre || ''), (r.cedula || ''), (r.cargo || ''), (r.ciudad || '')].join(' ').toLowerCase();
+    const coincideTexto = !q || txt.includes(q.toLowerCase());
+    const coincideFecha = !desde || (desde && !hasta && r.fecha === desde) || (desde && hasta && r.fecha >= desde && r.fecha <= hasta);
     const coincideTipo  = !fTipo || r.tipo === fTipo;
     return coincideTexto && coincideFecha && coincideTipo;
   });
 
-  // Mostrar columna Fecha solo cuando se busca por nombre sin filtrar una fecha específica
   const thFecha = document.getElementById('asistThFecha');
-  const mostrarFecha = buscandoPorNombre;
+  const mostrarFecha = buscandoPorNombre || tieneRango || (!desde && !hasta);
   if (thFecha) thFecha.style.display = mostrarFecha ? '' : 'none';
 
   if (!filtrados.length) {
     tbody.innerHTML = '';
     if (empty) {
       empty.querySelector('.empty-state-text').textContent =
-        buscandoPorNombre ? `Sin registros para "${q}"` : 'Sin registros para esta fecha';
+        buscandoPorNombre ? `Sin registros para "${q}"` : 'Sin registros para los filtros seleccionados';
       empty.style.display = '';
     }
     return;
@@ -2857,37 +2966,137 @@ async function eliminarRegistroAsist(id) {
 async function renderAsistencia() {
   showLoading(true);
   try {
-    // No pre-llenar la fecha: el usuario puede buscar por nombre (historial global)
-    // o elegir una fecha para filtrar por día. Las stats sí muestran hoy por defecto.
-    const fechaInput = document.getElementById('asistFiltroFecha');
-    if (fechaInput) fechaInput.value = '';
+    const elD = document.getElementById('asistFiltroDesde');
+    const elH = document.getElementById('asistFiltroHasta');
+    const fHoy = today();
+    if (elD && !elD.value) elD.value = fHoy;
+    if (elH && !elH.value) elH.value = fHoy;
 
-    const subtitleEl = document.getElementById('asistFecha');
-    if (subtitleEl) {
-      subtitleEl.textContent = new Date().toLocaleDateString('es-CO', {
-        timeZone: 'America/Bogota',
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-      });
-    }
+    const fechaInput = document.getElementById('asistFiltroFecha');
+    if (fechaInput) fechaInput.value = fHoy;
 
     await _actualizarStatsHoy();
     await renderTablaAsistencia();
   } finally { showLoading(false); }
 }
 
-// ── Exportar Asistencia (Excel .xlsx) ──────────────────────────
-async function exportarAsistencia() {
+// ── Modal y Descarga de Informe de Asistencia (Excel .xlsx) ────
+function abrirModalExportarAsistencia() {
+  const elD = document.getElementById('exportAsistDesde');
+  const elH = document.getElementById('exportAsistHasta');
+  const tablaDesde = document.getElementById('asistFiltroDesde')?.value;
+  const tablaHasta = document.getElementById('asistFiltroHasta')?.value;
+
+  if (tablaDesde && tablaHasta && elD && elH) {
+    elD.value = tablaDesde;
+    elH.value = tablaHasta;
+  } else if (elD && elH) {
+    const { desde } = _calcularFechasRango('mes');
+    elD.value = desde;
+    elH.value = today();
+  }
+
+  const qTabla = (document.getElementById('asistSearch')?.value || '').trim();
+  const elTrab = document.getElementById('exportAsistTrabajador');
+  if (elTrab) elTrab.value = qTabla;
+
+  const tipoTabla = document.getElementById('asistFiltroTipo')?.value || '';
+  const elTipo = document.getElementById('exportAsistTipo');
+  if (elTipo) elTipo.value = tipoTabla;
+
+  openModal('modalExportarAsistencia');
+}
+
+// Compatibilidad con invocaciones directas
+function exportarAsistencia() {
+  abrirModalExportarAsistencia();
+}
+
+async function ejecutarExportarAsistencia() {
+  const desde = document.getElementById('exportAsistDesde')?.value;
+  const hasta = document.getElementById('exportAsistHasta')?.value;
+  const fTipo = document.getElementById('exportAsistTipo')?.value || '';
+  const fCiudad = document.getElementById('exportAsistCiudad')?.value || '';
+  const qTrab = (document.getElementById('exportAsistTrabajador')?.value || '').trim().toLowerCase();
+  const btn = document.getElementById('btnDescargarAsistExcel');
+
+  if (!desde || !hasta) {
+    return toast('Debes seleccionar las fechas Desde y Hasta', 'warning');
+  }
+  if (desde > hasta) {
+    return toast('La fecha Desde no puede ser posterior a la fecha Hasta', 'error');
+  }
+
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Generando reporte...';
+  }
   showLoading(true);
-  const todos = await Asistencia.getAll();
-  showLoading(false);
-  if (!todos.length) return toast('No hay registros para exportar', 'warning');
-  const headers = ['Fecha', 'Hora', 'Tipo', 'Trabajador', 'Cédula', 'Cargo', 'Ciudad', 'Método'];
-  const rows = todos.map(r => [
-    r.fecha, fmtHora(r.hora), r.tipo,
-    r.trabajador_nombre, r.cedula,
-    r.cargo || '', r.ciudad || '', r.metodo,
-  ]);
-  downloadExcel('asistencia', headers, rows, 'Asistencia');
+
+  try {
+    let registros;
+    if (desde === hasta) {
+      registros = await Asistencia.getByFecha(desde);
+    } else {
+      registros = await Asistencia.getByRango(desde, hasta);
+    }
+
+    const filtrados = (registros || []).filter(r => {
+      if (fTipo && r.tipo !== fTipo) return false;
+      if (fCiudad && (r.ciudad || '').toLowerCase() !== fCiudad.toLowerCase()) return false;
+      if (qTrab) {
+        const txt = [(r.trabajador_nombre || ''), (r.cedula || '')].join(' ').toLowerCase();
+        if (!txt.includes(qTrab)) return false;
+      }
+      return true;
+    });
+
+    if (!filtrados.length) {
+      return toast('No hay registros de asistencia en el rango y filtros seleccionados', 'warning');
+    }
+
+    const headers = [
+      'Fecha',
+      'Hora',
+      'Tipo Marcación',
+      'Colaborador',
+      'Cédula',
+      'Cargo',
+      'Ciudad / Sede',
+      'Método de Registro',
+      'Dispositivo / Observaciones',
+    ];
+
+    const rows = filtrados.map(r => [
+      r.fecha,
+      fmtHora(r.hora),
+      _TIPO_LABEL_ASIST[r.tipo] || r.tipo,
+      r.trabajador_nombre || '',
+      r.cedula || '',
+      r.cargo || '',
+      r.ciudad || '',
+      r.metodo === 'qr' ? '📲 Código QR' : '🪪 Manual / Cédula',
+      r.obs || r.device_id || '',
+    ]);
+
+    const nombreArchivo = desde === hasta
+      ? `asistencia_${desde}`
+      : `asistencia_${desde}_al_${hasta}`;
+
+    downloadExcel(nombreArchivo, headers, rows, 'Asistencia');
+    closeModal('modalExportarAsistencia');
+    toast(`Reporte descargado: ${filtrados.length} registros 📊`, 'success');
+  } catch (err) {
+    console.error('Error al exportar asistencia:', err);
+    toast('Error al generar el informe de asistencia', 'error');
+  } finally {
+    showLoading(false);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4413,7 +4622,7 @@ function generarPDFVacaciones() {
   <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
   <div class="hdr-centro">
     <div class="hdr-empresa">Tiendas y Marcas Eje Cafetero</div>
-    <div class="hdr-nit">NIT 900.973.929-0</div>
+    <div class="hdr-nit">NIT 900.973.932-9</div>
     <div class="hdr-doc">Solicitud de ${tipoDoc}</div>
   </div>
 </div>
@@ -4541,7 +4750,7 @@ function generarPDFVacaciones() {
 <!-- ── Pie ── -->
 <div class="doc-pie">
   <img class="doc-pie-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
-  <span>Tiendas y Marcas Eje Cafetero &nbsp;·&nbsp; NIT 900.973.929-0 &nbsp;·&nbsp; Documento generado por GH Pro</span>
+  <span>Tiendas y Marcas Eje Cafetero &nbsp;·&nbsp; NIT 900.973.932-9 &nbsp;·&nbsp; Documento generado por GH Pro</span>
   <span class="doc-numero">Fecha impresión: ${new Date().toLocaleDateString('es-CO')}</span>
 </div>
 
@@ -5038,7 +5247,7 @@ async function generarActaEntregaPDF(datos) {
     text-align:center;
   }
   .firma-espacio{
-    height:55px;
+    height:46px;
   }
   .firma-linea{
     border-bottom:1.5px solid #475569;
@@ -5126,9 +5335,9 @@ async function generarActaEntregaPDF(datos) {
     </div>
     <div class="hdr-centro">
       <div class="hdr-empresa">Tiendas y Marcas Eje Cafetero S.A.S.</div>
-      <div class="hdr-nit">NIT 900.973.929-0</div>
+      <div class="hdr-nit">NIT 900.973.932-9</div>
       <div class="hdr-doc">Acta de Entrega de Dotación y EPP</div>
-      <div class="hdr-subdoc">Conforme al Art. 230 del Código Sustantivo del Trabajo & Sistema SG-SST</div>
+      <div class="hdr-subdoc">Conforme a los Arts. 58 (num. 3 y 7), 230, 232 y 233 del CST & Sistema SG-SST</div>
     </div>
     <div class="hdr-doc-tag">
       <div class="tag-row">
@@ -5269,10 +5478,10 @@ async function generarActaEntregaPDF(datos) {
   <div class="seccion">
     <div class="clausula-box">
       <p>
-        <strong>DECLARACIÓN DE RECIBIDO Y COMPROMISO LABORAL:</strong> Expresamente declaro que he recibido a mi entera satisfacción, en perfecto estado de conservación, higiene y confección, y en mi talla adecuada, los elementos de calzado, vestido de labor y/o elementos de protección personal (EPP) asignados al cargo que desempeño, descritos en la presente acta.
+        <strong>DECLARACIÓN DE RECIBIDO E INSTRUCCIONES:</strong> Expresamente declaro que he recibido a mi entera satisfacción, en perfecto estado de conservación, higiene y confección, y en mi talla adecuada, los elementos de calzado, vestido de labor y/o elementos de protección personal (EPP) asignados al cargo que desempeño, descritos en la presente acta. Así mismo, <strong>declaro haber recibido las instrucciones necesarias y acordes al uso, cuidado y mantenimiento, así como las características de prevención</strong> de los elementos entregados.
       </p>
       <p>
-        De conformidad con los <strong>Artículos 230, 232 y 233 del Código Sustantivo del Trabajo (CST)</strong> y los lineamientos del <strong>SG-SST (Decreto 1072 de 2015)</strong>, el trabajador se compromete formalmente a: <strong>1)</strong> Destinar la dotación recibida de manera <em>exclusiva y obligatoria</em> al desempeño de sus funciones en la empresa durante la jornada de trabajo; <strong>2)</strong> Velar por su adecuado cuidado, limpieza y presentación personal; <strong>3)</strong> Abstenerse de ceder, transferir o comercializar estos elementos. El trabajador reconoce que el no uso de la dotación suministrada exime al empleador de las sanciones de ley y constituye falta a sus obligaciones laborales.
+        <strong>OBLIGACIONES LEGALES Y SG-SST (ART. 58 CST NUM. 3 Y 7 / ARTS. 230, 232 Y 233):</strong> De conformidad con el <strong>Art. 58 del Código Sustantivo del Trabajo (numerales 3° y 7°)</strong> —obligación especial del trabajador de observar con suma diligencia las instrucciones y órdenes preventivas de accidentes o enfermedades laborales y acatar las medidas preventivas higiénicas—, los <strong>Artículos 230, 232 y 233 del CST</strong> y las normas del <strong>SG-SST (Decreto 1072 de 2015)</strong>, el trabajador se compromete formalmente a: <strong>1)</strong> Destinar la dotación y EPP de manera <em>exclusiva y obligatoria</em> al desempeño de sus funciones durante la jornada de trabajo; <strong>2)</strong> Velar por su adecuado uso, cuidado, limpieza y mantenimiento; <strong>3)</strong> Abstenerse de ceder, transferir o comercializar estos elementos. El no uso de la dotación suministrada exime al empleador de las sanciones de ley y constituye falta a sus obligaciones laborales.
       </p>
     </div>
   </div>
@@ -5299,7 +5508,7 @@ async function generarActaEntregaPDF(datos) {
   <div class="doc-pie">
     <div style="display:flex;align-items:center;gap:8px;">
       <img class="doc-pie-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
-      <span>Tiendas y Marcas Eje Cafetero S.A.S. &nbsp;·&nbsp; NIT 900.973.929-0 &nbsp;·&nbsp; GH Pro</span>
+      <span>Tiendas y Marcas Eje Cafetero S.A.S. &nbsp;·&nbsp; NIT 900.973.932-9 &nbsp;·&nbsp; GH Pro</span>
     </div>
     <div style="text-align:right;">
       <span>Código: FOR-SST-023 (v.4) &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span>

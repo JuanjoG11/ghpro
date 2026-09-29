@@ -1220,7 +1220,9 @@
     <div class="page-title">🕐 <span>Asistencia</span></div>
     <div class="page-subtitle" id="asistFecha">Historial de registros</div>
     <div class="page-actions">
-      <button class="btn btn-secondary" onclick="exportarAsistencia()">📊 Exportar Excel (.xlsx)</button>
+      <button class="btn btn-primary" onclick="abrirModalExportarAsistencia()" style="display:inline-flex;align-items:center;gap:6px">
+        <span>📊</span> Descargar Informe (Rango de Fechas)
+      </button>
     </div>
   </div>
 
@@ -1249,25 +1251,40 @@
   <div class="card">
     <div class="card-header">
       <span class="card-title">📋 Historial de asistencia</span>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <input type="date" id="asistFiltroFecha" onchange="renderTablaAsistencia();_actualizarStatsHoy();"
-          style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text-primary);padding:6px 10px;font-size:13px">
-        <div class="search-input-wrap" style="min-width:200px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:3px 8px;">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Desde</span>
+          <input type="date" id="asistFiltroDesde" onchange="renderTablaAsistencia();_actualizarStatsHoy();"
+            style="background:transparent;border:none;color:var(--text-primary);padding:4px;font-size:12px;outline:none;">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Hasta</span>
+          <input type="date" id="asistFiltroHasta" onchange="renderTablaAsistencia();_actualizarStatsHoy();"
+            style="background:transparent;border:none;color:var(--text-primary);padding:4px;font-size:12px;outline:none;">
+          <input type="hidden" id="asistFiltroFecha">
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoAsistenciaRapido('hoy')" title="Ver solo registros de hoy" style="padding:4px 8px;font-size:11px">Hoy</button>
+          <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoAsistenciaRapido('quincena')" title="Ver registros de la quincena actual" style="padding:4px 8px;font-size:11px">Quincena</button>
+          <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoAsistenciaRapido('mes')" title="Ver registros de este mes" style="padding:4px 8px;font-size:11px">Mes</button>
+          <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoAsistenciaRapido('todos')" title="Ver todo el historial sin límite" style="padding:4px 8px;font-size:11px">Todo</button>
+        </div>
+        <div class="search-input-wrap" style="min-width:180px">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="asistSearch"
-            placeholder="Buscar nombre o cédula..."
-            oninput="renderTablaAsistencia();if(!this.value.trim())_actualizarStatsHoy();">
+            placeholder="Buscar colaborador o cédula..."
+            oninput="renderTablaAsistencia();">
         </div>
         <select id="asistFiltroTipo" onchange="renderTablaAsistencia()"
           style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
-                 color:var(--text-primary);padding:6px 10px;font-size:13px">
-          <option value="">Todos</option>
+                 color:var(--text-primary);padding:6px 10px;font-size:12px">
+          <option value="">Todos los tipos</option>
           <option value="entrada">Entradas</option>
           <option value="salida_almuerzo">Salida Almuerzo</option>
           <option value="regreso_almuerzo">Regreso Almuerzo</option>
           <option value="salida">Salidas</option>
         </select>
+        <button class="btn btn-secondary btn-sm" onclick="abrirModalExportarAsistencia()" title="Descargar reporte Excel con rango de fechas" style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;font-size:12px">
+          <span>📊</span> Exportar
+        </button>
       </div>
     </div>
     <div class="card-body" style="padding:0">
@@ -2334,6 +2351,81 @@
   </div>
 </div>
 
+<!-- Modal Exportar Informe Asistencia -->
+<div class="modal-overlay" id="modalExportarAsistencia">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">📊 Descargar Informe de Asistencia</div>
+      <button class="modal-close" onclick="closeModal('modalExportarAsistencia')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">
+        Descarga el historial de marcaciones en formato Excel (.xlsx). Selecciona el periodo deseado:
+      </p>
+
+      <!-- Accesos Rápidos de Rango -->
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Rango Rápido</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setRangoExportAsist('hoy')" style="font-size:11px;padding:4px 8px">📅 Hoy</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setRangoExportAsist('quincena')" style="font-size:11px;padding:4px 8px">📅 Esta Quincena</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setRangoExportAsist('quincena_ant')" style="font-size:11px;padding:4px 8px">📅 Quincena Anterior</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setRangoExportAsist('mes')" style="font-size:11px;padding:4px 8px">📅 Este Mes</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setRangoExportAsist('mes_ant')" style="font-size:11px;padding:4px 8px">📅 Mes Anterior</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setRangoExportAsist('todos')" style="font-size:11px;padding:4px 8px">📅 Todo el Historial</button>
+        </div>
+      </div>
+
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label style="font-weight:700">Fecha Desde *</label>
+          <input type="date" id="exportAsistDesde" required>
+        </div>
+        <div class="form-group">
+          <label style="font-weight:700">Fecha Hasta *</label>
+          <input type="date" id="exportAsistHasta" required>
+        </div>
+      </div>
+
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label>Tipo de Marcación</label>
+          <select id="exportAsistTipo">
+            <option value="">Todas las Marcaciones</option>
+            <option value="entrada">Solo Entradas</option>
+            <option value="salida_almuerzo">Salida a Almuerzo</option>
+            <option value="regreso_almuerzo">Regreso de Almuerzo</option>
+            <option value="salida">Solo Salidas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sede / Ciudad</label>
+          <select id="exportAsistCiudad">
+            <option value="">Todas las Sedes</option>
+            <option value="Pereira">Pereira</option>
+            <option value="Manizales">Manizales</option>
+            <option value="Armenia">Armenia</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Colaborador específico (opcional)</label>
+        <input type="text" id="exportAsistTrabajador" placeholder="Nombre o cédula (vacío para todos)">
+      </div>
+
+      <div style="background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">💡</span>
+        <span>El reporte descargado incluirá todos los registros históricos del rango indicado sin corte ni límite de filas.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalExportarAsistencia')">Cancelar</button>
+      <button class="btn btn-primary" id="btnDescargarAsistExcel" onclick="ejecutarExportarAsistencia()">📥 Descargar Excel (.xlsx)</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== ASISTENCIA ===== -->
 <style>
   .asist-links {
@@ -2527,8 +2619,8 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="supabase.js"></script>
-<script src="app.js"></script>
+<script src="supabase.js?v=2.0.5"></script>
+<script src="app.js?v=2.0.5"></script>
 
 <!-- Estilos y lógica del portal de trabajadores -->
 <style>
