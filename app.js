@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    GH PRO — app.js
    Lógica principal — usa Supabase como backend
    ============================================================ */
@@ -3592,6 +3592,9 @@ function _renderPrendasTabla(tipo, lista) {
 
   // Para pantalones los géneros tienen tallas distintas → tabla separada por género
   const generarTablaGenero = (genero, tallas, refs) => {
+    // Filtrar referencias que no tienen datos para este genero (fix: CROCS y Conjunto Antifluido)
+    refs = refs.filter(ref => agrupado[ref]?.[genero] !== undefined);
+    if (!refs.length) return '';
     const colorHeader = genero === 'hombre'
       ? 'background:linear-gradient(135deg,rgba(58,130,200,0.25),rgba(58,130,200,0.1))'
       : 'background:linear-gradient(135deg,rgba(200,58,150,0.25),rgba(200,58,150,0.1))';
