@@ -110,6 +110,18 @@ from
           ('41'), ('42'), ('43'), ('44'), ('45')) as t(talla)
 on conflict (tipo, referencia, genero, talla) do nothing;
 
+-- ── CROCS ANTIFLUIDO: mujer · tallas 35‑45 ───────────────────
+insert into dotacion_prendas (tipo, referencia, genero, talla, stock_min)
+select 'calzado', 'CROCS ANTIFLUIDO', 'mujer', t.talla, 2
+from (values ('35'), ('36'), ('37'), ('38'), ('39'), ('40'), ('41'), ('42'), ('43'), ('44'), ('45')) as t(talla)
+on conflict (tipo, referencia, genero, talla) do nothing;
+
+-- ── CONJUNTO ANTIFLUIDO DAMA: chaqueta · tallas S, M, L, XL ────────
+insert into dotacion_prendas (tipo, referencia, genero, talla, stock_min)
+select 'chaqueta', 'Conjunto Antifluido Dama', 'mujer', t.talla, 2
+from (values ('S'), ('M'), ('L'), ('XL')) as t(talla)
+on conflict (tipo, referencia, genero, talla) do nothing;
+
 -- ── NOTA: agregar nuevas referencias en el futuro ────────────
 -- Simplemente agrega un nuevo bloque INSERT con el tipo y
 -- referencia correspondientes. El constraint UNIQUE evita
