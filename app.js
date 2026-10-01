@@ -4342,7 +4342,9 @@ async function abrirAprobacion(id) {
   _actualizarEspejos();
 
   document.getElementById('aprobVacStatus').value = v.status === 'aprobada' ? 'aprobada' : 'aprobada';
-  document.getElementById('aprobVacObs').value = v.observaciones || '';
+  const notaTarjeta = document.getElementById(`nota-${v.id}`)?.value?.trim();
+  const obsFinal = v.observaciones || notaTarjeta || (v.motivo ? `Motivo: ${v.motivo}` : '') || '';
+  document.getElementById('aprobVacObs').value = obsFinal;
 
   // Listeners para el espejo en tiempo real
   ['aprobDiasHabAprobados', 'aprobFechaReintegro'].forEach(elId => {
@@ -4470,6 +4472,7 @@ function generarPDFVacaciones() {
   const firmaJefe = v('aprobFirmaJefe') || '&nbsp;';
   const fechaReint = fmtD(v('aprobFechaReintegro'));
   const fechaIniDef = fmtD(v('aprobFechaInicioDefinitiva'));
+  const obs = v('aprobVacObs');
 
   const logoUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/logo_tym.png';
 
@@ -4721,6 +4724,14 @@ function generarPDFVacaciones() {
       <div class="campo-lbl">Fecha de reintegro</div>
       <div class="campo-val">${fechaReint}</div>
     </div>
+  </div>
+</div>
+
+<!-- ── Observaciones ── -->
+<div class="seccion" style="margin-top:10px">
+  <div class="sec-titulo">📝 Observaciones</div>
+  <div class="campo" style="background:#fafcff;border:1px solid #d0e4f4;padding:8px 12px;border-radius:8px">
+    <div style="font-size:10.5px;font-weight:500;color:#1a1a2e;line-height:1.45;min-height:18px;white-space:pre-wrap">${obs || 'Sin observaciones adicionales.'}</div>
   </div>
 </div>
 
