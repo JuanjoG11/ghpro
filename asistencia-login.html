@@ -89,12 +89,6 @@
     .tipo-btn.active-salida {
       border-color: var(--danger); background: rgba(255,71,87,0.12); color: var(--danger);
     }
-    .tipo-btn.active-salida-almuerzo {
-      border-color: #f7971e; background: rgba(247,151,30,0.12); color: #f7971e;
-    }
-    .tipo-btn.active-regreso-almuerzo {
-      border-color: #1e90ff; background: rgba(30,144,255,0.12); color: #1e90ff;
-    }
 
     /* Cédula input */
     .cedula-label { font-size: 11px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: 1px; }
@@ -226,12 +220,10 @@
 
   <div class="card">
 
-    <!-- Toggle Entrada / Salida almuerzo / Regreso almuerzo / Salida -->
+    <!-- Toggle Entrada / Salida -->
     <div class="tipo-toggle">
-      <button class="tipo-btn active-entrada"  id="btnEntrada"         onclick="setTipo('entrada')">🟢 Entrada</button>
-      <button class="tipo-btn"                 id="btnSalidaAlmuerzo"  onclick="setTipo('salida_almuerzo')"  style="display:none">🟠 Sal. Almuerzo</button>
-      <button class="tipo-btn"                 id="btnRegresoAlmuerzo" onclick="setTipo('regreso_almuerzo')" style="display:none">🔵 Reg. Almuerzo</button>
-      <button class="tipo-btn"                 id="btnSalida"          onclick="setTipo('salida')">🔴 Salida</button>
+      <button class="tipo-btn active-entrada" id="btnEntrada" onclick="setTipo('entrada')">🟢 Entrada</button>
+      <button class="tipo-btn"                id="btnSalida"  onclick="setTipo('salida')">🔴 Salida</button>
     </div>
 
     <!-- Input cédula -->
@@ -511,13 +503,11 @@ async function verificarDispositivoHoy(cedula) {
   }
 
   const result = {
-    count:                data.length,
-    tieneEntrada:         data.some(r => r.tipo === 'entrada'),
-    tieneSalidaAlmuerzo:  data.some(r => r.tipo === 'salida_almuerzo'),
-    tieneRegresoAlmuerzo: data.some(r => r.tipo === 'regreso_almuerzo'),
-    tieneSalida:          data.some(r => r.tipo === 'salida'),
-    registros:            data,
-    offline:              false,
+    count:        data.length,
+    tieneEntrada: data.some(r => r.tipo === 'entrada'),
+    tieneSalida:  data.some(r => r.tipo === 'salida'),
+    registros:    data,
+    offline:      false,
   };
 
   // Cachear 8 segundos — suficiente para evitar queries duplicadas en el mismo flujo
@@ -525,41 +515,13 @@ async function verificarDispositivoHoy(cedula) {
   return result;
 }
 
-// ── Nombres legibles para cada tipo ─────────────────────────────
-const TIPO_LABEL = {
-  entrada:          'Entrada',
-  salida_almuerzo:  'Salida Almuerzo',
-  regreso_almuerzo: 'Regreso Almuerzo',
-  salida:           'Salida',
-};
-const TIPO_EMOJI = {
-  entrada:          '🟢',
-  salida_almuerzo:  '🟠',
-  regreso_almuerzo: '🔵',
-  salida:           '🔴',
-};
-
-// ── Cargos que tienen botones de almuerzo ────────────────────────
-const CARGOS_ALMUERZO = ['administrativo', 'coordinador comercial', 'coordinadora comercial'];
-
-function tieneAlmuerzo(cargo) {
-  return CARGOS_ALMUERZO.includes((cargo || '').toLowerCase().trim());
-}
-
-// ── Toggle tipo ──────────────────────────────────────────────────
+// ── Toggle tipo (Entrada / Salida) ───────────────────────────────
 async function setTipo(tipo) {
   State.tipo = tipo;
-  // Mapa: valor interno → id del botón → clase CSS activa
-  const btns = [
-    { tipo: 'entrada',          id: 'btnEntrada',         cls: 'active-entrada'         },
-    { tipo: 'salida_almuerzo',  id: 'btnSalidaAlmuerzo',  cls: 'active-salida-almuerzo' },
-    { tipo: 'regreso_almuerzo', id: 'btnRegresoAlmuerzo', cls: 'active-regreso-almuerzo'},
-    { tipo: 'salida',           id: 'btnSalida',          cls: 'active-salida'          },
-  ];
-  btns.forEach(({ tipo: t, id, cls }) => {
-    const el = document.getElementById(id);
-    if (el) el.className = 'tipo-btn' + (t === tipo ? ' ' + cls : '');
-  });
+  const btnE = document.getElementById('btnEntrada');
+  const btnS = document.getElementById('btnSalida');
+  if (btnE) btnE.className = 'tipo-btn' + (tipo === 'entrada' ? ' active-entrada' : '');
+  if (btnS) btnS.className = 'tipo-btn' + (tipo === 'salida'  ? ' active-salida'  : '');
 
   if (State.trabajador) {
     await actualizarBotonPorEstado();
@@ -586,19 +548,17 @@ async function actualizarBotonPorEstado() {
     return;
   }
 
-  // 1. Límite absoluto: este celular ya tiene 4 registros hoy (de cualquier cédula)
+  // 1. Límite absoluto: este celular ya tiene 2 registros hoy (de cualquier cédula)
   const deviceTotal = await verificarDispositivoTotal();
-  if (!deviceTotal.offline && deviceTotal.count >= 4) {
+  if (!deviceTotal.offline && deviceTotal.count >= 2) {
     btn.disabled  = true;
     btn.innerHTML = '📵 Límite de dispositivo alcanzado';
     return;
   }
 
   // 2. Si este trabajador ya registró el tipo seleccionado desde este dispositivo
-  if (State.tipo === 'entrada'          && device.tieneEntrada)         { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Entrada hoy'; return; }
-  if (State.tipo === 'salida_almuerzo'  && device.tieneSalidaAlmuerzo)  { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Salida Almuerzo hoy'; return; }
-  if (State.tipo === 'regreso_almuerzo' && device.tieneRegresoAlmuerzo) { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Regreso Almuerzo hoy'; return; }
-  if (State.tipo === 'salida'           && device.tieneSalida)          { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Salida hoy'; return; }
+  if (State.tipo === 'entrada' && device.tieneEntrada) { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Entrada hoy'; return; }
+  if (State.tipo === 'salida'  && device.tieneSalida)  { btn.disabled = true; btn.innerHTML = '⚠️ Ya registraste Salida hoy'; return; }
 
   // 3. Consultar estado del trabajador (con cache 10s)
   const cacheKeyBtn = `cedula_${t.cedula}_${today()}`;
@@ -613,28 +573,22 @@ async function actualizarBotonPorEstado() {
     registrosHoyBtn = hoy || [];
     QueryCache.set(cacheKeyBtn, registrosHoyBtn, 10000);
   }
-  const registrosHoy          = registrosHoyBtn;
-  const tieneEntrada          = registrosHoy.some(r => r.tipo === 'entrada');
-  const tieneSalidaAlmuerzo   = registrosHoy.some(r => r.tipo === 'salida_almuerzo');
-  const tieneRegresoAlmuerzo  = registrosHoy.some(r => r.tipo === 'regreso_almuerzo');
-  const tieneSalida           = registrosHoy.some(r => r.tipo === 'salida');
+  const registrosHoy = registrosHoyBtn;
+  const tieneEntrada = registrosHoy.some(r => r.tipo === 'entrada');
+  const tieneSalida  = registrosHoy.some(r => r.tipo === 'salida');
 
-  // Jornada completada: entrada + salida como mínimo
+  // Jornada completada: entrada + salida
   if (tieneEntrada && tieneSalida) {
     btn.disabled  = true;
     btn.innerHTML = '🔒 Jornada completada hoy';
     return;
   }
 
-  if (State.tipo === 'entrada'          && tieneEntrada)        { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Entrada'; return; }
-  if (State.tipo === 'salida_almuerzo'  && tieneSalidaAlmuerzo) { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Salida Almuerzo'; return; }
-  if (State.tipo === 'regreso_almuerzo' && tieneRegresoAlmuerzo){ btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Regreso Almuerzo'; return; }
-  if (State.tipo === 'salida'           && tieneSalida)         { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Salida'; return; }
+  if (State.tipo === 'entrada' && tieneEntrada) { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Entrada'; return; }
+  if (State.tipo === 'salida'  && tieneSalida)  { btn.disabled = true; btn.innerHTML = '⚠️ Trabajador ya registró Salida'; return; }
 
-  const lbl = TIPO_LABEL[State.tipo] || State.tipo;
-  const emo = TIPO_EMOJI[State.tipo] || '✅';
   btn.disabled  = false;
-  btn.innerHTML = `${emo} Registrar ${lbl}`;
+  btn.innerHTML = State.tipo === 'entrada' ? '🟢 Registrar Entrada' : '🔴 Registrar Salida';
 }
 
 // ── Búsqueda cédula en tiempo real ───────────────────────────────
@@ -648,11 +602,6 @@ async function onCedula(val) {
     State.trabajador = null;
     btn.disabled     = true;
     btn.innerHTML    = '✅ Registrar Asistencia';
-    // Ocultar botones de almuerzo hasta que se conozca el cargo
-    const btnSA = document.getElementById('btnSalidaAlmuerzo');
-    const btnRA = document.getElementById('btnRegresoAlmuerzo');
-    if (btnSA) btnSA.style.display = 'none';
-    if (btnRA) btnRA.style.display = 'none';
     return;
   }
 
@@ -662,18 +611,6 @@ async function onCedula(val) {
     document.getElementById('tAvatar').style.background = avatarColor(t.nombre);
     document.getElementById('tAvatar').textContent      = t.nombre.charAt(0).toUpperCase();
     document.getElementById('tNombre').textContent      = t.nombre;
-
-    // Mostrar u ocultar botones de almuerzo según el cargo del trabajador
-    const conAlmuerzo = tieneAlmuerzo(t.cargo);
-    const btnSA = document.getElementById('btnSalidaAlmuerzo');
-    const btnRA = document.getElementById('btnRegresoAlmuerzo');
-    if (btnSA) btnSA.style.display = conAlmuerzo ? '' : 'none';
-    if (btnRA) btnRA.style.display = conAlmuerzo ? '' : 'none';
-
-    // Si el tipo actual es de almuerzo pero el cargo no lo permite, resetear a entrada
-    if (!conAlmuerzo && (State.tipo === 'salida_almuerzo' || State.tipo === 'regreso_almuerzo')) {
-      State.tipo = 'entrada';
-    }
 
     // Consultar registros de hoy para este trabajador (con cache 10s)
     const cacheKeyCedula = `cedula_${cedula}_${today()}`;
@@ -688,37 +625,26 @@ async function onCedula(val) {
       registrosHoy = hoy || [];
       QueryCache.set(cacheKeyCedula, registrosHoy, 10000);
     }
-    const ultimoEntrada          = registrosHoy.find(r => r.tipo === 'entrada');
-    const ultimaSalidaAlmuerzo   = registrosHoy.find(r => r.tipo === 'salida_almuerzo');
-    const ultimoRegresoAlmuerzo  = registrosHoy.find(r => r.tipo === 'regreso_almuerzo');
-    const ultimaSalida           = registrosHoy.find(r => r.tipo === 'salida');
+    const ultimoEntrada = registrosHoy.find(r => r.tipo === 'entrada');
+    const ultimaSalida  = registrosHoy.find(r => r.tipo === 'salida');
 
     // Estado descriptivo
     let estadoTexto = [t.cargo, t.ciudad].filter(Boolean).join(' · ');
     let estadoExtra = '';
     if (registrosHoy.length > 0) {
       const partes = [];
-      if (ultimoEntrada)         partes.push(`🟢 Entrada: ${fmtHora(ultimoEntrada.hora)}`);
-      if (ultimaSalidaAlmuerzo)  partes.push(`🟠 S.Alm: ${fmtHora(ultimaSalidaAlmuerzo.hora)}`);
-      if (ultimoRegresoAlmuerzo) partes.push(`🔵 R.Alm: ${fmtHora(ultimoRegresoAlmuerzo.hora)}`);
-      if (ultimaSalida)          partes.push(`🔴 Salida: ${fmtHora(ultimaSalida.hora)}`);
+      if (ultimoEntrada) partes.push(`🟢 Entrada: ${fmtHora(ultimoEntrada.hora)}`);
+      if (ultimaSalida)  partes.push(`🔴 Salida: ${fmtHora(ultimaSalida.hora)}`);
       estadoExtra = partes.join('  ·  ');
     }
     document.getElementById('tSub').innerHTML = estadoTexto +
       (estadoExtra ? `<br><span style="font-size:11px;color:var(--accent3)">${estadoExtra}</span>` : '');
 
-    // Sugerir el siguiente tipo en la secuencia lógica del día
-    const device = await verificarDispositivoHoy(cedula);
-    if (!ultimoEntrada) {
-      setTipo('entrada');
-    } else if (!ultimaSalidaAlmuerzo) {
-      setTipo('salida_almuerzo');
-    } else if (!ultimoRegresoAlmuerzo) {
-      setTipo('regreso_almuerzo');
-    } else if (!ultimaSalida) {
-      setTipo('salida');
+    // Sugerir tipo automáticamente según lo que falta
+    if (ultimoEntrada && !ultimaSalida) {
+      await setTipo('salida');
     } else {
-      setTipo('entrada'); // jornada completa, dejar en entrada por defecto
+      await setTipo('entrada');
     }
 
     card.className = 'trabajador-card show';
@@ -765,25 +691,26 @@ async function registrar(metodo = 'qr') {
     return;
   }
 
-  // Regla 1: Máximo 4 registros totales por día por dispositivo (cualquier cédula)
-  if (deviceTotal.count >= 4) {
+  // Regla 1: Máximo 2 registros totales por día por dispositivo (cualquier cédula)
+  if (deviceTotal.count >= 2) {
     mostrarBloqueo(
       'Límite de dispositivo alcanzado',
-      'Este dispositivo ya completó sus 4 registros diarios. No se permiten más registros desde este teléfono.',
+      'Este dispositivo ya completó sus 2 registros diarios (entrada y salida). No se permiten más registros desde este teléfono.',
       'device'
     );
     return;
   }
 
-  // Regla 2: Esta cédula ya registró este tipo hoy en este dispositivo
-  const tipoYaRegistrado = (
-    (tipo === 'entrada'          && device.tieneEntrada)         ||
-    (tipo === 'salida_almuerzo'  && device.tieneSalidaAlmuerzo)  ||
-    (tipo === 'regreso_almuerzo' && device.tieneRegresoAlmuerzo) ||
-    (tipo === 'salida'           && device.tieneSalida)
-  );
-  if (tipoYaRegistrado) {
-    toast(`⛔ Esta cédula ya tiene ${TIPO_LABEL[tipo] || tipo} registrada hoy.`, 'error', 6000);
+  // Regla 2: Esta cédula ya registró entrada hoy en este dispositivo
+  if (tipo === 'entrada' && device.tieneEntrada) {
+    toast('⛔ Esta cédula ya tiene una Entrada registrada hoy.', 'error', 6000);
+    await actualizarBotonPorEstado();
+    return;
+  }
+
+  // Regla 3: Esta cédula ya registró salida hoy en este dispositivo
+  if (tipo === 'salida' && device.tieneSalida) {
+    toast('⛔ Esta cédula ya tiene una Salida registrada hoy.', 'error', 6000);
     await actualizarBotonPorEstado();
     return;
   }
@@ -798,7 +725,8 @@ async function registrar(metodo = 'qr') {
 
   if (trabajadorHoy && trabajadorHoy.length > 0) {
     const yaHora = fmtHora(trabajadorHoy[0].hora);
-    toast(`⚠️ Esta cédula ya tiene ${TIPO_LABEL[tipo] || tipo} registrada hoy a las ${yaHora}.`, 'warning', 5000);
+    const nombreTipo = tipo === 'entrada' ? 'Entrada' : 'Salida';
+    toast(`⚠️ Esta cédula ya tiene una ${nombreTipo} registrada hoy a las ${yaHora}.`, 'warning', 5000);
     await actualizarBotonPorEstado();
     return;
   }
@@ -825,7 +753,8 @@ async function registrar(metodo = 'qr') {
     // Error 23505 = duplicate key: la constraint de la DB detectó un duplicado
     // (dos taps simultáneos, etc.). Tratarlo como si ya estuviera registrado.
     if (error.code === '23505') {
-      toast(`⚠️ ${TIPO_LABEL[tipo] || tipo} ya fue registrada hoy para esta cédula.`, 'warning', 5000);
+      const nombreTipo = tipo === 'entrada' ? 'Entrada' : 'Salida';
+      toast(`⚠️ Esta ${nombreTipo} ya fue registrada hoy para esta cédula.`, 'warning', 5000);
     } else {
       toast('❌ Error al guardar: ' + error.message, 'error', 6000);
     }
@@ -837,18 +766,18 @@ async function registrar(metodo = 'qr') {
   // Invalidar cache para que los datos se refresquen en el próximo uso
   QueryCache.invalidate();
 
-  const lbl = TIPO_LABEL[tipo] || tipo;
-  const emo = TIPO_EMOJI[tipo] || '✅';
-  toast(`${emo} ${lbl} registrada — ${t.nombre}`, 'success', 5000);
+  const emoji = tipo === 'entrada' ? '🟢' : '🔴';
+  const nombreTipo = tipo === 'entrada' ? 'Entrada' : 'Salida';
+  toast(`${emoji} ${nombreTipo} registrada correctamente — ${t.nombre}`, 'success', 5000);
 
   await cargarRecientes(t.cedula);
 
-  // Si este registro completó los 4 permitidos para este dispositivo
-  if (deviceTotal.count + 1 >= 4) {
+  // Si este registro completó los 2 permitidos para este dispositivo (total del día)
+  if (deviceTotal.count + 1 >= 2) {
     setTimeout(() => {
       mostrarBloqueo(
         'Jornada registrada',
-        '¡Has completado los 4 registros de hoy! Este dispositivo queda bloqueado hasta el próximo día.',
+        '¡Has completado tus 2 registros de hoy (Entrada y Salida)! Este dispositivo queda bloqueado hasta el próximo día.',
         'device'
       );
     }, 2500);
@@ -865,11 +794,6 @@ function resetearFormulario() {
   document.getElementById('btnContinuar').disabled    = true;
   document.getElementById('btnContinuar').innerHTML   = '✅ Registrar Asistencia';
   State.trabajador = null;
-  // Ocultar botones de almuerzo al resetear
-  const btnSA = document.getElementById('btnSalidaAlmuerzo');
-  const btnRA = document.getElementById('btnRegresoAlmuerzo');
-  if (btnSA) btnSA.style.display = 'none';
-  if (btnRA) btnRA.style.display = 'none';
   setTipo('entrada');
   setTimeout(() => document.getElementById('cedulaInput').focus(), 300);
 }

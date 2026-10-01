@@ -612,7 +612,7 @@ function setBtn(id, loading) {
    PASO 1 — BUSCAR TRABAJADOR POR CÉDULA
    ============================================================ */
 async function buscarTrabajador() {
-  const cedula = document.getElementById('inputCedula').value.trim();
+  const cedula = document.getElementById('inputCedula').value.trim().replace(/\D/g, '');
   if (!cedula) { toast('Ingresa tu número de cédula', 'warning'); return; }
 
   setBtn('btnBuscar', true);
@@ -800,15 +800,17 @@ async function enviarSolicitud() {
     trabajador_nombre: trabajadorActual.nombre,
     fecha_inicio:      fechaIni,
     fecha_fin:         fechaFinFinal,
-    tipo: subtipo || tipo,
+    tipo:              subtipo || tipo,
     status:            'en_proceso',
     observaciones:     obs || null,
-    motivo:            motivo || null,
-    hora_inicio:       tipo === 'permiso' ? horaIni : null,
-    hora_fin:          tipo === 'permiso' ? horaFin  : null,
-    es_remunerado:     tipo === 'permiso' ? remunerado : null,
-    solicitado_en:     new Date().toISOString(),
   };
+
+  if (motivo) row.motivo = motivo;
+  if (tipo === 'permiso') {
+    if (horaIni) row.hora_inicio = horaIni;
+    if (horaFin) row.hora_fin = horaFin;
+    if (remunerado !== undefined) row.es_remunerado = remunerado;
+  }
 
   const btn = document.getElementById('btnEnviar');
   btn.disabled = true;
@@ -822,15 +824,16 @@ async function enviarSolicitud() {
       .single();
 
     if (error) {
+      const msg = error.message || '';
       // Si los campos nuevos no existen aún (SQL no ejecutado), reintentar sin ellos
-      if (error.message && error.message.includes('column')) {
+      if (msg.includes('column') || msg.includes('schema cache') || error.code === 'PGRST204') {
         const rowBasico = {
           trabajador_id:     row.trabajador_id,
           trabajador_nombre: row.trabajador_nombre,
           fecha_inicio:      row.fecha_inicio,
           fecha_fin:         row.fecha_fin,
           tipo:              row.tipo,
-          status:            row.status,
+          status:            'en_proceso',
           observaciones:     [obs, motivo ? `Motivo: ${motivo}` : '', horaIni ? `Hora: ${horaIni}–${horaFin || '?'}` : '', tipo === 'permiso' ? (remunerado ? '✅ Remunerado' : '❌ No remunerado') : ''].filter(Boolean).join(' | ') || null,
         };
         const { error: e2 } = await sb.from('vacaciones').insert([rowBasico]);

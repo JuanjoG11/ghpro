@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    GH PRO — app.js
    Lógica principal — usa Supabase como backend
    ============================================================ */
@@ -110,6 +110,7 @@ function navigate(pageId) {
     alertas: renderAlertas,
     asistencia: renderAsistencia,
     prendas: renderDotacionPrendas,
+    solicitudes: renderSolicitudes,
   };
   if (renders[pageId]) renders[pageId]();
   if (window.innerWidth <= 768) closeSidebar();
@@ -2607,11 +2608,18 @@ async function guardarVacacion() {
     status: document.getElementById('vacStatus').value,
     aprobado_por: document.getElementById('vacAprobadoPor').value.trim(),
     observaciones: document.getElementById('vacObs').value.trim() || null,
-    motivo: document.getElementById('vacMotivo')?.value.trim() || null,
-    hora_inicio: esPermiso ? (document.getElementById('vacHoraInicio')?.value || null) : null,
-    hora_fin: esPermiso ? (document.getElementById('vacHoraFin')?.value || null) : null,
-    es_remunerado: esPermiso ? esRemun : null,
   };
+
+  const motivo = document.getElementById('vacMotivo')?.value.trim();
+  if (motivo) row.motivo = motivo;
+
+  if (esPermiso) {
+    const hIni = document.getElementById('vacHoraInicio')?.value;
+    const hFin = document.getElementById('vacHoraFin')?.value;
+    if (hIni) row.hora_inicio = hIni;
+    if (hFin) row.hora_fin = hFin;
+    if (esRemun !== null) row.es_remunerado = esRemun;
+  }
 
   showLoading(true);
   const result = id ? await Vacaciones.update(id, row) : await Vacaciones.insert(row);
@@ -2619,9 +2627,11 @@ async function guardarVacacion() {
   if (!result) return;
 
   Cache.invalidate('vacaciones');
+  Cache.solicitudes = null;
   closeModal('modalVacacion');
   _resetVacForm();
   await renderVacaciones();
+  if (typeof renderSolicitudes === 'function') await renderSolicitudes();
   toast(id ? 'Solicitud actualizada ✅' : 'Solicitud registrada ✅');
 }
 
@@ -3962,7 +3972,7 @@ async function renderSolicitudes() {
     if (countEl) countEl.textContent = pendientes > 0 ? `(${pendientes})` : '';
 
     // ── Tab pendientes ────────────────────────────────────────
-    const pendList = lista.filter(v => ['solicitada', 'en_proceso'].includes(v.status));
+    const pendList = lista.filter(v => ['solicitada', 'en_proceso', 'en_curso'].includes(v.status));
     const listaPend = document.getElementById('listaSolicPendientes');
     const emptyPend = document.getElementById('emptySolicPendientes');
 
@@ -4212,7 +4222,7 @@ async function _confirmarCambioEstado() {
       const { data } = await sb
         .from('vacaciones')
         .select('id')
-        .in('status', ['solicitada', 'en_proceso']);
+        .in('status', ['solicitada', 'en_proceso', 'en_curso']);
       updateSolicBadge((data || []).length);
 
       const page = document.getElementById('page-solicitudes');

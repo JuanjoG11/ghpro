@@ -871,24 +871,66 @@ const Vacaciones = {
     return data;
   },
 
+  _limpiarRow(row) {
+    const r = { ...row };
+    // Eliminar propiedades undefined o vacías que puedan causar error
+    Object.keys(r).forEach(k => {
+      if (r[k] === undefined) delete r[k];
+    });
+    return r;
+  },
+
   async insert(row) {
+    const r = this._limpiarRow(row);
     const { data, error } = await sb
       .from('vacaciones')
-      .insert([row])
+      .insert([r])
       .select()
       .single();
-    if (sbErr(error, 'vacaciones.insert')) return null;
+    if (error) {
+      // Si la BD no tiene aún las columnas de portal-trabajador.sql, reintentar sin ellas
+      const msg = error.message || '';
+      if (msg.includes('column') || msg.includes('schema cache') || error.code === 'PGRST204') {
+        const clean = { ...r };
+        delete clean.hora_inicio;
+        delete clean.hora_fin;
+        delete clean.motivo;
+        delete clean.es_remunerado;
+        delete clean.solicitado_en;
+        const { data: d2, error: e2 } = await sb.from('vacaciones').insert([clean]).select().single();
+        if (sbErr(e2, 'vacaciones.insert')) return null;
+        return d2;
+      }
+      if (sbErr(error, 'vacaciones.insert')) return null;
+      return null;
+    }
     return data;
   },
 
   async update(id, row) {
+    const r = this._limpiarRow(row);
     const { data, error } = await sb
       .from('vacaciones')
-      .update(row)
+      .update(r)
       .eq('id', id)
       .select()
       .single();
-    if (sbErr(error, 'vacaciones.update')) return null;
+    if (error) {
+      const msg = error.message || '';
+      if (msg.includes('column') || msg.includes('schema cache') || error.code === 'PGRST204') {
+        const clean = { ...r };
+        delete clean.hora_inicio;
+        delete clean.hora_fin;
+        delete clean.motivo;
+        delete clean.es_remunerado;
+        delete clean.solicitado_en;
+        const { data: d2, error: e2 } = await sb.from('vacaciones').update(clean).eq('id', id).select().single();
+        if (sbErr(e2, 'vacaciones.update')) return null;
+        return d2;
+      }
+      if (sbErr(error, 'vacaciones.update')) return null;
+      return null;
+    }
     return data;
   },
 

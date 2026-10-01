@@ -32,10 +32,13 @@ update vacaciones set status = 'en_proceso' where status in ('solicitada', 'en_c
 update vacaciones set status = 'rechazada'  where status = 'no_aprobada';
 update vacaciones set status = 'aprobada'   where status = 'finalizada';
 
--- 3. Crear constraint estricto con los 3 estados
+-- 3. Crear constraint con los estados soportados (incluye compatibilidad)
 alter table vacaciones add constraint vacaciones_status_check
-  check (status in ('en_proceso', 'aprobada', 'rechazada'));
+  check (status in ('en_proceso', 'aprobada', 'rechazada', 'solicitada', 'en_curso', 'finalizada'));
 
 -- 4. Valor por defecto 'en_proceso'
 alter table vacaciones alter column status set default 'en_proceso';
+
+-- 5. Recargar schema cache de PostgREST
+notify pgrst, 'reload schema';
 
