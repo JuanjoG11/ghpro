@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    GH PRO — app.js
    Lógica principal — usa Supabase como backend
    ============================================================ */
@@ -4871,8 +4871,17 @@ async function generarActaEntregaPDF(datos) {
     };
   });
 
-  const logoUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/')) + 'icons/logo_tym.png';
+  // ── Branding condicional por marca ──────────────────────────
+  const esFamilia = (marcaTrabajador || '').toUpperCase().includes('FAMILIA');
+  const _baseUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/'));
 
+  const logoUrl       = esFamilia ? _baseUrl + 'icons/logo_tat.jpg'                  : _baseUrl + 'icons/logo_tym.png';
+  const empresaNombre = esFamilia ? 'T.A.T. Distribuciones del Eje Cafetero'         : 'Tiendas y Marcas Eje Cafetero S.A.S.';
+  const empresaNit    = esFamilia ? 'NIT 901.568.117-1'                               : 'NIT 900.973.932-9';
+  const logoAlt       = esFamilia ? 'Logo T.A.T.'                                    : 'Logo Tiendas y Marcas';
+  const docCodigo     = esFamilia ? 'FOR-SST-008'                                    : 'FOR-SST-024';
+  const docVersion    = esFamilia ? '3'                                               : '4';
+  const docFechaVer   = '10/10/2023';
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -4973,7 +4982,7 @@ async function generarActaEntregaPDF(datos) {
     min-height:279.4mm;
     margin:20px auto;
     background:#fff;
-    padding:24px 30px;
+    padding:16px 24px;
     box-shadow:0 8px 30px rgba(0,0,0,0.12);
     border-radius:4px;
     position:relative;
@@ -4985,14 +4994,14 @@ async function generarActaEntregaPDF(datos) {
     align-items:center;
     background:linear-gradient(135deg,#1a3a5c 0%,#1a5c99 55%,#2a8a6e 100%);
     border-radius:12px;
-    padding:16px 20px;
-    margin-bottom:16px;
+    padding:10px 16px;
+    margin-bottom:10px;
     gap:16px;
     color:#fff;
   }
   .hdr-logo-box{
-    width:70px;
-    height:70px;
+    width:56px;
+    height:56px;
     background:#fff;
     border-radius:10px;
     padding:5px;
@@ -5079,7 +5088,7 @@ async function generarActaEntregaPDF(datos) {
 
   /* ── Secciones ── */
   .seccion{
-    margin-bottom:12px;
+    margin-bottom:8px;
   }
   .sec-header{
     display:flex;
@@ -5240,7 +5249,7 @@ async function generarActaEntregaPDF(datos) {
 
   /* ── Sección de Firma del Trabajador ── */
   .firmas-container{
-    margin-top:14px;
+    margin-top:8px;
     display:flex;
     justify-content:center;
   }
@@ -5269,7 +5278,7 @@ async function generarActaEntregaPDF(datos) {
     text-align:center;
   }
   .firma-espacio{
-    height:46px;
+    height:32px;
   }
   .firma-linea{
     border-bottom:1.5px solid #475569;
@@ -5289,7 +5298,7 @@ async function generarActaEntregaPDF(datos) {
 
   /* ── Pie de documento ── */
   .doc-pie{
-    margin-top:14px;
+    margin-top:8px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -5327,7 +5336,7 @@ async function generarActaEntregaPDF(datos) {
     }
     @page{
       size:letter portrait;
-      margin:10mm 12mm 10mm 12mm;
+      margin:8mm 10mm 8mm 10mm;
     }
   }
 </style>
@@ -5353,26 +5362,26 @@ async function generarActaEntregaPDF(datos) {
   <!-- ── Encabezado Corporativo ── -->
   <div class="hdr">
     <div class="hdr-logo-box">
-      <img src="${logoUrl}" alt="Logo Tiendas y Marcas" onerror="this.style.display='none'">
+      <img src="${logoUrl}" alt="${logoAlt}" onerror="this.style.display='none'">
     </div>
     <div class="hdr-centro">
-      <div class="hdr-empresa">Tiendas y Marcas Eje Cafetero S.A.S.</div>
-      <div class="hdr-nit">NIT 900.973.932-9</div>
+      <div class="hdr-empresa">${empresaNombre}</div>
+      <div class="hdr-nit">${empresaNit}</div>
       <div class="hdr-doc">Acta de Entrega de Dotación y EPP</div>
       <div class="hdr-subdoc">Conforme a los Arts. 58 (num. 3 y 7), 230, 232 y 233 del CST & Sistema SG-SST</div>
     </div>
     <div class="hdr-doc-tag">
       <div class="tag-row">
         <span class="tag-lbl">Código:</span>
-        <span class="tag-val">FOR-SST-024</span>
+        <span class="tag-val">${docCodigo}</span>
       </div>
       <div class="tag-row shaded">
         <span class="tag-lbl">Versión:</span>
-        <span class="tag-val">4</span>
+        <span class="tag-val">${docVersion}</span>
       </div>
       <div class="tag-row">
         <span class="tag-lbl">Fecha Versión:</span>
-        <span class="tag-val">10/10/2023</span>
+        <span class="tag-val">${docFechaVer}</span>
       </div>
     </div>
   </div>
@@ -5530,10 +5539,10 @@ async function generarActaEntregaPDF(datos) {
   <div class="doc-pie">
     <div style="display:flex;align-items:center;gap:8px;">
       <img class="doc-pie-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
-      <span>Tiendas y Marcas Eje Cafetero S.A.S. &nbsp;·&nbsp; NIT 900.973.932-9 &nbsp;·&nbsp; GH Pro</span>
+      <span>${empresaNombre} &nbsp;·&nbsp; ${empresaNit} &nbsp;·&nbsp; GH Pro</span>
     </div>
     <div style="text-align:right;">
-      <span>Código: FOR-SST-024 (v.4) &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
+      <span>Código: ${docCodigo} (v.${docVersion}) &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
     </div>
   </div>
 
