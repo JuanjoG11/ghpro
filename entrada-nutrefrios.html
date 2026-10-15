@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#3a82c8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>GH Pro — Entrada Nutrefríos</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080d14;
+      --card:     #0d1520;
+      --border:   rgba(255,255,255,0.08);
+      --glow:     rgba(58,130,200,0.45);
+      --accent:   #3a82c8;
+      --accent3:  #3aaa80;
+      --danger:   #e05555;
+      --warning:  #c87c3a;
+      --text:     #e8f0fa;
+      --muted:    #4a6080;
+      --secondary:#8fa8c8;
+      --radius:   16px;
+      --radius-sm:10px;
+      --transition: 0.2s ease;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* Fondo decorativo */
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.18; }
+    .orb-1 { width: 400px; height: 400px; background: var(--accent); top: -100px; left: -100px; }
+    .orb-2 { width: 300px; height: 300px; background: #43e97b; bottom: -80px; right: -80px; }
+
+    /* Layout */
+    .container {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: 32px 16px env(safe-area-inset-bottom, 16px);
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 10px; }
+    .header-logo {
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;
+    }
+    .header-title { font-size: 24px; font-weight: 800; }
+    .header-title span { color: var(--accent3); }
+
+    /* Badge de ubicación */
+    .ubicacion-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(58,130,200,0.12);
+      border: 1px solid rgba(58,130,200,0.3);
+      border-radius: 20px; padding: 6px 14px;
+      font-size: 12px; color: var(--secondary);
+      margin-bottom: 22px;
+    }
+    .ubicacion-badge a {
+      color: var(--accent); text-decoration: none; font-weight: 700;
+    }
+    .ubicacion-badge a:hover { text-decoration: underline; }
+
+    /* Reloj */
+    .hora-display {
+      font-size: 44px; font-weight: 800; letter-spacing: 2px;
+      font-variant-numeric: tabular-nums; margin-bottom: 3px;
+    }
+    .fecha-display {
+      font-size: 13px; color: var(--muted); margin-bottom: 24px; text-align: center;
+    }
+
+    /* Card */
+    .card {
+      width: 100%; max-width: 420px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px 22px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    /* Pill "solo entrada" */
+    .solo-entrada-pill {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: rgba(58,170,128,0.14);
+      border: 1.5px solid rgba(58,170,128,0.4);
+      border-radius: 10px; padding: 11px;
+      font-size: 14px; font-weight: 700; color: var(--accent3);
+    }
+
+    /* Input cédula */
+    .cedula-label {
+      font-size: 11px; font-weight: 700; color: var(--secondary);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .cedula-input {
+      width: 100%; font-size: 28px; text-align: center; letter-spacing: 6px;
+      padding: 16px 12px; border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.06); border: 2px solid var(--border);
+      color: var(--text); transition: all var(--transition);
+      -webkit-appearance: none;
+    }
+    .cedula-input:focus {
+      outline: none; border-color: var(--glow);
+      box-shadow: 0 0 0 4px rgba(58,130,200,0.18);
+      background: rgba(255,255,255,0.09);
+    }
+    .cedula-input::placeholder {
+      color: var(--muted); letter-spacing: 2px; font-size: 18px;
+    }
+
+    /* Tarjeta trabajador */
+    .trabajador-card {
+      display: none; align-items: center; gap: 14px;
+      background: rgba(58,170,128,0.08);
+      border: 1px solid rgba(58,170,128,0.3);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+      animation: fadeSlide 0.25s ease;
+    }
+    .trabajador-card.show { display: flex; }
+    .trabajador-card.not-found {
+      background: rgba(224,85,85,0.08);
+      border-color: rgba(224,85,85,0.3);
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .t-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; flex-shrink: 0; color: #fff;
+    }
+    .t-nombre { font-weight: 700; font-size: 15px; }
+    .t-sub    { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* Botón principal */
+    .btn-registrar {
+      width: 100%; padding: 17px; border-radius: var(--radius-sm);
+      border: none; cursor: pointer; font-size: 17px; font-weight: 700;
+      background: linear-gradient(135deg, #3aaa80, #3a82c8);
+      color: #fff; box-shadow: 0 4px 20px rgba(58,170,128,0.3);
+      transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-registrar:hover  { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(58,170,128,0.5); }
+    .btn-registrar:active { transform: translateY(0); }
+    .btn-registrar:disabled {
+      opacity: 0.5; cursor: not-allowed; transform: none;
+      box-shadow: none;
+    }
+
+    /* Banner de estado de ubicación */
+    .geo-banner {
+      width: 100%; max-width: 420px;
+      border-radius: var(--radius-sm);
+      padding: 13px 16px;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 13px; font-weight: 600;
+      margin-bottom: 4px;
+      border: 1px solid;
+    }
+    .geo-banner.checking {
+      background: rgba(58,130,200,0.08); border-color: rgba(58,130,200,0.3);
+      color: var(--secondary);
+    }
+    .geo-banner.ok {
+      background: rgba(58,170,128,0.1); border-color: rgba(58,170,128,0.35);
+      color: var(--accent3);
+    }
+    .geo-banner.lejos {
+      background: rgba(224,85,85,0.1); border-color: rgba(224,85,85,0.4);
+      color: var(--danger);
+    }
+    .geo-banner.denied {
+      background: rgba(200,124,58,0.1); border-color: rgba(200,124,58,0.4);
+      color: var(--warning);
+    }
+    .geo-icon { font-size: 22px; flex-shrink: 0; }
+    .geo-text { flex: 1; line-height: 1.4; }
+    .geo-text small { display: block; font-size: 11px; opacity: 0.75; margin-top: 2px; font-weight: 400; }
+    .btn-geo-retry {
+      background: none; border: 1px solid currentColor; border-radius: 8px;
+      padding: 5px 12px; font-size: 12px; font-weight: 700;
+      color: inherit; cursor: pointer; white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-geo-retry:hover { background: rgba(255,255,255,0.1); }
+
+    /* Aviso de éxito (pantalla de confirmación) */
+    .success-screen {
+      display: none; flex-direction: column; align-items: center;
+      gap: 16px; text-align: center; padding: 10px 0;
+    }
+    .success-screen.show { display: flex; }
+    .success-icon { font-size: 64px; animation: pop 0.4s ease; }
+    @keyframes pop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      70%  { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-nombre {
+      font-size: 20px; font-weight: 800; color: var(--accent3);
+    }
+    .success-detalle {
+      font-size: 13px; color: var(--muted); line-height: 1.6;
+    }
+    .btn-nuevo {
+      margin-top: 6px; padding: 13px 32px;
+      border-radius: var(--radius-sm); border: none;
+      background: rgba(255,255,255,0.07); color: var(--text);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      border: 1px solid var(--border); transition: background 0.2s;
+    }
+    .btn-nuevo:hover { background: rgba(255,255,255,0.12); }
+
+    /* Historial reciente */
+    .recientes-title {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .reciente-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px;
+    }
+    .reciente-item:last-child { border-bottom: none; }
+    .rec-tipo {
+      font-size: 10px; padding: 2px 8px; border-radius: 8px;
+      font-weight: 700; flex-shrink: 0;
+      background: rgba(58,170,128,0.15); color: var(--accent3);
+    }
+    .rec-hora {
+      color: var(--accent); font-weight: 700;
+      font-variant-numeric: tabular-nums; min-width: 40px;
+    }
+    .rec-nombre { flex: 1; color: var(--text); }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      left: 50%; transform: translateX(-50%);
+      z-index: 9999;
+      display: flex; flex-direction: column; gap: 8px; align-items: center;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1a2535; border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 13px 20px; min-width: 260px; max-width: 340px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      animation: toastIn 0.3s ease; font-size: 14px;
+      pointer-events: all;
+    }
+    .toast.success { border-left: 3px solid var(--accent3); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast.info    { border-left: 3px solid var(--accent); }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-logo">🏢 GH Pro · Auxiliares Logísticos Zenú</div>
+    <div class="header-title">Registro de <span>Entrada</span></div>
+  </div>
+
+  <!-- Badge de ubicación vinculado al mapa -->
+  <div class="ubicacion-badge">
+    📍
+    <a href="https://maps.app.goo.gl/nutrefrios" target="_blank" rel="noopener">
+      Nutrefríos — Comercializadora de Refrigerados Nutresa
+    </a>
+  </div>
+
+  <div class="hora-display" id="horaDisplay">00:00</div>
+  <div class="fecha-display" id="fechaDisplay"></div>
+
+  <!-- Banner estado GPS -->
+  <div class="geo-banner checking" id="geoBanner">
+    <span class="geo-icon">📡</span>
+    <div class="geo-text">
+      Verificando ubicación…
+      <small>Debes estar en Nutrefríos para registrar</small>
+    </div>
+  </div>
+
+  <div class="card" id="mainCard">
+
+    <!-- Indicador solo entrada -->
+    <div class="solo-entrada-pill">
+      🟢 Solo Registro de Entrada
+    </div>
+
+    <!-- Input cédula -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <label class="cedula-label" for="cedulaInput">Número de cédula</label>
+      <input
+        type="tel"
+        id="cedulaInput"
+        class="cedula-input"
+        placeholder="Ej: 1088038370"
+        maxlength="12"
+        autocomplete="off"
+        inputmode="numeric"
+        oninput="onCedula(this.value)"
+        onkeydown="if(event.key==='Enter') registrar()"
+      />
+    </div>
+
+    <!-- Tarjeta trabajador encontrado -->
+    <div class="trabajador-card" id="trabajadorCard">
+      <div class="t-avatar" id="tAvatar"></div>
+      <div>
+        <div class="t-nombre" id="tNombre"></div>
+        <div class="t-sub"    id="tSub"></div>
+      </div>
+    </div>
+
+    <!-- Pantalla de éxito (post-registro) -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">✅</div>
+      <div class="success-nombre" id="successNombre"></div>
+      <div class="success-detalle" id="successDetalle"></div>
+      <button class="btn-nuevo" onclick="resetearFormulario()">Registrar otro trabajador</button>
+    </div>
+
+    <!-- Botón registrar -->
+    <button class="btn-registrar" id="btnRegistrar" onclick="registrar()" disabled>
+      🟢 Registrar Entrada
+    </button>
+
+    <!-- Historial reciente del día en este punto -->
+    <div id="recientesWrap" style="display:none">
+      <div class="recientes-title" style="margin-bottom:10px">Últimas entradas de hoy — Nutrefríos</div>
+      <div id="recientesList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script>
+'use strict';
+
+// ── Supabase ─────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── Cédulas autorizadas: Auxiliares Logísticos Zenú ──────────────
+const CEDULAS_AUTORIZADAS = new Set([
+  '1004669887', // Cristian Mauricio Giraldo Ramirez
+  '1004776445', // Cristian Mendoza Garcia
+  '1088037094', // Daniel Felipe Murillo Granda
+  '1089601941', // Felipe Montes Rivera
+  '1088038370', // George Michael Higuita Restrepo
+  '9862197',    // Gustavo Adolfo Morales Tirado
+  '1112776419', // Jammes Alberto Ramirez Nieto
+  '10005257',   // Oscar Mauricio Guarumo Clavijo
+]);
+
+// ── Configuración de ubicación ────────────────────────────────────
+const UBICACION     = 'Nutrefríos';
+const CIUDAD        = 'Manizales';
+// Coordenadas exactas de Nutrefríos - Comercializadora de Refrigerados Nutresa
+const GEO_LAT       = 4.8244681;
+const GEO_LNG       = -75.6847921;
+const GEO_RADIO_M   = 300;   // metros de tolerancia (radio permitido)
+
+// ── Estado ───────────────────────────────────────────────────────
+// geoOk: null=verificando, true=dentro del radio, false=fuera/denegado
+const State = { trabajador: null, trabajadores: [], geoOk: null, geoCoordenadas: null };
+
+// ── Cache ────────────────────────────────────────────────────────
+const Cache = {
+  _s: {},
+  get(k)           { const e = this._s[k]; if (!e) return null; if (Date.now()-e.ts > e.ttl) { delete this._s[k]; return null; } return e.v; },
+  set(k, v, ttl=8000) { this._s[k] = { v, ts: Date.now(), ttl }; },
+  clear()          { this._s = {}; },
+};
+
+// ── Helpers (zona horaria Colombia) ──────────────────────────────
+const today = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit'
+}).format(new Date());
+
+const horaActual = () => new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'America/Bogota', hour:'2-digit', minute:'2-digit',
+  second:'2-digit', hour12: false
+}).format(new Date());
+
+const fmtHora = h => h ? h.slice(0,5) : '—';
+
+const AVATAR_COLORS = ['#3a82c8','#3aaa80','#ff6584','#f7971e','#9c63ff','#1e90ff'];
+const avatarColor   = s => AVATAR_COLORS[(s||'').charCodeAt(0) % AVATAR_COLORS.length];
+
+function toast(msg, type='success', ms=3500) {
+  const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => {
+    el.style.transition='0.3s'; el.style.opacity='0'; el.style.transform='translateY(16px)';
+    setTimeout(() => el.remove(), 320);
+  }, ms);
+}
+
+// ── Reloj ────────────────────────────────────────────────────────
+function actualizarReloj() {
+  const now = new Date();
+  const h = document.getElementById('horaDisplay');
+  const f = document.getElementById('fechaDisplay');
+  if (h) h.textContent = horaActual().slice(0,5);
+  if (f) {
+    const s = now.toLocaleDateString('es-CO', {
+      timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long', year:'numeric'
+    });
+    f.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  }
+}
+
+// ── Fingerprint / Device ID (mismo algoritmo que asistencia-login.html) ──
+function cyrb53(str, seed=0) {
+  let h1=0xdeadbeef^seed, h2=0x41c6ce57^seed;
+  for (let i=0,ch; i<str.length; i++) {
+    ch=str.charCodeAt(i);
+    h1=Math.imul(h1^ch,2654435761); h2=Math.imul(h2^ch,1597334677);
+  }
+  h1=Math.imul(h1^(h1>>>16),2246822507); h1^=Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507); h2^=Math.imul(h1^(h1>>>13),3266489909);
+  return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);
+}
+
+function getDeviceFingerprint() {
+  try {
+    const parts = [
+      navigator.userAgent||'', navigator.language||'',
+      screen.width+'x'+screen.height+'x'+(screen.colorDepth||24),
+      window.devicePixelRatio||1, navigator.hardwareConcurrency||'na',
+      navigator.maxTouchPoints||0, Intl.DateTimeFormat().resolvedOptions().timeZone||'',
+    ];
+    try {
+      const c=document.createElement('canvas'); c.width=150; c.height=30;
+      const ctx=c.getContext('2d');
+      if(ctx){ ctx.textBaseline='top'; ctx.font='14px Arial'; ctx.fillStyle='#f60'; ctx.fillRect(10,5,60,20); ctx.fillStyle='#069'; ctx.fillText('GH-PRO-FP',12,10); parts.push(c.toDataURL()); }
+    } catch(_){}
+    return cyrb53(parts.join('|||'));
+  } catch(_) { return 'fp_'+Math.random().toString(36).slice(2,10); }
+}
+
+function getStoredDeviceId() {
+  const K='ghpro_device_id'; let id=null;
+  try { id=localStorage.getItem(K); } catch(_){}
+  if (!id) { const m=document.cookie.match(new RegExp('(^|;\\s*)'+K+'=([^;]+)')); if(m) id=decodeURIComponent(m[2]); }
+  if (!id) { try { id=sessionStorage.getItem(K); } catch(_){} }
+  return id;
+}
+
+function persistDeviceId(id) {
+  const K='ghpro_device_id';
+  try { localStorage.setItem(K,id); } catch(_){}
+  try { sessionStorage.setItem(K,id); } catch(_){}
+  try { document.cookie=`${K}=${encodeURIComponent(id)}; max-age=31536000; path=/; SameSite=Lax`; } catch(_){}
+}
+
+async function getDeviceId() {
+  let stored=getStoredDeviceId();
+  if (stored) { persistDeviceId(stored); return stored; }
+  const fp=getDeviceFingerprint();
+  const rand='xxxxxxxxxxxx'.replace(/[x]/g,()=>(Math.random()*16|0).toString(16));
+  const newId=`fp_${fp}_${rand}`;
+  persistDeviceId(newId);
+  return newId;
+}
+
+// ── Geolocalización ───────────────────────────────────────────────
+
+// Distancia en metros entre dos coordenadas (fórmula Haversine)
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+  const R  = 6371000; // radio de la Tierra en metros
+  const dL = (lat2 - lat1) * Math.PI / 180;
+  const dG = (lng2 - lng1) * Math.PI / 180;
+  const a  = Math.sin(dL/2)**2 +
+             Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dG/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function actualizarBannerGeo(estado, distancia) {
+  const banner = document.getElementById('geoBanner');
+  const btn    = document.getElementById('btnRegistrar');
+  if (!banner) return;
+
+  banner.className = 'geo-banner ' + estado;
+
+  if (estado === 'ok') {
+    const dist = distancia !== null ? `${Math.round(distancia)} m del punto de registro` : '';
+    banner.innerHTML = `
+      <span class="geo-icon">✅</span>
+      <div class="geo-text">
+        Ubicación verificada — Nutrefríos
+        <small>${dist}</small>
+      </div>`;
+    // Desbloquear botón si hay trabajador válido sin entrada
+    actualizarBoton();
+  } else if (estado === 'lejos') {
+    const dist = distancia !== null ? `Estás a ${Math.round(distancia)} m · Máximo permitido: ${GEO_RADIO_M} m` : '';
+    banner.innerHTML = `
+      <span class="geo-icon">🚫</span>
+      <div class="geo-text">
+        Fuera del área permitida
+        <small>${dist}</small>
+      </div>
+      <button class="btn-geo-retry" onclick="verificarUbicacion()">Reintentar</button>`;
+    if (btn) { btn.disabled = true; btn.innerHTML = '📍 Debes estar en Nutrefríos'; }
+  } else if (estado === 'denied') {
+    // Detectar si es iOS o Android para dar instrucciones precisas
+    const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const instruccion = esIOS
+      ? 'En iPhone: Ajustes → Privacidad → Localización → Safari → "Al usar la app"'
+      : 'En Android: toca los 3 puntos del navegador → Configuración del sitio → Ubicación → Permitir';
+    banner.innerHTML = `
+      <span class="geo-icon">⚠️</span>
+      <div class="geo-text">
+        Permiso de ubicación denegado
+        <small>${instruccion}</small>
+      </div>
+      <button class="btn-geo-retry" onclick="verificarUbicacion()">Reintentar</button>`;
+    if (btn) { btn.disabled = true; btn.innerHTML = '📍 Activa el GPS para continuar'; }
+  } else {
+    // checking
+    banner.innerHTML = `
+      <span class="geo-icon">📡</span>
+      <div class="geo-text">
+        Verificando ubicación…
+        <small>Debes estar en Nutrefríos para registrar</small>
+      </div>`;
+  }
+}
+
+function verificarUbicacion() {
+  if (!navigator.geolocation) {
+    // Navegador sin GPS — bloquear
+    State.geoOk = false;
+    actualizarBannerGeo('denied', null);
+    return;
+  }
+
+  actualizarBannerGeo('checking', null);
+  State.geoOk = null;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      State.geoCoordenadas = { latitude, longitude, accuracy };
+      const dist = distanciaMetros(latitude, longitude, GEO_LAT, GEO_LNG);
+
+      // Si la precisión del GPS es muy baja (>200m) sumamos el margen de error
+      const distEfectiva = dist - (accuracy > 50 ? Math.min(accuracy * 0.5, 100) : 0);
+
+      if (distEfectiva <= GEO_RADIO_M) {
+        State.geoOk = true;
+        actualizarBannerGeo('ok', dist);
+      } else {
+        State.geoOk = false;
+        actualizarBannerGeo('lejos', dist);
+      }
+    },
+    (err) => {
+      State.geoOk = false;
+      // 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+      actualizarBannerGeo('denied', null);
+      console.warn('Geo error:', err.code, err.message);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 60000, // reusar posición si tiene menos de 1 min
+    }
+  );
+}
+
+// ── Actualiza el estado del botón según geo + trabajador ──────────
+function actualizarBoton() {
+  const btn = document.getElementById('btnRegistrar');
+  if (!btn) return;
+
+  if (State.geoOk !== true) {
+    btn.disabled  = true;
+    btn.innerHTML = State.geoOk === null
+      ? '📡 Verificando ubicación…'
+      : '📍 Debes estar en Nutrefríos';
+    return;
+  }
+
+  if (!State.trabajador) {
+    btn.disabled  = true;
+    btn.innerHTML = '🟢 Registrar Entrada';
+    return;
+  }
+
+  // Verificar si ya tiene entrada (usando info que ya cargó onCedula)
+  btn.disabled  = false;
+  btn.innerHTML = '🟢 Registrar Entrada';
+}
+
+// ── Cargar solo los trabajadores autorizados de Supabase ─────────
+async function cargarTrabajadores() {
+  const cedulasArr = [...CEDULAS_AUTORIZADAS];
+  const { data, error } = await sb
+    .from('trabajadores')
+    .select('id, nombre, cedula, cargo, ciudad, marca')
+    .in('cedula', cedulasArr)
+    .eq('estado', 'activo');
+
+  if (error || !data) {
+    toast('⚠️ Error al cargar trabajadores. Verifica tu conexión.', 'error', 8000);
+    return;
+  }
+  State.trabajadores = data;
+}
+
+// ── Buscar trabajador al escribir cédula ─────────────────────────
+async function onCedula(val) {
+  const cedula = val.trim();
+  const card   = document.getElementById('trabajadorCard');
+  const btn    = document.getElementById('btnRegistrar');
+  const ss     = document.getElementById('successScreen');
+
+  // Ocultar pantalla de éxito si se vuelve a escribir
+  if (ss.classList.contains('show')) {
+    ss.classList.remove('show');
+    btn.style.display = '';
+  }
+
+  if (cedula.length < 4) {
+    card.className   = 'trabajador-card';
+    State.trabajador = null;
+    btn.disabled     = true;
+    return;
+  }
+
+  const t = State.trabajadores.find(w => w.cedula === cedula);
+
+  if (t) {
+    State.trabajador = t;
+    document.getElementById('tAvatar').style.background = avatarColor(t.nombre);
+    document.getElementById('tAvatar').textContent      = t.nombre.charAt(0).toUpperCase();
+    document.getElementById('tNombre').textContent      = t.nombre;
+
+    // Consultar si ya marcó entrada hoy
+    const cacheKey = `entrada_${cedula}_${today()}`;
+    let registrosHoy = Cache.get(cacheKey);
+    if (!registrosHoy) {
+      const { data: hoy } = await sb
+        .from('asistencia')
+        .select('tipo, hora')
+        .eq('cedula', cedula)
+        .eq('fecha', today())
+        .eq('tipo', 'entrada')
+        .order('hora', { ascending: false });
+      registrosHoy = hoy || [];
+      Cache.set(cacheKey, registrosHoy, 10000);
+    }
+
+    const tieneEntrada = registrosHoy.length > 0;
+    let subTexto = [t.cargo, UBICACION].filter(Boolean).join(' · ');
+
+    if (tieneEntrada) {
+      const horaYa = fmtHora(registrosHoy[0].hora);
+      subTexto += `<br><span style="font-size:11px;color:var(--warning)">⚠️ Ya registró entrada a las ${horaYa}</span>`;
+      btn.disabled  = true;
+      btn.innerHTML = '⚠️ Ya registraste Entrada hoy';
+    } else {
+      subTexto += `<br><span style="font-size:11px;color:var(--accent3)">✅ Sin entrada registrada hoy</span>`;
+      // Habilitar solo si la geo ya pasó
+      if (State.geoOk === true) {
+        btn.disabled  = false;
+        btn.innerHTML = '🟢 Registrar Entrada';
+      } else {
+        btn.disabled  = true;
+        btn.innerHTML = State.geoOk === null
+          ? '📡 Verificando ubicación…'
+          : '📍 Debes estar en Nutrefríos';
+      }
+    }
+
+    document.getElementById('tSub').innerHTML = subTexto;
+    card.className = 'trabajador-card show';
+
+  } else if (CEDULAS_AUTORIZADAS.has(cedula)) {
+    // Cédula autorizada pero no activa en BD
+    State.trabajador = null;
+    document.getElementById('tAvatar').textContent = '⏳';
+    document.getElementById('tAvatar').style.background = '#333';
+    document.getElementById('tNombre').textContent = 'Cargando...';
+    document.getElementById('tSub').textContent    = 'Verificando en base de datos';
+    card.className = 'trabajador-card show';
+    btn.disabled   = true;
+  } else {
+    // Cédula no pertenece al grupo autorizado
+    State.trabajador = null;
+    document.getElementById('tAvatar').textContent = '🚫';
+    document.getElementById('tAvatar').style.background = '#442222';
+    document.getElementById('tNombre').textContent = 'Cédula no autorizada en este punto';
+    document.getElementById('tSub').innerHTML =
+      'Este link es exclusivo para <strong>Auxiliares Logísticos Zenú</strong> en Nutrefríos.<br>' +
+      'Usa el sistema principal de asistencia.';
+    card.className = 'trabajador-card show not-found';
+    btn.disabled   = true;
+    btn.innerHTML  = '🟢 Registrar Entrada';
+  }
+}
+
+// ── Registrar entrada ─────────────────────────────────────────────
+async function registrar() {
+  const t = State.trabajador;
+  if (!t) return toast('Ingresa tu número de cédula', 'warning');
+
+  // Bloqueo por geolocalización — verificación final antes de insertar
+  if (State.geoOk !== true) {
+    if (State.geoOk === null) {
+      toast('📡 Espera a que se verifique tu ubicación.', 'warning', 4000);
+    } else {
+      toast('🚫 No puedes registrar entrada fuera de Nutrefríos.', 'error', 5000);
+    }
+    return;
+  }
+
+  const btn      = document.getElementById('btnRegistrar');
+  const fechaHoy = today();
+  const hora     = horaActual();
+
+  btn.disabled  = true;
+  btn.innerHTML = '⏳ Guardando...';
+
+  // Verificar nuevamente en la DB (evita doble tap)
+  const { data: yaExiste } = await sb
+    .from('asistencia')
+    .select('id, hora')
+    .eq('cedula', t.cedula)
+    .eq('fecha', fechaHoy)
+    .eq('tipo', 'entrada');
+
+  if (yaExiste && yaExiste.length > 0) {
+    const horaYa = fmtHora(yaExiste[0].hora);
+    toast(`⚠️ Ya tienes una entrada registrada hoy a las ${horaYa}.`, 'warning', 6000);
+    btn.innerHTML = '⚠️ Ya registraste Entrada hoy';
+    Cache.clear();
+    await onCedula(t.cedula);
+    return;
+  }
+
+  const deviceId = await getDeviceId();
+
+  const row = {
+    trabajador_id:     t.id,
+    trabajador_nombre: t.nombre,
+    cedula:            t.cedula,
+    cargo:             t.cargo  || 'Auxiliar Logístico',
+    ciudad:            t.ciudad || CIUDAD,
+    tipo:              'entrada',
+    fecha:             fechaHoy,
+    hora,
+    metodo:            'link_nutrefrios',
+    device_id:         deviceId,
+    // Coordenadas GPS registradas al momento del check-in
+    ...(State.geoCoordenadas && {
+      obs: `GPS: ${State.geoCoordenadas.latitude.toFixed(6)},${State.geoCoordenadas.longitude.toFixed(6)} ±${Math.round(State.geoCoordenadas.accuracy||0)}m`
+    }),
+  };
+
+  const { error } = await sb.from('asistencia').insert([row]);
+
+  if (error) {
+    if (error.code === '23505') {
+      toast('⚠️ Esta entrada ya fue registrada (registro duplicado evitado).', 'warning', 5000);
+    } else {
+      toast('❌ Error al guardar: ' + error.message, 'error', 6000);
+      btn.disabled  = false;
+      btn.innerHTML = '🟢 Registrar Entrada';
+    }
+    Cache.clear();
+    return;
+  }
+
+  // ── Éxito ────────────────────────────────────────────────────
+  Cache.clear();
+
+  const ss = document.getElementById('successScreen');
+  document.getElementById('successNombre').textContent  = t.nombre;
+  document.getElementById('successDetalle').innerHTML   =
+    `✅ Entrada registrada a las <strong>${hora.slice(0,5)}</strong><br>` +
+    `📍 ${UBICACION}<br>` +
+    `📅 ${fechaHoy}`;
+  ss.classList.add('show');
+  btn.style.display = 'none';
+
+  // Ocultar tarjeta del trabajador
+  document.getElementById('trabajadorCard').className = 'trabajador-card';
+
+  // Cargar historial del día
+  await cargarRecientes();
+
+  toast(`🟢 Entrada registrada — ${t.nombre}`, 'success', 5000);
+}
+
+// ── Cargar últimas entradas del día en Nutrefríos ─────────────────
+async function cargarRecientes() {
+  const wrap  = document.getElementById('recientesWrap');
+  const lista = document.getElementById('recientesList');
+  if (!wrap || !lista) return;
+
+  const cedulasArr = [...CEDULAS_AUTORIZADAS];
+  const { data } = await sb
+    .from('asistencia')
+    .select('trabajador_nombre, hora, tipo')
+    .in('cedula', cedulasArr)
+    .eq('fecha', today())
+    .eq('tipo', 'entrada')
+    .order('hora', { ascending: false })
+    .limit(8);
+
+  if (!data || data.length === 0) { wrap.style.display = 'none'; return; }
+
+  lista.innerHTML = data.map(r => `
+    <div class="reciente-item">
+      <span class="rec-tipo">Entrada</span>
+      <span class="rec-hora">${fmtHora(r.hora)}</span>
+      <span class="rec-nombre">${r.trabajador_nombre}</span>
+    </div>
+  `).join('');
+
+  wrap.style.display = 'block';
+}
+
+// ── Resetear formulario ───────────────────────────────────────────
+function resetearFormulario() {
+  document.getElementById('cedulaInput').value         = '';
+  document.getElementById('trabajadorCard').className  = 'trabajador-card';
+  document.getElementById('successScreen').classList.remove('show');
+  document.getElementById('btnRegistrar').style.display = '';
+  document.getElementById('btnRegistrar').disabled      = true;
+  document.getElementById('btnRegistrar').innerHTML     = '🟢 Registrar Entrada';
+  State.trabajador = null;
+  setTimeout(() => document.getElementById('cedulaInput').focus(), 300);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+(async function init() {
+  actualizarReloj();
+  setInterval(actualizarReloj, 1000);
+  // Arrancar verificación de GPS inmediatamente
+  verificarUbicacion();
+  await cargarTrabajadores();
+  await cargarRecientes();
+  setTimeout(() => document.getElementById('cedulaInput').focus(), 500);
+})();
+</script>
+
+</body>
+</html>
