@@ -13,7 +13,7 @@ create table if not exists asistencia (
   tipo              text default 'entrada' check (tipo in ('entrada','salida')),
   fecha             date not null,
   hora              time not null,
-  metodo            text default 'cedula' check (metodo in ('cedula','qr')),
+  metodo            text default 'cedula' check (metodo in ('cedula','qr','link_nutrefrios')),
   obs               text,
   created_at        timestamptz default now()
 );
