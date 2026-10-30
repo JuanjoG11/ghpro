@@ -1,0 +1,1005 @@
+﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#3a82c8" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Requisición de Personal — GH Pro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #080d14;
+      --bg2:     #0c1220;
+      --border:  rgba(255,255,255,0.08);
+      --accent:  #3a82c8;
+      --accent2: #c87c3a;
+      --success: #3aaa80;
+      --danger:  #e05555;
+      --warning: #c87c3a;
+      --tp:      #e8f0fa;
+      --ts:      #8fa8c8;
+      --tm:      #4a6080;
+      --radius:  16px;
+      --rsm:     10px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--tp);
+      min-height: 100vh; padding: 0 16px 60px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* Orbs */
+    .orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb  { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12; animation: floatOrb 20s infinite ease-in-out; }
+    .o1 { width:500px;height:500px;background:var(--accent);top:-180px;left:-180px; }
+    .o2 { width:350px;height:350px;background:var(--accent2);bottom:-80px;right:-80px;animation-delay:-8s; }
+    @keyframes floatOrb { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(50px,-30px) scale(1.1)} 66%{transform:translate(-30px,50px) scale(0.9)} }
+
+    /* Layout */
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 560px; }
+
+    /* Top bar */
+    .topbar {
+      width: 100%; max-width: 560px; position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0 16px; border-bottom: 1px solid var(--border); margin-bottom: 28px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; box-shadow: 0 4px 14px rgba(58,130,200,0.35); flex-shrink: 0;
+    }
+    .brand-text { font-size: 14px; font-weight: 700; }
+    .brand-sub  { font-size: 11px; color: var(--tm); margin-top: 1px; }
+    #userChip {
+      display: none; align-items: center; gap: 6px;
+      padding: 5px 12px; background: rgba(58,130,200,0.1);
+      border: 1px solid rgba(58,130,200,0.25); border-radius: 20px;
+      font-size: 12px; cursor: pointer;
+    }
+    #userChip:hover { background: rgba(58,130,200,0.2); }
+
+    /* Card */
+    .card {
+      background: rgba(12,18,32,0.96);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .card-header {
+      padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .card-icon {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: rgba(58,130,200,0.12); border: 1px solid rgba(58,130,200,0.25);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-sub   { font-size: 12px; color: var(--ts); margin-top: 2px; }
+    .card-body  { padding: 22px; }
+
+    /* Form */
+    .form-group   { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label   { font-size: 12px; color: var(--ts); font-weight: 600; }
+    .req          { color: var(--danger); }
+    .form-input, .form-select, .form-textarea {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: var(--rsm); color: var(--tp); font-size: 13px;
+      padding: 9px 12px; outline: none; width: 100%; font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(58,130,200,0.15);
+    }
+    .form-textarea { resize: vertical; min-height: 90px; }
+    .form-select option { background: #0c1220; }
+    .form-input:read-only { opacity: 0.55; cursor: not-allowed; }
+    .hint { font-size: 11px; color: var(--tm); margin-top: 3px; }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px; border-radius: var(--rsm); border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #2a6aaa);
+      color: #fff; box-shadow: 0 4px 14px rgba(58,130,200,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(58,130,200,0.4); }
+    .btn-primary:disabled { opacity: 0.45; pointer-events: none; }
+    .btn-secondary { background: rgba(255,255,255,0.07); color: var(--ts); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.11); color: var(--tp); }
+    .btn-full { width: 100%; justify-content: center; }
+    .btn-lg { padding: 13px 28px; font-size: 14px; border-radius: 12px; }
+
+    /* Notice */
+    .notice {
+      padding: 11px 14px; border-radius: var(--rsm); font-size: 13px;
+      display: flex; align-items: flex-start; gap: 9px; margin-bottom: 16px;
+    }
+    .notice-info { background: rgba(58,130,200,0.08); border: 1px solid rgba(58,130,200,0.2); color: var(--ts); }
+    .notice-warning { background: rgba(200,124,58,0.1); border: 1px solid rgba(200,124,58,0.3); color: #d4964a; }
+
+    /* Worker cards */
+    .worker-card {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 13px; border-radius: var(--rsm);
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s; margin-bottom: 6px;
+    }
+    .worker-card:hover, .worker-card.selected {
+      background: rgba(58,130,200,0.1); border-color: rgba(58,130,200,0.35);
+    }
+    .w-avatar {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; text-transform: uppercase; color: #fff;
+    }
+    .w-name { font-size: 13px; font-weight: 600; }
+    .w-info { font-size: 11px; color: var(--ts); margin-top: 1px; }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-warning { background: rgba(200,124,58,0.15); color: #d4964a; }
+    .badge-success { background: rgba(58,170,128,0.15); color: #4ab896; }
+    .badge-info    { background: rgba(58,130,200,0.15); color: #7ab4e8; }
+    .badge-danger  { background: rgba(224,85,85,0.15);  color: var(--danger); }
+
+    /* Toast */
+    #toastBox { position: fixed; bottom: 24px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      padding: 11px 15px; border-radius: var(--rsm); display: flex; align-items: center; gap: 9px;
+      font-size: 13px; min-width: 240px; max-width: 340px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: slideIn 0.25s ease;
+    }
+    @keyframes slideIn { from{transform:translateX(70px);opacity:0} to{transform:translateX(0);opacity:1} }
+    .toast.success { background: rgba(58,170,128,0.92); color:#fff; }
+    .toast.error   { background: rgba(224,85,85,0.92);  color:#fff; }
+    .toast.warning { background: rgba(200,124,58,0.92); color:#fff; }
+    .toast.info    { background: rgba(58,130,200,0.92); color:#fff; }
+
+    /* Loader */
+    #loader {
+      display: none; position: fixed; inset: 0;
+      background: rgba(8,13,20,0.75); z-index: 9998;
+      align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+      backdrop-filter: blur(4px);
+    }
+    .spinner {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 3px solid rgba(58,130,200,0.2); border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* Success */
+    #sectionSuccess { display: none; text-align: center; }
+    .success-circle {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 16px;
+      background: rgba(58,170,128,0.15); border: 2px solid rgba(58,170,128,0.4);
+      display: flex; align-items: center; justify-content: center; font-size: 34px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 4px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 5px;
+      margin-bottom: 18px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px 12px; border: none; border-radius: 10px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      background: transparent; color: var(--ts);
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .tab-btn.active {
+      background: rgba(58,130,200,0.18);
+      color: var(--tp);
+      box-shadow: 0 2px 8px rgba(58,130,200,0.15);
+    }
+    .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.06); color: var(--tp); }
+
+    /* Mis solicitudes list */
+    .req-item {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 13px 0; border-bottom: 1px solid var(--border); gap: 10px;
+    }
+    .req-item:last-child { border-bottom: none; }
+
+    @media (max-width: 480px) { .card-body { padding: 16px; } }
+  </style>
+</head>
+<body>
+
+<div class="orbs"><div class="orb o1"></div><div class="orb o2"></div></div>
+<div id="loader"><div class="spinner"></div></div>
+<div id="toastBox"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">📋</div>
+    <div>
+      <div class="brand-text">GH Pro</div>
+      <div class="brand-sub">Requisición de Personal</div>
+    </div>
+  </div>
+  <div id="userChip" onclick="cerrarSesion()">
+    <span id="userChipName"></span>
+    <span style="color:var(--tm)">· Salir</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ══════════════════════════════
+       LOGIN
+  ══════════════════════════════ -->
+  <div id="sectionLogin">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🔐</div>
+        <div>
+          <div class="card-title">Ingreso</div>
+          <div class="card-sub">Ingrese su número de cédula</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-group" style="margin-bottom:18px">
+          <label class="form-label">Número de cédula <span class="req">*</span></label>
+          <input type="text" class="form-input" id="loginCedula"
+                 inputmode="numeric" maxlength="12" placeholder="Ej: 1088312345"
+                 oninput="this.value=this.value.replace(/\D/g,'')"
+                 onkeydown="if(event.key==='Enter')iniciarSesion()"
+                 style="font-size:18px;text-align:center;letter-spacing:2px">
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="iniciarSesion()">
+          ▶ Ingresar
+        </button>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--tm);margin-top:12px">
+      TYM / TAT Distribuciones del Eje Cafetero · Gestión Humana
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       FORMULARIO (UN SOLO PASO)
+  ══════════════════════════════ -->
+  <div id="sectionForm" style="display:none">
+
+    <!-- Info del jefe -->
+    <div id="jefeCard" style="padding:12px 16px;background:rgba(58,130,200,0.07);
+         border:1px solid rgba(58,130,200,0.2);border-radius:var(--rsm);
+         margin-bottom:16px;display:flex;gap:12px;align-items:center">
+      <div style="font-size:26px">👤</div>
+      <div>
+        <div id="jefeNom" style="font-weight:700;font-size:14px"></div>
+        <div id="jefeCar" style="font-size:12px;color:var(--ts);margin-top:1px"></div>
+        <div id="jefeEmp" style="font-size:11px;color:var(--tm);margin-top:1px"></div>
+      </div>
+    </div>
+
+    <!-- Pestañas -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tabNueva" onclick="switchTab('nueva')">
+        ➕ Nueva solicitud
+      </button>
+      <button class="tab-btn" id="tabMias" onclick="switchTab('mias')">
+        📋 Mis solicitudes
+      </button>
+    </div>
+
+    <!-- Panel: Nueva solicitud -->
+    <div id="panelNueva">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div>
+          <div class="card-title">Solicitud de personal</div>
+          <div class="card-sub">Complete los datos y envíe — Gestión Humana hace el resto</div>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Empresa + Sede -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label class="form-label">Empresa</label>
+            <input class="form-input" id="rEmpresa" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sede <span class="req">*</span></label>
+            <select class="form-select" id="rSede">
+              <option value="">Seleccione...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Cargo + Vacantes -->
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end">
+          <div class="form-group">
+            <label class="form-label">Cargo a cubrir <span class="req">*</span></label>
+            <select class="form-select" id="rCargo" onchange="onCargoChange()">
+              <option value="">Seleccione...</option>
+            </select>
+          </div>
+          <div class="form-group" style="width:90px">
+            <label class="form-label">Vacantes</label>
+            <input type="number" class="form-input" id="rVacantes" value="1" min="1" max="20">
+          </div>
+        </div>
+        <div class="form-group" id="grpOtroCargo" style="display:none">
+          <label class="form-label">Nombre del cargo <span class="req">*</span></label>
+          <input type="text" class="form-input" id="rCargoOtro" placeholder="Escriba el nombre del cargo">
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Motivo -->
+        <div class="form-group">
+          <label class="form-label">Motivo <span class="req">*</span></label>
+          <select class="form-select" id="rMotivo" onchange="onMotivoChange()">
+            <option value="">Seleccione...</option>
+            <option value="reemplazo_retiro">Reemplazo por retiro</option>
+            <option value="reemplazo_temporal">Reemplazo temporal (incapacidad, licencia, vacaciones)</option>
+            <option value="cargo_nuevo">Cargo nuevo</option>
+            <option value="aumento_operacion">Aumento de operación</option>
+            <option value="temporada">Temporada</option>
+          </select>
+        </div>
+
+        <!-- Persona a reemplazar (solo si motivo = reemplazo) -->
+        <div id="grpReemplazo" style="display:none">
+          <div class="notice notice-info">
+            <span>ℹ️</span>
+            <span>Busque y seleccione el trabajador que va a ser reemplazado.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trabajador a reemplazar</label>
+            <input type="text" class="form-input" id="rBuscarReemplazo"
+                   placeholder="Buscar por nombre o cédula..."
+                   oninput="buscarTrabajadores(this.value)">
+          </div>
+          <div id="listaReemplazo"></div>
+          <div id="reemplazadoSeleccionado" style="display:none"></div>
+        </div>
+
+        <!-- Justificación -->
+        <div class="form-group">
+          <label class="form-label">Justificación <span class="req">*</span></label>
+          <textarea class="form-textarea" id="rJustificacion"
+                    placeholder="¿Por qué necesita esta persona? Descríbalo brevemente..."></textarea>
+        </div>
+
+        <!-- Fecha requerida -->
+        <div class="form-group">
+          <label class="form-label">Fecha requerida de ingreso <span class="req">*</span></label>
+          <input type="date" class="form-input" id="rFechaReq">
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ¿Tiene candidato? -->
+        <div class="form-group">
+          <label class="form-label">¿Ya tiene una persona para el cargo? <span class="req">*</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+            <label id="lblSi" style="display:flex;align-items:center;gap:10px;cursor:pointer;
+                          padding:12px 14px;background:rgba(255,255,255,0.04);
+                          border:1px solid var(--border);border-radius:var(--rsm);transition:all 0.2s">
+              <input type="radio" name="tieneCand" id="tieneCandSi" value="si"
+                     onchange="onTieneCandChange()"
+                     style="accent-color:var(--accent);width:16px;height:16px;flex-shrink:0">
+              <span style="font-size:13px;color:var(--ts)">✅ Sí, ya tengo alguien</span>
+            </label>
+            <label id="lblNo" style="display:flex;align-items:center;gap:10px;cursor:pointer;
+                          padding:12px 14px;background:rgba(255,255,255,0.04);
+                          border:1px solid var(--border);border-radius:var(--rsm);transition:all 0.2s">
+              <input type="radio" name="tieneCand" id="tieneCandNo" value="no"
+                     onchange="onTieneCandChange()"
+                     style="accent-color:var(--accent);width:16px;height:16px;flex-shrink:0">
+              <span style="font-size:13px;color:var(--ts)">🔍 No, que GH busque</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Datos del candidato — solo si dijo Sí -->
+        <div id="grpCandidato" style="display:none;padding:14px;
+             background:rgba(58,130,200,0.06);border:1px solid rgba(58,130,200,0.2);
+             border-radius:var(--rsm);margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="form-group">
+              <label class="form-label">Nombre completo <span class="req">*</span></label>
+              <input type="text" class="form-input" id="cNombre" placeholder="Nombres y apellidos">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cédula</label>
+              <input type="text" class="form-input" id="cCedula" placeholder="Número de documento"
+                     inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Hoja de vida <span style="color:var(--tm);font-weight:400">(PDF, Word o imagen · máx. 10 MB)</span></label>
+            <div id="fileDrop" onclick="document.getElementById('fileInput').click()"
+                 ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)"
+                 style="border:2px dashed var(--border);border-radius:var(--rsm);padding:18px;
+                        text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(255,255,255,0.02)">
+              <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                     onchange="onFileSelect(this.files[0])" style="display:none">
+              <div style="font-size:22px;margin-bottom:4px">📄</div>
+              <div style="font-size:12px;color:var(--ts)">Arrastra la HV aquí o haz clic</div>
+            </div>
+            <div id="filePreview" style="display:none;align-items:center;gap:10px;margin-top:8px;
+                 padding:10px 13px;background:rgba(58,170,128,0.08);
+                 border:1px solid rgba(58,170,128,0.25);border-radius:var(--rsm)">
+              <span style="font-size:18px">📄</span>
+              <span id="fileName" style="font-size:13px;flex:1"></span>
+              <span id="fileSize" style="font-size:11px;color:var(--tm)"></span>
+              <button onclick="quitarArchivo()" style="background:none;border:none;cursor:pointer;
+                      color:var(--danger);font-size:16px;padding:2px 6px">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px">
+          <button class="btn btn-primary btn-full btn-lg" id="btnEnviar" onclick="enviarRequisicion()">
+            📨 Enviar a Gestión Humana
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    </div><!-- /panelNueva -->
+
+    <!-- Panel: Mis solicitudes -->
+    <div id="panelMias" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📋</div>
+          <div>
+            <div class="card-title">Mis solicitudes</div>
+            <div class="card-sub">Historial de requisiciones enviadas</div>
+          </div>
+        </div>
+        <div class="card-body" id="miasBody">
+          <div style="text-align:center;color:var(--tm);padding:24px">Cargando...</div>
+        </div>
+      </div>
+    </div><!-- /panelMias -->
+
+  </div><!-- /sectionForm -->
+
+  <!-- ══════════════════════════════
+       ÉXITO
+  ══════════════════════════════ -->
+  <div id="sectionSuccess" style="display:none">
+    <div class="card">
+      <div class="card-body" style="padding:32px 22px 24px;text-align:center">
+        <div class="success-circle">✅</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:4px">¡Solicitud enviada!</div>
+        <div style="font-family:monospace;font-size:17px;color:var(--accent);font-weight:700;margin-bottom:8px" id="successNum"></div>
+        <div style="font-size:13px;color:var(--ts)">
+          Gestión Humana recibió su solicitud y la procesará pronto.
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial inline -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div>
+          <div class="card-title">Mis solicitudes</div>
+          <div class="card-sub">Todas sus requisiciones de personal</div>
+        </div>
+      </div>
+      <div class="card-body" id="historialInlineBody">
+        <div style="text-align:center;color:var(--tm);padding:20px">Cargando...</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <button class="btn btn-primary btn-full btn-lg" onclick="nuevaSolicitud()">➕ Nueva solicitud</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       HISTORIAL (standalone, desde login directo)
+  ══════════════════════════════ -->
+  <div id="sectionHistorial" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div><div class="card-title">Mis solicitudes</div></div>
+      </div>
+      <div class="card-body" id="historialBody"></div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-secondary btn-full" onclick="nuevaSolicitud()">➕ Nueva solicitud</button>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ── Estado ── */
+let jefeSesion     = null;
+let paramVigente   = null;
+let reemplazadoId  = null;
+let reemplazadoNom = null;
+
+/* ── Utils ── */
+const fv  = id => (document.getElementById(id)||{}).value || '';
+const show = (id, v) => { const e = document.getElementById(id); if(e) e.style.display = v ? '' : 'none'; };
+const today = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota'}).format(new Date());
+const fmtDate = d => { if(!d) return '—'; const [y,m,dd]=d.split('T')[0].split('-'); return `${dd}/${m}/${y}`; };
+const avatarColors = ['#6c63ff','#ff6584','#43e97b','#f7971e','#1e90ff','#ff9f43','#a29bfe','#fd79a8'];
+const avatarColor  = s => avatarColors[(s||'').charCodeAt(0) % avatarColors.length];
+
+function showLoader(v) { document.getElementById('loader').style.display = v ? 'flex' : 'none'; }
+
+function toast(msg, type='success', dur=3500) {
+  const icons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span> ${msg}`;
+  document.getElementById('toastBox').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(70px)'; el.style.transition='0.3s'; setTimeout(()=>el.remove(),300); }, dur);
+}
+
+/* ── Init ── */
+async function init() {
+  const { data } = await sb.from('parametros_legales')
+    .select('*').order('anio',{ascending:false}).limit(1).single();
+  paramVigente = data || { smmlv:1560000, aux_transporte:220000 };
+}
+
+/* ══════════════
+   LOGIN
+══════════════ */
+async function iniciarSesion() {
+  const cedula = fv('loginCedula').trim();
+  if (!cedula) { toast('Ingrese su número de cédula','warning'); document.getElementById('loginCedula').focus(); return; }
+
+  showLoader(true);
+  const { data, error } = await sb.from('jefes_inmediatos')
+    .select('*').eq('cedula', cedula).eq('activo', true).single();
+  showLoader(false);
+
+  if (error || !data) {
+    toast('Cédula no registrada. Contacte a Gestión Humana.','error');
+    document.getElementById('loginCedula').select();
+    return;
+  }
+
+  jefeSesion = data;
+  show('sectionLogin', false);
+  show('sectionForm', true);
+
+  document.getElementById('userChipName').textContent = data.nombre.split(' ').slice(0,2).join(' ');
+  document.getElementById('userChip').style.display = 'flex';
+
+  cargarDatosJefe();
+}
+
+function cerrarSesion() {
+  jefeSesion = null; reemplazadoId = null; reemplazadoNom = null;
+  show('sectionLogin', true);
+  show('sectionForm', false);
+  show('sectionSuccess', false);
+  show('sectionHistorial', false);
+  document.getElementById('userChip').style.display = 'none';
+  document.getElementById('loginCedula').value = '';
+  document.getElementById('loginCedula').focus();
+}
+
+/* ══════════════
+   CARGAR DATOS DEL JEFE
+══════════════ */
+async function cargarDatosJefe() {
+  const j = jefeSesion;
+
+  document.getElementById('jefeNom').textContent = j.nombre;
+  document.getElementById('jefeCar').textContent = j.cargo;
+  document.getElementById('jefeEmp').textContent = j.empresa + (j.proveedores ? ' · ' + j.proveedores : '');
+
+  document.getElementById('rEmpresa').value = j.empresa === 'TYM'
+    ? 'TYM – Tiendas y Marcas del Eje Cafetero'
+    : 'TAT – TAT Distribuciones del Eje Cafetero';
+
+  // Sedes
+  const sedeSelect = document.getElementById('rSede');
+  sedeSelect.innerHTML = '<option value="">Seleccione...</option>';
+  const sedesJefe = (j.sedes||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if (sedesJefe.length) {
+    sedesJefe.forEach(s => {
+      const o = document.createElement('option'); o.value=s; o.textContent=s; sedeSelect.appendChild(o);
+    });
+    if (sedesJefe.length === 1) sedeSelect.value = sedesJefe[0];
+  } else {
+    const { data: sedes } = await sb.from('sedes').select('nombre').eq('activo',true).order('nombre');
+    (sedes||[]).forEach(s => {
+      const o = document.createElement('option'); o.value=s.nombre; o.textContent=s.nombre; sedeSelect.appendChild(o);
+    });
+  }
+
+  // Cargos a cargo del jefe
+  const cargoSelect = document.getElementById('rCargo');
+  cargoSelect.innerHTML = '<option value="">Seleccione...</option>';
+  (j.cargos_a_cargo||[]).forEach(c => {
+    const o = document.createElement('option'); o.value=c; o.textContent=c; cargoSelect.appendChild(o);
+  });
+  const otro = document.createElement('option'); otro.value='otro'; otro.textContent='Otro (especificar)';
+  cargoSelect.appendChild(otro);
+
+  // Fecha mínima = hoy
+  document.getElementById('rFechaReq').min = today();
+}
+
+/* ══════════════
+   CONDICIONALES
+══════════════ */
+function onTieneCandChange() {
+  const si = document.getElementById('tieneCandSi')?.checked;
+  show('grpCandidato', si);
+  // Estilo visual de los radio buttons
+  document.getElementById('lblSi').style.background = si ? 'rgba(58,130,200,0.12)' : 'rgba(255,255,255,0.04)';
+  document.getElementById('lblSi').style.borderColor = si ? 'rgba(58,130,200,0.4)' : 'rgba(255,255,255,0.08)';
+  document.getElementById('lblNo').style.background = !si ? 'rgba(58,130,200,0.12)' : 'rgba(255,255,255,0.04)';
+  document.getElementById('lblNo').style.borderColor = !si ? 'rgba(58,130,200,0.4)' : 'rgba(255,255,255,0.08)';
+  if (!si) { hvFile = null; quitarArchivo(); }
+}
+
+/* ── HV ── */
+let hvFile = null;
+function onFileSelect(file) {
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { toast('El archivo supera 10 MB','warning'); return; }
+  hvFile = file;
+  document.getElementById('fileDrop').style.display = 'none';
+  const prev = document.getElementById('filePreview');
+  prev.style.display = 'flex';
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = (file.size/1024/1024).toFixed(1) + ' MB';
+}
+function quitarArchivo() {
+  hvFile = null;
+  const inp = document.getElementById('fileInput');
+  if (inp) inp.value = '';
+  const drop = document.getElementById('fileDrop');
+  const prev = document.getElementById('filePreview');
+  if (drop) drop.style.display = '';
+  if (prev) prev.style.display = 'none';
+}
+function onDragOver(e)  { e.preventDefault(); e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='rgba(58,130,200,0.08)'; }
+function onDragLeave(e) { e.currentTarget.style.borderColor=''; e.currentTarget.style.background='rgba(255,255,255,0.02)'; }
+function onDrop(e) {
+  e.preventDefault(); onDragLeave(e);
+  const f = e.dataTransfer.files[0]; if (f) onFileSelect(f);
+}
+
+function onCargoChange() {
+  show('grpOtroCargo', fv('rCargo') === 'otro');
+}
+
+function onMotivoChange() {
+  const m = fv('rMotivo');
+  show('grpReemplazo', m.startsWith('reemplazo'));
+  if (!m.startsWith('reemplazo')) { reemplazadoId=null; reemplazadoNom=null; }
+}
+
+/* ══════════════
+   BÚSQUEDA TRABAJADOR A REEMPLAZAR
+══════════════ */
+let _timer = null;
+function buscarTrabajadores(q) {
+  clearTimeout(_timer);
+  reemplazadoId=null; reemplazadoNom=null;
+  show('reemplazadoSeleccionado', false);
+  if (q.length < 2) { document.getElementById('listaReemplazo').innerHTML=''; return; }
+  _timer = setTimeout(async () => {
+    const { data } = await sb.from('trabajadores')
+      .select('id,nombre,cedula,cargo,ciudad')
+      .eq('estado','activo')
+      .or(`nombre.ilike.%${q}%,cedula.ilike.%${q}%`)
+      .order('nombre').limit(6);
+    const lista = document.getElementById('listaReemplazo');
+    if (!data?.length) {
+      lista.innerHTML = `<div style="font-size:12px;color:var(--tm);padding:8px">No encontrado — puede escribir el nombre en la justificación.</div>`;
+      return;
+    }
+    lista.innerHTML = data.map(t=>`
+      <div class="worker-card" onclick="seleccionarReemplazo('${t.id}','${t.nombre.replace(/'/g,"\\'")}','${t.cargo||''}','${t.cedula||''}')">
+        <div class="w-avatar" style="background:${avatarColor(t.nombre)}">${t.nombre.charAt(0)}</div>
+        <div>
+          <div class="w-name">${t.nombre}</div>
+          <div class="w-info">${t.cargo||'—'} · CC ${t.cedula||'—'}</div>
+        </div>
+      </div>`).join('');
+  }, 300);
+}
+
+function seleccionarReemplazo(id, nombre, cargo, cedula) {
+  reemplazadoId=id; reemplazadoNom=nombre;
+  document.getElementById('listaReemplazo').innerHTML='';
+  document.getElementById('rBuscarReemplazo').value='';
+  const div = document.getElementById('reemplazadoSeleccionado');
+  show('reemplazadoSeleccionado', true);
+  div.innerHTML = `
+    <div class="worker-card selected" style="cursor:default;margin-bottom:12px">
+      <div class="w-avatar" style="background:${avatarColor(nombre)}">${nombre.charAt(0)}</div>
+      <div style="flex:1">
+        <div class="w-name">✅ ${nombre}</div>
+        <div class="w-info">${cargo} · CC ${cedula}</div>
+      </div>
+      <button class="btn btn-secondary" style="padding:3px 8px;font-size:11px" onclick="limpiarReemplazo()">Cambiar</button>
+    </div>`;
+}
+
+function limpiarReemplazo() {
+  reemplazadoId=null; reemplazadoNom=null;
+  show('reemplazadoSeleccionado', false);
+  document.getElementById('rBuscarReemplazo').value='';
+}
+
+/* ══════════════
+   ENVIAR
+══════════════ */
+async function enviarRequisicion() {
+  // Validar
+  const sede       = fv('rSede');
+  const cargoVal   = fv('rCargo');
+  const cargoNom   = cargoVal === 'otro' ? fv('rCargoOtro').trim() : cargoVal;
+  const motivo     = fv('rMotivo');
+  const justif     = fv('rJustificacion').trim();
+  const fechaReq   = fv('rFechaReq');
+
+  if (!sede)     { toast('Seleccione la sede','warning'); return; }
+  if (!cargoNom) { toast('Indique el cargo a cubrir','warning'); return; }
+  if (!motivo)   { toast('Seleccione el motivo','warning'); return; }
+  if (!justif)   { toast('Escriba la justificación','warning'); return; }
+  if (!fechaReq) { toast('Indique la fecha requerida de ingreso','warning'); return; }
+
+  const tieneCand = document.querySelector('input[name="tieneCand"]:checked')?.value;
+  if (!tieneCand) { toast('Indique si ya tiene candidato o no','warning'); return; }
+  if (tieneCand === 'si' && !fv('cNombre').trim()) {
+    toast('Escriba el nombre del candidato','warning'); return;
+  }
+
+  const btn = document.getElementById('btnEnviar');
+  btn.disabled = true;
+  showLoader(true);
+
+  try {
+    // Consecutivo
+    const { data: numData, error: numErr } = await sb.rpc('fn_siguiente_consecutivo',{p_tipo:'REQ'});
+    if (numErr) throw new Error('No se pudo generar el número de requisición');
+
+    const personaReemplazo = reemplazadoNom ||
+      (motivo.startsWith('reemplazo') ? document.getElementById('rBuscarReemplazo')?.value?.trim()||null : null);
+
+    const payload = {
+      numero:              numData,
+      empresa:             jefeSesion.empresa,
+      sede_nombre:         sede,
+      area:                obtenerArea(jefeSesion.cargo),
+      nombre_solicitante:  jefeSesion.nombre,
+      cargo_solicitante:   jefeSesion.cargo,
+      fecha_requerida:     fechaReq,
+      cargo_nombre:        cargoNom,
+      num_vacantes:        parseInt(fv('rVacantes'))||1,
+      jefe_inmediato:      jefeSesion.nombre,
+      horario:             'tiempo_completo',   // GH lo ajusta
+      lugar_trabajo:       sede,                // GH lo ajusta
+      cargo_nuevo:         motivo === 'cargo_nuevo',
+      motivo,
+      persona_reemplazar:  personaReemplazo,
+      justificacion:       justif,
+      tipo_contrato:       'termino_indefinido', // GH lo define
+      salario:             0,                    // GH lo define
+      auxilio_transporte:  false,
+      nivel_riesgo_arl:    'I',                  // GH lo define
+      nivel_educativo:     'bachiller',           // GH lo define
+      experiencia_meses:   0,
+      funciones:           'Por definir por Gestión Humana',
+      estado:              'pendiente',
+      creado_desde_portal: true,
+      jefe_id:             jefeSesion.id,
+      hv_candidato_nombre: tieneCand === 'si' ? fv('cNombre').trim() : null,
+    };
+
+    // Subir HV si hay archivo
+    let hvUrl = null;
+    if (tieneCand === 'si' && hvFile) {
+      const path = `hv/${Date.now()}_${hvFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { data: up } = await sb.storage.from('contratacion-docs').upload(path, hvFile, {upsert:false});
+      if (up) {
+        const { data: urlData } = sb.storage.from('contratacion-docs').getPublicUrl(path);
+        hvUrl = urlData?.publicUrl || null;
+      }
+    }
+    if (hvUrl) payload.hv_candidato_url = hvUrl;
+
+    const { data: req, error: reqErr } = await sb
+      .from('requisicion_personal').insert([payload]).select().single();
+    if (reqErr) throw new Error(reqErr.message);
+
+    // Registrar candidato si dijo que sí tiene uno
+    const cNombre = fv('cNombre').trim();
+    const cCedula = fv('cCedula').trim();
+    if (tieneCand === 'si' && cNombre) {
+      await sb.from('candidatos').insert([{
+        requisicion_id:     req.id,
+        requisicion_num:    req.numero,
+        nombre:             cNombre,
+        tipo_id:            'CC',
+        numero_id:          cCedula || '0',
+        autorizacion_datos: false,
+        obs: 'Propuesto por jefe inmediato',
+      }]);
+    }
+
+    showLoader(false);
+    show('sectionForm', false);
+    show('sectionSuccess', true);
+    document.getElementById('successNum').textContent = req.numero;
+    toast(`Requisición ${req.numero} enviada`,'success');
+    // Mostrar historial automáticamente debajo de la confirmación
+    cargarHistorialEnExito();
+  } catch(err) {
+    showLoader(false);
+    btn.disabled = false;
+    toast('Error: ' + err.message,'error');
+  }
+}
+
+function obtenerArea(cargo) {
+  const map = {
+    'Coordinador Comercial':'Comercial', 'Jefe Logístico':'Logística',
+    'Supervisor Comercial':'Comercial',  'Coordinador GGHH/SST':'Administrativa',
+    'Contador':'Administrativa',         'Gerente':'Gerencia',
+  };
+  return map[cargo] || cargo;
+}
+
+/* ══════════════
+   PESTAÑAS
+══════════════ */
+function switchTab(tab) {
+  const esNueva = tab === 'nueva';
+  document.getElementById('tabNueva').classList.toggle('active', esNueva);
+  document.getElementById('tabMias').classList.toggle('active', !esNueva);
+  document.getElementById('panelNueva').style.display = esNueva ? '' : 'none';
+  document.getElementById('panelMias').style.display  = esNueva ? 'none' : '';
+  if (!esNueva) cargarMiasTab();
+}
+
+async function cargarMiasTab() {
+  const body = document.getElementById('miasBody');
+  if (!body) return;
+  body.innerHTML = '<div style="text-align:center;color:var(--tm);padding:24px">Cargando...</div>';
+  const data = await fetchHistorial();
+  if (!data.length) {
+    body.innerHTML = '<div style="text-align:center;color:var(--tm);padding:24px">Aún no tiene solicitudes enviadas.</div>';
+    return;
+  }
+  body.innerHTML = data.map(r=>`
+    <div class="req-item">
+      <div style="min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-family:monospace;font-size:11px;color:var(--accent)">${r.numero}</span>
+          <span class="badge ${COLOR_ESTADO[r.estado]||'badge-info'}">${LABEL_ESTADO[r.estado]||r.estado}</span>
+        </div>
+        <div style="font-weight:600;font-size:14px">${r.cargo_nombre}</div>
+        <div style="font-size:11px;color:var(--tm);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+          <span>📅 ${fmtDate(r.fecha_solicitud)}</span>
+          <span>👤 ${r.vacantes_cubiertas||0}/${r.num_vacantes} vacante${r.num_vacantes>1?'s':''}</span>
+        </div>
+        ${r.motivo_rechazo?`<div style="font-size:11px;color:var(--danger);margin-top:4px">⚠️ ${r.motivo_rechazo}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+/* ══════════════
+   HISTORIAL
+══════════════ */
+const COLOR_ESTADO = { pendiente:'badge-warning',aprobada:'badge-success',rechazada:'badge-danger',
+                       en_seleccion:'badge-info',cubierta:'badge-success',cancelada:'badge-danger' };
+const LABEL_ESTADO = { pendiente:'Pendiente',aprobada:'Aprobada',rechazada:'Rechazada',
+                       en_seleccion:'En selección',cubierta:'Cubierta',cancelada:'Cancelada' };
+
+async function fetchHistorial() {
+  const { data } = await sb.from('requisicion_personal')
+    .select('numero,cargo_nombre,num_vacantes,vacantes_cubiertas,estado,fecha_solicitud,motivo_rechazo')
+    .eq('jefe_id', jefeSesion.id)
+    .order('created_at',{ascending:false}).limit(20);
+  return data || [];
+}
+
+function renderFilasHistorial(data) {
+  if (!data.length) return '<div style="text-align:center;color:var(--tm);padding:20px">No tiene solicitudes aún.</div>';
+  return data.map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;
+                padding:12px 0;border-bottom:1px solid var(--border);gap:8px">
+      <div style="min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-family:monospace;font-size:11px;color:var(--accent)">${r.numero}</span>
+          <span class="badge ${COLOR_ESTADO[r.estado]||'badge-info'}" style="flex-shrink:0">${LABEL_ESTADO[r.estado]||r.estado}</span>
+        </div>
+        <div style="font-weight:600;font-size:13px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.cargo_nombre}</div>
+        <div style="font-size:11px;color:var(--tm);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap">
+          <span>📅 ${fmtDate(r.fecha_solicitud)}</span>
+          <span>👤 ${r.vacantes_cubiertas||0}/${r.num_vacantes} vacante${r.num_vacantes>1?'s':''}</span>
+        </div>
+        ${r.motivo_rechazo?`<div style="font-size:11px;color:var(--danger);margin-top:3px">⚠️ ${r.motivo_rechazo}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function cargarHistorialEnExito() {
+  const body = document.getElementById('historialInlineBody');
+  if (!body) return;
+  body.innerHTML = '<div style="text-align:center;color:var(--tm);padding:20px">Cargando...</div>';
+  const data = await fetchHistorial();
+  body.innerHTML = renderFilasHistorial(data);
+}
+
+async function verHistorial() {
+  show('sectionSuccess', false);
+  show('sectionHistorial', true);
+  const body = document.getElementById('historialBody');
+  body.innerHTML = '<div style="text-align:center;color:var(--tm);padding:20px">Cargando...</div>';
+  const data = await fetchHistorial();
+  body.innerHTML = renderFilasHistorial(data);
+}
+
+function nuevaSolicitud() {
+  reemplazadoId=null; reemplazadoNom=null;
+  show('sectionSuccess', false);
+  show('sectionHistorial', false);
+  show('sectionForm', true);
+  switchTab('nueva');
+  ['rSede','rCargo','rMotivo','rJustificacion','rFechaReq','rCargoOtro','rBuscarReemplazo','cNombre','cCedula']
+    .forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  document.getElementById('rVacantes').value = '1';
+  // Reset radio buttons
+  document.querySelectorAll('input[name="tieneCand"]').forEach(r => r.checked = false);
+  show('grpCandidato', false);
+  quitarArchivo();
+  ['lblSi','lblNo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.background='rgba(255,255,255,0.04)'; el.style.borderColor='rgba(255,255,255,0.08)'; }
+  });
+  show('grpReemplazo', false);
+  show('grpOtroCargo', false);
+  show('reemplazadoSeleccionado', false);
+  document.getElementById('listaReemplazo').innerHTML='';
+  document.getElementById('btnEnviar').disabled = false;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+init();
+</script>
+</body>
+</html>

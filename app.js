@@ -1,4 +1,4 @@
-﻿/* ============================================================
+﻿﻿﻿/* ============================================================
    GH PRO — app.js
    Lógica principal — usa Supabase como backend
    ============================================================ */
@@ -111,6 +111,7 @@ function navigate(pageId) {
     asistencia: renderAsistencia,
     prendas: renderDotacionPrendas,
     solicitudes: renderSolicitudes,
+    contratacion: () => { if (typeof renderContratacion === 'function') renderContratacion(); },
   };
   if (renders[pageId]) renders[pageId]();
   if (window.innerWidth <= 768) closeSidebar();
