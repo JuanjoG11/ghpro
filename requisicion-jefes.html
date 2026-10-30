@@ -395,7 +395,7 @@
 
         <!-- ¿Tiene candidato? -->
         <div class="form-group">
-          <label class="form-label">¿Ya tiene una persona para el cargo? <span class="req">*</span></label>
+          <label class="form-label">¿Deseas postular a alguien? <span class="req">*</span></label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
             <label id="lblSi" style="display:flex;align-items:center;gap:10px;cursor:pointer;
                           padding:12px 14px;background:rgba(255,255,255,0.04);
@@ -403,7 +403,7 @@
               <input type="radio" name="tieneCand" id="tieneCandSi" value="si"
                      onchange="onTieneCandChange()"
                      style="accent-color:var(--accent);width:16px;height:16px;flex-shrink:0">
-              <span style="font-size:13px;color:var(--ts)">✅ Sí, ya tengo alguien</span>
+              <span style="font-size:13px;color:var(--ts)">✅ Sí</span>
             </label>
             <label id="lblNo" style="display:flex;align-items:center;gap:10px;cursor:pointer;
                           padding:12px 14px;background:rgba(255,255,255,0.04);
@@ -411,7 +411,7 @@
               <input type="radio" name="tieneCand" id="tieneCandNo" value="no"
                      onchange="onTieneCandChange()"
                      style="accent-color:var(--accent);width:16px;height:16px;flex-shrink:0">
-              <span style="font-size:13px;color:var(--ts)">🔍 No, que GH busque</span>
+              <span style="font-size:13px;color:var(--ts)">🔍 No</span>
             </label>
           </div>
         </div>
@@ -647,9 +647,24 @@ async function cargarDatosJefe() {
   // Cargos a cargo del jefe
   const cargoSelect = document.getElementById('rCargo');
   cargoSelect.innerHTML = '<option value="">Seleccione...</option>';
-  (j.cargos_a_cargo||[]).forEach(c => {
-    const o = document.createElement('option'); o.value=c; o.textContent=c; cargoSelect.appendChild(o);
-  });
+
+  const esTodos = (j.cargos_a_cargo||[]).some(c => c.trim().toUpperCase() === 'TODOS');
+
+  if (esTodos) {
+    // Cargar todos los cargos activos de la tabla maestra
+    const { data: todosCargos } = await sb.from('cargos_maestros')
+      .select('nombre').eq('activo', true).order('nombre');
+    (todosCargos||[]).forEach(c => {
+      const o = document.createElement('option'); o.value=c.nombre; o.textContent=c.nombre;
+      cargoSelect.appendChild(o);
+    });
+  } else {
+    (j.cargos_a_cargo||[]).forEach(c => {
+      const o = document.createElement('option'); o.value=c; o.textContent=c;
+      cargoSelect.appendChild(o);
+    });
+  }
+
   const otro = document.createElement('option'); otro.value='otro'; otro.textContent='Otro (especificar)';
   cargoSelect.appendChild(otro);
 
