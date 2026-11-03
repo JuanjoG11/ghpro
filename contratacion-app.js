@@ -21,6 +21,21 @@ const LBL = {
   tipo_contrato:    { termino_indefinido:'Término indefinido', termino_fijo:'Término fijo',
                       obra_labor:'Obra o labor', aprendizaje:'Aprendizaje (SENA)' },
   horario:          { tiempo_completo:'Tiempo completo', medio_tiempo:'Medio tiempo', por_turnos:'Por turnos' },
+  jornada_oc:       {
+    'Lun-Vie 7am-5pm':   'Lun – Vie  7:00 am – 5:00 pm',
+    'Lun-Vie 7am-4pm':   'Lun – Vie  7:00 am – 4:00 pm',
+    'Lun-Vie 8am-6pm':   'Lun – Vie  8:00 am – 6:00 pm',
+    'Lun-Vie 8am-5pm':   'Lun – Vie  8:00 am – 5:00 pm',
+    'Lun-Vie 8am-12pm-2pm-6pm': 'Lun – Vie  8:00 am – 12:00 m / 2:00 pm – 6:00 pm',
+    'Lun-Sab 7am-1pm':   'Lun – Sáb  7:00 am – 1:00 pm',
+    'Lun-Sab 8am-4pm':   'Lun – Sáb  8:00 am – 4:00 pm',
+    'Lun-Sab 8am-6pm':   'Lun – Sáb  8:00 am – 6:00 pm',
+    'Dom-Dom Turno-A':   'Domingo a Domingo – Turno A (6am-2pm)',
+    'Dom-Dom Turno-B':   'Domingo a Domingo – Turno B (2pm-10pm)',
+    'Dom-Dom Turno-C':   'Domingo a Domingo – Turno C (10pm-6am)',
+    'Rotativo':          'Rotativo',
+    'Otro':              'Otro / Especificar',
+  },
   nivel_educativo:  { bachiller:'Bachiller', tecnico:'Técnico', tecnologo:'Tecnólogo',
                       profesional:'Profesional', posgrado:'Posgrado' },
   nivel_riesgo:     { I:'Nivel I', II:'Nivel II', III:'Nivel III', IV:'Nivel IV', V:'Nivel V' },
@@ -1641,7 +1656,8 @@ function renderOrdenesFiltered() {
                 ${!['anulada','contrato_generado'].includes(o.estado)?`
                 <button class="btn btn-secondary" style="padding:5px 8px;font-size:11px;color:var(--danger)"
                         onclick="anularOrden('${o.id}')">🚫</button>`:''}
-              </div>
+                <button class="btn btn-secondary" style="padding:5px 8px;font-size:11px;background:rgba(130,80,200,0.18);color:#a78bfa"
+                        onclick="abrirModalPortalCandidato('${o.id}')">📲 Portal</button>              </div>
             </td>
           </tr>`).join('')}
         </tbody>
@@ -1870,7 +1886,12 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
           <div class="form-group"><label class="form-label">Otros pagos / beneficios</label>
             <input type="text" class="form-input" id="ocOtrosPagos" value="${d.otros_pagos||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Jornada / Horario <span class="req-star">*</span></label>
-            <input type="text" class="form-input" id="ocJornada" value="${d.jornada||''}" placeholder="Lun-Vie 8am-6pm" ${isReadOnly?'readonly':''}></div>
+            <select class="form-select" id="ocJornada" onchange="toggleJornadaOtro()" ${isReadOnly?'disabled':''}>
+              ${selectOpts(LBL.jornada_oc, Object.keys(LBL.jornada_oc).includes(d.jornada) ? d.jornada : (d.jornada?'Otro':''), 'Seleccione jornada...')}
+            </select></div>
+          <div class="form-group" id="grpJornadaOtro" style="display:none">
+            <label class="form-label">Especificar jornada</label>
+            <input type="text" class="form-input" id="ocJornadaOtro" value="${(!Object.keys(LBL.jornada_oc).includes(d.jornada)&&d.jornada&&d.jornada!=='Otro')?d.jornada:''}" placeholder="Ej: Mar-Sáb 9am-5pm" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Sede / Lugar de trabajo</label>
             <select class="form-select" id="ocSede" ${isReadOnly?'disabled':''}>
               ${selectOptsArr(sedes,'id','nombre',d.sede_id)}</select></div>
@@ -1883,6 +1904,8 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
           <div class="form-group"><label class="form-label">Tipo de cuenta</label>
             <select class="form-select" id="ocTipoCuenta" ${isReadOnly?'disabled':''}>
               ${selectOpts(LBL.tipo_cuenta, d.tipo_cuenta)}</select></div>
+          <div class="form-group"><label class="form-label">Número de cuenta <span class="req-star">*</span></label>
+            <input type="text" class="form-input" id="ocNumeroCuenta" value="${d.numero_cuenta||''}" placeholder="Ej: 1234567890" ${isReadOnly?'readonly':''}></div>
         </div>
 
         <div class="form-section-title" style="margin-top:20px">🏥 5.3 Seguridad social y parafiscales</div>
@@ -1936,12 +1959,23 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
   document.body.insertAdjacentHTML('beforeend', html);
   document.body.style.overflow = 'hidden';
   toggleOCFechaTerminacion();
+  toggleJornadaOtro();
   calcAuxTransporteOC();
 }
 
 function toggleOCFechaTerminacion() {
   const tc = fv('ocTipoContrato');
   show('grpFechaTermOC', tc==='termino_fijo'||tc==='obra_labor');
+}
+
+function toggleJornadaOtro() {
+  show('grpJornadaOtro', fv('ocJornada') === 'Otro');
+}
+
+function getJornadaOC() {
+  const sel = fv('ocJornada');
+  if (sel === 'Otro') return fv('ocJornadaOtro').trim() || 'Otro';
+  return sel;
 }
 
 async function calcAuxTransporteOC() {
@@ -1973,7 +2007,7 @@ async function guardarOrden() {
   const jefe      = fv('ocJefe').trim();
   const tipoC     = fv('ocTipoContrato');
   const fIngreso  = fv('ocFechaIngreso');
-  const jornada   = fv('ocJornada').trim();
+  const jornada   = getJornadaOC();
   const salario   = parseFloat(fv('ocSalario'))||0;
   const formaPago = fv('ocFormaPago');
   const ciudad    = fv('ocCiudad').trim();
@@ -2050,6 +2084,7 @@ async function guardarOrden() {
     sede_id: sede_id||null, sede_nombre: fNombre(sedes, sede_id),
     banco_id: banco_id||null, banco_nombre: fNombre(bancos, banco_id),
     tipo_cuenta: fv('ocTipoCuenta')||null,
+    numero_cuenta: fv('ocNumeroCuenta')||null,
     eps_id: eps_id||null, eps_nombre: fNombre(eps, eps_id),
     afp_id: afp_id||null, afp_nombre: fNombre(afp, afp_id),
     cesantias_id: ces_id||null, cesantias_nombre: fNombre(ces, ces_id),
@@ -2073,10 +2108,28 @@ async function guardarOrden() {
   showLoading(false);
 
   if (ok) {
-    toast(_ocEditId ? 'Orden actualizada' : `Orden creada: ${ok.numero}`, 'success');
-    cerrarModalOrden();
-    switchContratacionTab('ordenes');
-    renderOrdenes();
+    if (!_ocEditId) {
+      // Nueva orden: inicializar checklist y generar link automáticamente
+      await ChecklistDocs.inicializar(ok.id, ok.numero, ok.nombres);
+      const token = await PortalCandidato.crearToken(
+        ok.id, ok.numero, ok.nombres, ok.email, ok.telefono
+      );
+      cerrarModalOrden();
+      switchContratacionTab('ordenes');
+      await renderOrdenes();
+      // Abrir modal del portal directamente para que GH envíe el link
+      if (token) {
+        toast(`Orden creada: ${ok.numero} — envía el link al candidato`, 'success');
+        await abrirModalPortalCandidato(ok.id);
+      } else {
+        toast(`Orden creada: ${ok.numero}`, 'success');
+      }
+    } else {
+      toast('Orden actualizada', 'success');
+      cerrarModalOrden();
+      switchContratacionTab('ordenes');
+      renderOrdenes();
+    }
   }
 }
 
@@ -2146,6 +2199,8 @@ async function verOrden(ocId) {
           ${row('Jornada', oc.jornada)}
           ${row('Forma de pago', LBL.forma_pago[oc.forma_pago]||oc.forma_pago)}
           ${row('Banco', oc.banco_nombre)}
+          ${row('Tipo cuenta', LBL.tipo_cuenta[oc.tipo_cuenta]||oc.tipo_cuenta)}
+          ${row('N° cuenta', oc.numero_cuenta)}
           ${row('EPS', oc.eps_nombre)}
           ${row('AFP / Pensión', oc.afp_nombre)}
           ${row('Cesantías', oc.cesantias_nombre)}
@@ -2351,6 +2406,270 @@ function cerrar(modalId) {
   const m = document.getElementById(modalId);
   if (m) m.remove();
   document.body.style.overflow = '';
+}
+
+/* ════════════════════════════════════════════════════════════
+   PORTAL CANDIDATO — generar link + ver checklist GH
+   ════════════════════════════════════════════════════════════ */
+async function abrirModalPortalCandidato(ocId) {
+  showLoading(true);
+  const [oc, docs, tokenData] = await Promise.all([
+    OrdenContratacion.getById(ocId),
+    ChecklistDocs.getByOrden(ocId),
+    PortalCandidato.getByOrden(ocId),
+  ]);
+  showLoading(false);
+  if (!oc) return;
+
+  // Si no hay docs inicializados, crearlos
+  if (!docs.length) {
+    await ChecklistDocs.inicializar(ocId, oc.numero, oc.nombres);
+    const nuevos = await ChecklistDocs.getByOrden(ocId);
+    docs.splice(0, 0, ...nuevos);
+  }
+
+  const portalUrl = tokenData ? PortalCandidato.urlPortal(tokenData.token) : null;
+  const expirado  = tokenData ? new Date(tokenData.expira_en) < new Date() : false;
+
+  const estadoColor = {
+    pendiente:          'var(--text-muted)',
+    pendiente_revision: 'var(--warning)',
+    aprobado:           'var(--success)',
+    rechazado:          'var(--danger)',
+    no_aplica:          'var(--text-muted)',
+  };
+  const estadoIcon = {
+    pendiente: '⏳', pendiente_revision: '🔍', aprobado: '✅', rechazado: '❌', no_aplica: 'N/A',
+  };
+
+  const filasChecklist = docs.map(doc => `
+    <tr>
+      <td style="font-size:13px">${doc.item_label}</td>
+      <td style="text-align:center">
+        <span style="font-weight:700;color:${estadoColor[doc.estado]||'var(--text-muted)'}">
+          ${estadoIcon[doc.estado]||doc.estado}
+        </span>
+        <div style="font-size:11px;color:var(--text-muted)">${doc.subido_por?`Subido por ${doc.subido_por}`:''}</div>
+      </td>
+      <td>
+        ${doc.archivo_url
+          ? `<a href="${doc.archivo_url}" target="_blank" style="color:var(--accent);font-size:12px">📎 Ver archivo</a>`
+          : '<span style="color:var(--text-muted);font-size:12px">Sin archivo</span>'}
+      </td>
+      <td>
+        ${doc.estado === 'pendiente_revision'
+          ? `<div style="display:flex;gap:4px;flex-wrap:wrap">
+               <button class="btn" style="padding:4px 8px;font-size:11px;background:rgba(58,170,128,0.2);color:var(--success)"
+                       onclick="aprobarDocumento('${doc.id}','${ocId}')">✅ Aprobar</button>
+               <button class="btn" style="padding:4px 8px;font-size:11px;background:rgba(224,85,85,0.15);color:var(--danger)"
+                       onclick="rechazarDocumento('${doc.id}','${ocId}')">❌ Rechazar</button>
+             </div>`
+          : `<select class="form-select" style="font-size:12px;padding:4px 8px"
+                      onchange="cambiarEstadoDocGH('${doc.id}','${ocId}',this.value)">
+               <option value="">— Cambiar —</option>
+               <option value="aprobado">✅ Aprobado</option>
+               <option value="pendiente">⏳ Pendiente</option>
+               <option value="rechazado">❌ Rechazado</option>
+               <option value="no_aplica">N/A</option>
+             </select>`}
+      </td>
+    </tr>`).join('');
+
+  const html = `
+  <div class="modal-overlay open" id="modalPortalCandidato">
+    <div class="modal" style="max-width:780px;width:95vw;max-height:92vh;overflow-y:auto">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">📲 Portal Candidato · ${oc.numero}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">
+            ${oc.nombres} · ${oc.empresa} · ${oc.cargo}
+          </div>
+        </div>
+        <button class="modal-close" onclick="cerrar('modalPortalCandidato')">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Link del portal -->
+        <div style="padding:16px;background:rgba(130,80,200,0.08);border:1px solid rgba(130,80,200,0.25);
+                    border-radius:12px;margin-bottom:20px">
+          <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:12px">
+            🔗 Link de acceso para el candidato
+          </div>
+          ${portalUrl && !expirado
+            ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                 <input type="text" class="form-input" value="${portalUrl}" readonly
+                        style="flex:1;font-size:12px;font-family:monospace;min-width:200px" id="portalUrlInput">
+                 <button class="btn" style="background:rgba(130,80,200,0.25);color:#a78bfa;font-weight:600;white-space:nowrap"
+                         onclick="copiarPortalUrl()">📋 Copiar</button>
+                 <a href="${portalUrl}" target="_blank" class="btn"
+                    style="background:rgba(58,130,200,0.2);color:var(--accent);text-decoration:none;white-space:nowrap">
+                   🔍 Abrir
+                 </a>
+               </div>
+               <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
+                 ⏰ Expira: ${new Date(tokenData.expira_en).toLocaleDateString('es-CO')}
+               </div>`
+            : `<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">
+                 ${expirado ? '⚠️ El link anterior expiró.' : '⚠️ No se ha generado un link aún.'}
+               </div>`}
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            ${expirado
+              ? `<button class="btn" style="background:rgba(130,80,200,0.25);color:#a78bfa;font-weight:600"
+                      onclick="generarLinkPortal('${ocId}','${oc.numero}','${oc.nombres.replace(/'/g,"\\'")}','${oc.email||''}','${oc.telefono||''}')">
+                  🔄 Renovar link (el anterior expiró)
+                </button>`
+              : !portalUrl
+              ? `<button class="btn" style="background:rgba(130,80,200,0.25);color:#a78bfa;font-weight:600"
+                      onclick="generarLinkPortal('${ocId}','${oc.numero}','${oc.nombres.replace(/'/g,"\\'")}','${oc.email||''}','${oc.telefono||''}')">
+                  ✨ Generar link
+                </button>`
+              : ''}
+            ${oc.email
+              ? `<button class="btn" style="background:rgba(58,170,128,0.15);color:var(--success)"
+                         onclick="compartirPorEmail('${oc.email}','${oc.nombres.replace(/'/g,"\\'")}','${portalUrl||''}','${ocId}')">
+                   📧 Enviar por correo
+                 </button>`
+              : '<span style="font-size:12px;color:var(--text-muted)">Sin email registrado para notificación</span>'}
+            ${oc.telefono
+              ? `<button class="btn" style="background:rgba(37,211,102,0.15);color:#25d366"
+                         onclick="compartirPorWhatsApp('${oc.telefono}','${oc.nombres.replace(/'/g,"\\'")}','${portalUrl||''}','${ocId}')">
+                   💬 WhatsApp
+                 </button>`
+              : ''}
+          </div>
+        </div>
+
+        <!-- Checklist GH -->
+        <div class="form-section-title">✅ Lista de chequeo — estado de documentos</div>
+        <div class="table-wrap" style="margin-top:8px">
+          <table>
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th style="width:120px;text-align:center">Estado</th>
+                <th style="width:130px">Archivo</th>
+                <th style="width:200px">Acción GH</th>
+              </tr>
+            </thead>
+            <tbody>${filasChecklist}</tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:16px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;
+                    font-size:12px;color:var(--text-muted);line-height:1.7">
+          <strong>Cómo funciona:</strong><br>
+          1. Genera el link y envíalo al candidato por correo o WhatsApp.<br>
+          2. El candidato entra al link, ve qué documentos debe cargar y los sube desde su celular.<br>
+          3. Cada documento queda en estado <strong>🔍 Pendiente revisión</strong> y GH lo aprueba o rechaza aquí.<br>
+          4. GH también puede subir o actualizar documentos directamente desde este panel.
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="cerrar('modalPortalCandidato')">Cerrar</button>
+      </div>
+    </div>
+  </div>`;
+
+  const prev = document.getElementById('modalPortalCandidato');
+  if (prev) prev.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.body.style.overflow = 'hidden';
+}
+
+async function generarLinkPortal(ocId, ocNum, nombre, email, tel) {
+  showLoading(true);
+  const token = await PortalCandidato.crearToken(ocId, ocNum, nombre, email, tel);
+  showLoading(false);
+  if (!token) { toast('No se pudo generar el link', 'error'); return; }
+  toast('Link generado correctamente', 'success');
+  cerrar('modalPortalCandidato');
+  setTimeout(() => abrirModalPortalCandidato(ocId), 300);
+}
+
+function copiarPortalUrl() {
+  const inp = document.getElementById('portalUrlInput');
+  if (!inp) return;
+  inp.select();
+  navigator.clipboard.writeText(inp.value).then(() => toast('Link copiado al portapapeles', 'success'));
+}
+
+function compartirPorWhatsApp(tel, nombre, portalUrl, ocId) {
+  if (!portalUrl) {
+    toast('Primero genera el link del portal', 'warning');
+    return;
+  }
+  // Limpiar teléfono (solo dígitos) y agregar código país Colombia
+  const telLimpio = tel.replace(/\D/g, '');
+  const telFinal  = telLimpio.startsWith('57') ? telLimpio : '57' + telLimpio;
+  const msg = encodeURIComponent(
+    `¡Hola ${nombre}! 👋\n\n` +
+    `Te enviamos el enlace para cargar los documentos requeridos para tu proceso de contratación:\n\n` +
+    `🔗 ${portalUrl}\n\n` +
+    `*Lista de documentos:*\n` +
+    `• Hoja de vida actualizada\n` +
+    `• Fotocopia cédula al 150%\n` +
+    `• Certificados de estudio\n` +
+    `• Certificados laborales\n` +
+    `• Examen médico de ingreso\n` +
+    `• Antecedentes (Policía, Procuraduría, Contraloría)\n` +
+    `• Certificación bancaria\n` +
+    `• Autorización tratamiento de datos\n` +
+    `• Fotografía para carné\n\n` +
+    `Por favor cárgalos antes de tu fecha de ingreso. ¡Éxitos! 🎉`
+  );
+  window.open(`https://wa.me/${telFinal}?text=${msg}`, '_blank');
+}
+
+function compartirPorEmail(email, nombre, portalUrl, ocId) {
+  if (!portalUrl) {
+    toast('Primero genera el link del portal', 'warning');
+    return;
+  }
+  const asunto = encodeURIComponent('Documentos para proceso de contratación');
+  const cuerpo = encodeURIComponent(
+    `Estimado/a ${nombre},\n\n` +
+    `Nos complace informarle que ha sido seleccionado/a para iniciar su proceso de contratación.\n\n` +
+    `A continuación encontrará el enlace para cargar los documentos requeridos:\n` +
+    `${portalUrl}\n\n` +
+    `Documentos requeridos:\n` +
+    `- Hoja de vida actualizada\n` +
+    `- Fotocopia cédula al 150%\n` +
+    `- Certificados de estudio\n` +
+    `- Certificados laborales\n` +
+    `- Examen médico de ingreso\n` +
+    `- Antecedentes (Policía, Procuraduría, Contraloría)\n` +
+    `- Certificación bancaria\n` +
+    `- Autorización tratamiento de datos\n` +
+    `- Fotografía para carné\n\n` +
+    `Por favor cargue los documentos antes de su fecha de ingreso.\n\n` +
+    `Atentamente,\nGestión Humana`
+  );
+  window.location.href = `mailto:${email}?subject=${asunto}&body=${cuerpo}`;
+}
+
+async function aprobarDocumento(docId, ocId) {
+  await ChecklistDocs.actualizarEstado(docId, 'aprobado');
+  toast('Documento aprobado', 'success');
+  cerrar('modalPortalCandidato');
+  setTimeout(() => abrirModalPortalCandidato(ocId), 250);
+}
+
+async function rechazarDocumento(docId, ocId) {
+  const obs = prompt('Motivo del rechazo (el candidato podrá ver este mensaje):');
+  if (obs === null) return;
+  await ChecklistDocs.actualizarEstado(docId, 'rechazado', obs);
+  toast('Documento rechazado', 'warning');
+  cerrar('modalPortalCandidato');
+  setTimeout(() => abrirModalPortalCandidato(ocId), 250);
+}
+
+async function cambiarEstadoDocGH(docId, ocId, estado) {
+  if (!estado) return;
+  await ChecklistDocs.actualizarEstado(docId, estado);
+  toast('Estado actualizado', 'success');
+  cerrar('modalPortalCandidato');
+  setTimeout(() => abrirModalPortalCandidato(ocId), 250);
 }
 
 /* ════════════════════════════════════════════════════════════

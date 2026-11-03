@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Candidato — Documentos de Contratación</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:        #0a0a1a;
+      --bg-card:   #12122a;
+      --bg-item:   #1a1a35;
+      --border:    rgba(255,255,255,0.1);
+      --accent:    #4a8fd4;
+      --success:   #3aaa80;
+      --warning:   #e6a817;
+      --danger:    #e05555;
+      --text-primary:   #e8e8f0;
+      --text-secondary: #b0b0c8;
+      --text-muted:     #6a6a8a;
+      --purple:    #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 0 0 60px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #12122a, #1a1240);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 20px 16px;
+      text-align: center;
+    }
+    .header-logo {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      margin-bottom: 12px;
+    }
+    .header-logo img { height: 40px; border-radius: 8px; }
+    .header-logo-text {
+      font-size: 18px; font-weight: 800; color: var(--text-primary);
+      letter-spacing: -0.3px;
+    }
+    .header-badge {
+      display: inline-block; background: rgba(130,80,200,0.2);
+      color: var(--purple); border: 1px solid rgba(130,80,200,0.35);
+      border-radius: 20px; padding: 3px 14px; font-size: 12px; font-weight: 600;
+    }
+
+    /* ── Container ── */
+    .container { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
+
+    /* ── Card candidato ── */
+    .card-candidato {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+    .card-candidato .nombre {
+      font-size: 20px; font-weight: 800; margin-bottom: 4px;
+    }
+    .card-candidato .meta {
+      font-size: 13px; color: var(--text-muted);
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .card-candidato .meta span {
+      background: rgba(255,255,255,0.06);
+      padding: 2px 10px; border-radius: 20px;
+    }
+
+    /* ── Progreso ── */
+    .progreso-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .progreso-label {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .progreso-label span { font-size: 13px; font-weight: 600; }
+    .progreso-label .pct { color: var(--accent); font-size: 15px; font-weight: 800; }
+    .progress-bar-bg {
+      height: 8px; background: rgba(255,255,255,0.06);
+      border-radius: 99px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Sección título ── */
+    .section-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--text-muted); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Item de documento ── */
+    .doc-item {
+      background: var(--bg-item);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .doc-item.estado-aprobado  { border-color: rgba(58,170,128,0.35); }
+    .doc-item.estado-rechazado { border-color: rgba(224,85,85,0.35); }
+    .doc-item.estado-pendiente_revision { border-color: rgba(230,168,23,0.35); }
+
+    .doc-header {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .doc-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06);
+    }
+    .doc-icon.aprobado  { background: rgba(58,170,128,0.15); }
+    .doc-icon.rechazado { background: rgba(224,85,85,0.12); }
+    .doc-icon.pendiente_revision { background: rgba(230,168,23,0.12); }
+
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-label { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .doc-estado {
+      font-size: 12px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .doc-estado.pendiente         { color: var(--text-muted); }
+    .doc-estado.pendiente_revision{ color: var(--warning); }
+    .doc-estado.aprobado          { color: var(--success); }
+    .doc-estado.rechazado         { color: var(--danger); }
+    .doc-obs-rechazo {
+      margin-top: 6px; padding: 8px 10px;
+      background: rgba(224,85,85,0.08);
+      border: 1px solid rgba(224,85,85,0.2);
+      border-radius: 8px; font-size: 12px; color: var(--danger);
+    }
+
+    .doc-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Botones ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary   { background: rgba(74,143,212,0.25); color: var(--accent); border: 1px solid rgba(74,143,212,0.4); }
+    .btn-success   { background: rgba(58,170,128,0.2);  color: var(--success); border: 1px solid rgba(58,170,128,0.35); }
+    .btn-danger    { background: rgba(224,85,85,0.12);  color: var(--danger);  border: 1px solid rgba(224,85,85,0.25); }
+    .btn-ghost     { background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border); }
+
+    /* ── File input oculto ── */
+    .file-input-hidden { display: none; }
+
+    /* ── Enlace de archivo cargado ── */
+    .archivo-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--accent); text-decoration: none;
+      background: rgba(74,143,212,0.1); padding: 5px 10px;
+      border-radius: 6px; border: 1px solid rgba(74,143,212,0.2);
+    }
+    .archivo-link:hover { background: rgba(74,143,212,0.18); }
+
+    /* ── Toast ── */
+    #toastPortal {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1e1e40; border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text-primary); padding: 10px 22px; border-radius: 30px;
+      font-size: 14px; font-weight: 600; z-index: 9999;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+      max-width: 90vw; text-align: center;
+    }
+    #toastPortal.show { opacity: 1; }
+
+    /* ── Loading ── */
+    #portalLoader {
+      position: fixed; inset: 0; background: rgba(10,10,26,0.8);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9998; display: none;
+    }
+    .spinner {
+      width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Estado vacío / error ── */
+    .estado-pantalla {
+      text-align: center; padding: 60px 20px;
+    }
+    .estado-pantalla .icon { font-size: 56px; margin-bottom: 16px; }
+    .estado-pantalla h2 { font-size: 20px; margin-bottom: 8px; }
+    .estado-pantalla p  { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Instrucciones ── */
+    .instrucciones {
+      background: rgba(74,143,212,0.06);
+      border: 1px solid rgba(74,143,212,0.2);
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;
+      font-size: 13px; color: var(--text-secondary); line-height: 1.75;
+    }
+    .instrucciones strong { color: var(--text-primary); }
+
+    /* ── Upload progress ── */
+    .upload-progress {
+      height: 4px; background: rgba(255,255,255,0.06);
+      border-radius: 99px; overflow: hidden; margin-top: 8px; display: none;
+    }
+    .upload-progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple));
+      border-radius: 99px; transition: width 0.2s;
+    }
+
+    @media (max-width: 480px) {
+      .doc-label { font-size: 13px; }
+      .doc-actions { gap: 6px; }
+      .btn { padding: 8px 12px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div id="portalLoader"><div class="spinner"></div></div>
+
+  <!-- Toast -->
+  <div id="toastPortal"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">
+      <img src="icons/logo_tym.png" alt="Logo" onerror="this.style.display='none'">
+      <div class="header-logo-text">GH Pro</div>
+    </div>
+    <div class="header-badge">📋 Portal de Contratación</div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="container" id="mainContent">
+    <div class="estado-pantalla">
+      <div class="icon">⏳</div>
+      <h2>Cargando...</h2>
+      <p>Verificando tu acceso</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    'use strict';
+
+    // ── Supabase ─────────────────────────────────────────────
+    const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // ── Estado global ─────────────────────────────────────────
+    let _token   = null;
+    let _tokenData = null;
+    let _docs    = [];
+
+    // ── Helpers ───────────────────────────────────────────────
+    function showLoader(v) {
+      document.getElementById('portalLoader').style.display = v ? 'flex' : 'none';
+    }
+
+    let _toastTimer = null;
+    function toast(msg, tipo = 'info') {
+      const el = document.getElementById('toastPortal');
+      const colores = { success:'#3aaa80', error:'#e05555', warning:'#e6a817', info:'#4a8fd4' };
+      el.style.borderColor = colores[tipo] || colores.info;
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+    }
+
+    function setContent(html) {
+      document.getElementById('mainContent').innerHTML = html;
+    }
+
+    function nombreArchivo(url) {
+      try { return decodeURIComponent(url.split('/').pop().split('?')[0]); }
+      catch { return 'archivo'; }
+    }
+
+    // ── Inicializar ───────────────────────────────────────────
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      _token = params.get('t');
+
+      if (!_token) {
+        mostrarError('Link inválido', 'Este enlace no es válido o está incompleto. Solicita un nuevo link a Gestión Humana.');
+        return;
+      }
+
+      showLoader(true);
+      // Validar token
+      const { data: tokenRow, error: tokenErr } = await sb
+        .from('portal_candidato_tokens')
+        .select('*')
+        .eq('token', _token)
+        .eq('activo', true)
+        .single();
+
+      if (tokenErr || !tokenRow) {
+        showLoader(false);
+        mostrarError('Acceso no válido', 'Este enlace no existe o ya fue desactivado. Comunícate con Gestión Humana para obtener un nuevo link.');
+        return;
+      }
+
+      if (new Date(tokenRow.expira_en) < new Date()) {
+        showLoader(false);
+        mostrarError('Enlace expirado', `Este enlace venció el ${new Date(tokenRow.expira_en).toLocaleDateString('es-CO')}. Solicita un nuevo link a Gestión Humana.`);
+        return;
+      }
+
+      _tokenData = tokenRow;
+
+      // Cargar documentos del checklist
+      const { data: docs, error: docsErr } = await sb
+        .from('checklist_documentos')
+        .select('*')
+        .eq('orden_id', tokenRow.orden_id)
+        .order('item_key');
+
+      showLoader(false);
+
+      if (docsErr || !docs) {
+        mostrarError('Error al cargar', 'No se pudieron cargar los documentos. Intenta de nuevo más tarde.');
+        return;
+      }
+
+      _docs = docs;
+      renderPortal();
+    }
+
+    // ── Render principal ──────────────────────────────────────
+    function renderPortal() {
+      const total    = _docs.length;
+      const aprobados = _docs.filter(d => d.estado === 'aprobado').length;
+      const subidos  = _docs.filter(d => ['pendiente_revision','aprobado'].includes(d.estado)).length;
+      const pct      = total ? Math.round((subidos / total) * 100) : 0;
+
+      const html = `
+        <!-- Card candidato -->
+        <div class="card-candidato">
+          <div class="nombre">👋 Hola, ${_tokenData.candidato_nombre.split(' ')[0]}</div>
+          <div class="meta">
+            <span>📋 ${_tokenData.orden_num}</span>
+            ${_tokenData.candidato_email ? `<span>✉️ ${_tokenData.candidato_email}</span>` : ''}
+          </div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="instrucciones">
+          <strong>¿Cómo funciona?</strong><br>
+          Aquí puedes cargar los documentos requeridos para tu proceso de contratación.<br>
+          Toca el botón <strong>📎 Subir</strong> en cada documento, selecciona el archivo desde tu celular o computador,
+          y Gestión Humana lo revisará. Una vez aprobado verás ✅.<br>
+          Si un documento es rechazado verás el motivo y podrás volver a subirlo.
+        </div>
+
+        <!-- Barra de progreso -->
+        <div class="progreso-wrap">
+          <div class="progreso-label">
+            <span>📊 Documentos subidos</span>
+            <span class="pct">${subidos} / ${total}</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width:${pct}%"></div>
+          </div>
+          ${aprobados === total
+            ? `<div style="margin-top:8px;font-size:12px;color:var(--success);font-weight:700">
+                 🎉 ¡Todos los documentos han sido aprobados!
+               </div>`
+            : `<div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
+                 ${aprobados} aprobados · ${_docs.filter(d=>d.estado==='pendiente').length} pendientes de subir
+               </div>`}
+        </div>
+
+        <!-- Lista de documentos -->
+        <div class="section-title">📁 Documentos requeridos</div>
+        <div id="docList">
+          ${_docs.map(renderDocItem).join('')}
+        </div>
+
+        <div style="text-align:center;margin-top:28px;font-size:12px;color:var(--text-muted)">
+          Si tienes dudas comunícate con Gestión Humana.<br>
+          Este portal vence el <strong>${new Date(_tokenData.expira_en).toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'})}</strong>.
+        </div>`;
+
+      setContent(html);
+    }
+
+    // ── Render de un item de documento ────────────────────────
+    function renderDocItem(doc) {
+      const iconos = {
+        hv: '📄', id: '🪪', estudios: '🎓', laborales: '🏢',
+        vr: '🔍', examen: '🏥', antecedentes: '🚔', afiliaciones: '🏦',
+        cert_bancaria: '💳', licencia: '🚗', autorizacion: '✍️', foto: '📷',
+      };
+      const icono = iconos[doc.item_key] || '📁';
+
+      const estadoTexto = {
+        pendiente:           '⏳ Pendiente',
+        pendiente_revision:  '🔍 En revisión',
+        aprobado:            '✅ Aprobado',
+        rechazado:           '❌ Rechazado — volver a subir',
+        no_aplica:           'N/A',
+      };
+      const estado = doc.estado || 'pendiente';
+      const esFinal = estado === 'aprobado' || estado === 'no_aplica';
+
+      const archivoLink = doc.archivo_url
+        ? `<div style="margin-top:8px">
+             <a href="${doc.archivo_url}" target="_blank" class="archivo-link">
+               📎 Ver archivo cargado
+             </a>
+           </div>` : '';
+
+      const obsRechazo = doc.estado === 'rechazado' && doc.obs_gh
+        ? `<div class="doc-obs-rechazo">💬 Observación: ${doc.obs_gh}</div>` : '';
+
+      const botonSubir = !esFinal
+        ? `<button class="btn btn-primary" onclick="elegirArchivo('${doc.id}')">
+             📎 ${doc.archivo_url ? 'Reemplazar' : 'Subir documento'}
+           </button>
+           <div class="upload-progress" id="prog_${doc.id}">
+             <div class="upload-progress-fill" id="progFill_${doc.id}" style="width:0%"></div>
+           </div>
+           <input type="file" class="file-input-hidden" id="file_${doc.id}"
+                  accept=".pdf,.jpg,.jpeg,.png,.heic,.webp"
+                  onchange="subirArchivo('${doc.id}', this)">` : '';
+
+      return `
+        <div class="doc-item estado-${estado}" id="item_${doc.id}">
+          <div class="doc-header">
+            <div class="doc-icon ${estado}">${icono}</div>
+            <div class="doc-info">
+              <div class="doc-label">${doc.item_label}</div>
+              <div class="doc-estado ${estado}">${estadoTexto[estado] || estado}</div>
+              ${archivoLink}
+              ${obsRechazo}
+            </div>
+          </div>
+          ${botonSubir ? `<div class="doc-actions">${botonSubir}</div>` : ''}
+        </div>`;
+    }
+
+    // ── Elegir archivo ────────────────────────────────────────
+    function elegirArchivo(docId) {
+      document.getElementById('file_' + docId)?.click();
+    }
+
+    // ── Subir archivo a Supabase Storage ─────────────────────
+    async function subirArchivo(docId, inputEl) {
+      const file = inputEl.files[0];
+      if (!file) return;
+
+      // Validar tamaño (máx 10 MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast('El archivo supera el límite de 10 MB', 'error');
+        inputEl.value = '';
+        return;
+      }
+
+      // Mostrar barra de progreso
+      const progWrap = document.getElementById('prog_' + docId);
+      const progFill = document.getElementById('progFill_' + docId);
+      if (progWrap) progWrap.style.display = 'block';
+      if (progFill) progFill.style.width = '30%';
+
+      // Nombre del archivo en Storage
+      const ext  = file.name.split('.').pop().toLowerCase();
+      const path = `contratacion/${_tokenData.orden_id}/${docId}_${Date.now()}.${ext}`;
+
+      showLoader(true);
+
+      // Subir a Supabase Storage (bucket: contratacion-docs)
+      const { error: uploadErr } = await sb.storage
+        .from('contratacion-docs')
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadErr) {
+        showLoader(false);
+        if (progWrap) progWrap.style.display = 'none';
+        inputEl.value = '';
+        toast('Error al subir el archivo: ' + uploadErr.message, 'error');
+        return;
+      }
+
+      if (progFill) progFill.style.width = '80%';
+
+      // Obtener URL pública
+      const { data: urlData } = sb.storage
+        .from('contratacion-docs')
+        .getPublicUrl(path);
+      const archivoUrl = urlData?.publicUrl || '';
+
+      // Actualizar registro en BD
+      const { error: dbErr } = await sb.from('checklist_documentos')
+        .update({
+          archivo_url:   archivoUrl,
+          archivo_nombre: file.name,
+          estado:         'pendiente_revision',
+          subido_por:     'candidato',
+          updated_at:     new Date().toISOString(),
+        })
+        .eq('id', docId);
+
+      showLoader(false);
+      inputEl.value = '';
+
+      if (dbErr) {
+        toast('Archivo subido pero error al guardar. Contacta GH.', 'warning');
+        return;
+      }
+
+      if (progFill) progFill.style.width = '100%';
+      setTimeout(() => { if (progWrap) progWrap.style.display = 'none'; }, 600);
+
+      // Actualizar en memoria y re-render
+      const idx = _docs.findIndex(d => d.id === docId);
+      if (idx !== -1) {
+        _docs[idx].archivo_url    = archivoUrl;
+        _docs[idx].archivo_nombre = file.name;
+        _docs[idx].estado         = 'pendiente_revision';
+        _docs[idx].subido_por     = 'candidato';
+      }
+
+      toast('✅ Documento subido correctamente. Estará en revisión.', 'success');
+      renderPortal();
+    }
+
+    // ── Error pantalla ────────────────────────────────────────
+    function mostrarError(titulo, mensaje) {
+      setContent(`
+        <div class="estado-pantalla">
+          <div class="icon">🔒</div>
+          <h2>${titulo}</h2>
+          <p>${mensaje}</p>
+        </div>`);
+    }
+
+    // ── Arrancar ──────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>

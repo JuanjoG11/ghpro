@@ -537,3 +537,91 @@ const ReportesContratacion = {
     };
   },
 };
+
+/* ── Checklist de documentos (portal candidato) ─────────────*/
+const ChecklistDocs = {
+  ITEMS: [
+    { key:'hv',           label:'Hoja de vida actualizada' },
+    { key:'id',           label:'Fotocopia cédula al 150%' },
+    { key:'estudios',     label:'Certificados de estudio' },
+    { key:'laborales',    label:'Certificados laborales' },
+    { key:'vr',           label:'Validación de referencias (GH-F02)' },
+    { key:'examen',       label:'Examen médico de ingreso' },
+    { key:'antecedentes', label:'Antecedentes (Policía, Procuraduría, Contraloría)' },
+    { key:'afiliaciones', label:'Certificado afiliación EPS/Pensión (si aplica)' },
+    { key:'cert_bancaria',label:'Certificación bancaria' },
+    { key:'licencia',     label:'Licencia conducción / Montacargas (si aplica)' },
+    { key:'autorizacion', label:'Autorización tratamiento de datos' },
+    { key:'foto',        label:'Fotografía para carné' },
+  ],
+
+  async getByOrden(orden_id) {
+    const { data, error } = await sb
+      .from('checklist_documentos').select('*').eq('orden_id', orden_id).order('item_key');
+    if (sbErr(error, 'checklist.getByOrden')) return [];
+    return data;
+  },
+
+  async upsert(orden_id, item_key, item_label, candidato_nombre, orden_num, campos = {}) {
+    const { data, error } = await sb.from('checklist_documentos').upsert({
+      orden_id, item_key, item_label, candidato_nombre, orden_num,
+      updated_at: new Date().toISOString(),
+      ...campos,
+    }, { onConflict: 'orden_id,item_key' }).select().single();
+    if (sbErr(error, 'checklist.upsert')) return null;
+    return data;
+  },
+
+  async actualizarEstado(id, estado, obs_gh = null) {
+    const { data, error } = await sb.from('checklist_documentos')
+      .update({ estado, obs_gh, updated_at: new Date().toISOString() })
+      .eq('id', id).select().single();
+    if (sbErr(error, 'checklist.actualizarEstado')) return null;
+    return data;
+  },
+
+  /** Inicializa el checklist vacío para una orden nueva */
+  async inicializar(orden_id, orden_num, candidato_nombre) {
+    for (const item of this.ITEMS) {
+      await this.upsert(orden_id, item.key, item.label, candidato_nombre, orden_num, {
+        estado: 'pendiente', subido_por: null,
+      });
+    }
+  },
+};
+
+/* ── Portal del candidato — tokens ───────────────────────────*/
+const PortalCandidato = {
+  async crearToken(orden_id, orden_num, candidato_nombre, candidato_email, candidato_tel) {
+    // Desactivar tokens anteriores para esta orden
+    await sb.from('portal_candidato_tokens')
+      .update({ activo: false }).eq('orden_id', orden_id);
+
+    const { data, error } = await sb.from('portal_candidato_tokens').insert([{
+      orden_id, orden_num, candidato_nombre, candidato_email, candidato_tel,
+      activo: true,
+      expira_en: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    }]).select().single();
+    if (sbErr(error, 'portal.crearToken')) return null;
+    return data;
+  },
+
+  async getByToken(token) {
+    const { data, error } = await sb.from('portal_candidato_tokens')
+      .select('*').eq('token', token).eq('activo', true).single();
+    if (error) return null;
+    if (new Date(data.expira_en) < new Date()) return null; // expirado
+    return data;
+  },
+
+  async getByOrden(orden_id) {
+    const { data, error } = await sb.from('portal_candidato_tokens')
+      .select('*').eq('orden_id', orden_id).eq('activo', true).order('created_at', { ascending: false }).limit(1).single();
+    if (error) return null;
+    return data;
+  },
+
+  urlPortal(token) {
+    return `${window.location.origin}/portal-candidato.html?t=${token}`;
+  },
+};

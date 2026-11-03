@@ -307,6 +307,7 @@ create table if not exists orden_contratacion (
   banco_id              uuid references bancos_lista(id),
   banco_nombre          text,
   tipo_cuenta           text check (tipo_cuenta in ('ahorros','corriente')),
+  numero_cuenta         text,
   -- Seguridad social
   eps_id                uuid references eps_lista(id),
   eps_nombre            text,
