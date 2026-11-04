@@ -622,6 +622,10 @@ const PortalCandidato = {
   },
 
   urlPortal(token) {
-    return `${window.location.origin}/portal-candidato.html?t=${token}`;
+    // Siempre usa la URL de producción para que el link funcione desde cualquier entorno
+    const base = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'https://ghprotym.vercel.app'
+      : window.location.origin;
+    return `${base}/portal-candidato.html?t=${token}`;
   },
 };

@@ -114,6 +114,65 @@ function show(id, vis) {
 }
 
 /* ════════════════════════════════════════════════════════════
+   CIUDADES DE COLOMBIA Y PARENTESCOS
+   ════════════════════════════════════════════════════════════ */
+const CIUDADES_CO = [
+  'Bogotá D.C.','Medellín','Cali','Barranquilla','Cartagena','Cúcuta','Bucaramanga',
+  'Pereira','Santa Marta','Ibagué','Pasto','Manizales','Neiva','Villavicencio',
+  'Armenia','Valledupar','Montería','Sincelejo','Popayán','Palmira','Buenaventura',
+  'Floridablanca','Soledad','Dosquebradas','Bello','Soacha','Itagüí','Barrancabermeja',
+  'Tunja','Riohacha','Quibdó','Mocoa','Mitú','Puerto Carreño','San José del Guaviare',
+  'Leticia','Arauca','Yopal','Florencia','San Andrés',
+  'Aguachica','Aguadas','Anserma','Apartadó','Arauca','Barbosa','Buga','Caldas',
+  'Calarcá','Cartago','Cereté','Chaparral','Chía','Chigorodó','Chinchiná','Ciénaga',
+  'Corozal','Duitama','El Banco','Espinal','Facatativá','Fusagasugá','Funza',
+  'Girardot','Girón','Granada','Guarne','Honda','Ipiales','Istmina','Jamundí',
+  'La Ceja','La Dorada','La Estrella','La Plata','La Virginia','Lorica','Magangué',
+  'Maicao','Málaga','Malambo','Maní','Manta','Marmato','Miraflores','Montelíbano',
+  'Muzo','Ocaña','Pamplona','Pitalito','Puerto Asís','Puerto Berrío','Puerto Boyacá',
+  'Rionegro','Riosucio','Sabaneta','Salamina','San Gil','San Juan de Pasto',
+  'San Juan del Cesar','Santa Rosa de Cabal','Santa Rosa de Osos','Santiago de Cali',
+  'Sevilla','Sogamoso','Tumaco','Turbo','Ubaté','Vélez','Villamaría','Villanueva',
+  'Yarumal','Zarzal',
+].sort();
+
+const PARENTESCOS = {
+  'Cónyuge':                  'Cónyuge',
+  'Compañero(a) permanente':  'Compañero(a) permanente',
+  'Hijo(a)':                  'Hijo(a)',
+  'Padre':                    'Padre',
+  'Madre':                    'Madre',
+  'Hermano(a)':               'Hermano(a)',
+  'Abuelo(a)':                'Abuelo(a)',
+  'Nieto(a)':                 'Nieto(a)',
+  'Tío(a)':                   'Tío(a)',
+  'Sobrino(a)':               'Sobrino(a)',
+  'Primo(a)':                 'Primo(a)',
+  'Suegro(a)':                'Suegro(a)',
+  'Cuñado(a)':                'Cuñado(a)',
+  'Amigo(a)':                 'Amigo(a)',
+  'Otro':                     'Otro',
+};
+
+/** Genera <option> para ciudades de Colombia */
+function selectCiudad(valor = '', disabled = false) {
+  const opts = [`<option value="">Seleccione ciudad...</option>`];
+  CIUDADES_CO.forEach(c => {
+    opts.push(`<option value="${c}" ${valor === c ? 'selected' : ''}>${c}</option>`);
+  });
+  return `<select class="form-select" id="__CIUDAD_PLACEHOLDER__" ${disabled ? 'disabled' : ''}>${opts.join('')}</select>`;
+}
+
+/** Genera el HTML completo de un select de ciudades con un id dado */
+function ciudadSelectHtml(id, valor = '', disabled = false) {
+  const opts = [`<option value="">Seleccione ciudad...</option>`];
+  CIUDADES_CO.forEach(c => {
+    opts.push(`<option value="${c}" ${valor === c ? 'selected' : ''}>${c}</option>`);
+  });
+  return `<select class="form-select" id="${id}" ${disabled ? 'disabled' : ''}>${opts.join('')}</select>`;
+}
+
+/* ════════════════════════════════════════════════════════════
    SUB-TABS DE CONTRATACIÓN
    ════════════════════════════════════════════════════════════ */
 let _contratacionTab = 'requisiciones'; // 'requisiciones' | 'referencias' | 'ordenes'
@@ -1792,9 +1851,11 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
 
         ${req?`<div style="padding:10px 14px;background:rgba(58,130,200,0.08);border-radius:8px;margin-bottom:16px;font-size:13px">
           📋 Requisición: <strong style="font-family:monospace">${req.numero}</strong> · ${req.cargo_nombre} · ${req.empresa}</div>
-          <input type="hidden" name="ocReqId" value="${req?.id||d.requisicion_id||''}">
+          <input type="hidden" name="ocReqId"  value="${req?.id||d.requisicion_id||''}">
+          <input type="hidden" name="ocReqNum" value="${req?.numero||d.requisicion_num||''}">
           <input type="hidden" name="ocCandId" value="${candidato?.id||d.candidato_id||''}">
-          `:`<input type="hidden" name="ocReqId" value="${d.requisicion_id||''}">
+          `:`<input type="hidden" name="ocReqId"  value="${d.requisicion_id||''}">
+          <input type="hidden" name="ocReqNum" value="${d.requisicion_num||''}">
           <input type="hidden" name="ocCandId" value="${d.candidato_id||''}">`}
         <div class="form-section-title">👤 5.1 Datos del seleccionado</div>
         <div class="form-grid-2">
@@ -1809,19 +1870,19 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
           <div class="form-group"><label class="form-label">Número de documento <span class="req-star">*</span></label>
             <input type="text" class="form-input" id="ocNumId" value="${d.numero_id||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Lugar de expedición</label>
-            <input type="text" class="form-input" id="ocLugarExp" value="${d.lugar_expedicion||''}" ${isReadOnly?'readonly':''}></div>
+            ${ciudadSelectHtml('ocLugarExp', d.lugar_expedicion||'', isReadOnly)}</div>
           <div class="form-group"><label class="form-label">Fecha de expedición</label>
             <input type="date" class="form-input" id="ocFechaExp" value="${d.fecha_expedicion||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Fecha de nacimiento</label>
             <input type="date" class="form-input" id="ocFechaNac" value="${d.fecha_nacimiento||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Lugar de nacimiento</label>
-            <input type="text" class="form-input" id="ocLugarNac" value="${d.lugar_nacimiento||''}" ${isReadOnly?'readonly':''}></div>
+            ${ciudadSelectHtml('ocLugarNac', d.lugar_nacimiento||'', isReadOnly)}</div>
           <div class="form-group"><label class="form-label">Dirección <span class="req-star">*</span></label>
             <input type="text" class="form-input" id="ocDireccion" value="${d.direccion||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Barrio</label>
             <input type="text" class="form-input" id="ocBarrio" value="${d.barrio||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Ciudad <span class="req-star">*</span></label>
-            <input type="text" class="form-input" id="ocCiudad" value="${d.ciudad||''}" ${isReadOnly?'readonly':''}></div>
+            ${ciudadSelectHtml('ocCiudad', d.ciudad||'', isReadOnly)}</div>
           <div class="form-group"><label class="form-label">Teléfono <span class="req-star">*</span></label>
             <input type="tel" class="form-input" id="ocTelefono" value="${d.telefono||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Correo electrónico <span class="req-star">*</span></label>
@@ -1835,7 +1896,9 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
           <div class="form-group"><label class="form-label">Contacto de emergencia <span class="req-star">*</span></label>
             <input type="text" class="form-input" id="ocContactoEmerg" value="${d.contacto_emergencia||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Parentesco</label>
-            <input type="text" class="form-input" id="ocParentesco" value="${d.parentesco_emergencia||''}" ${isReadOnly?'readonly':''}></div>
+            <select class="form-select" id="ocParentesco" ${isReadOnly?'disabled':''}>
+              ${selectOpts(PARENTESCOS, d.parentesco_emergencia||'', 'Seleccione...')}
+            </select></div>
           <div class="form-group"><label class="form-label">Teléfono de emergencia</label>
             <input type="tel" class="form-input" id="ocTelEmerg" value="${d.telefono_emergencia||''}" ${isReadOnly?'readonly':''}></div>
         </div>
@@ -2020,7 +2083,29 @@ async function guardarOrden() {
   const durMeses  = parseInt(fv('ocDuracion'))||null;
 
   if (!nombres||!numId||!empresa||!cargo||!area||!jefe||!tipoC||!fIngreso||!salario||!formaPago||!ciudad||!direccion||!telefono||!email||!contactoEmerg) {
-    toast('Complete los campos obligatorios (*)', 'warning'); return;
+    // Identificar qué campo falta para dar mensaje útil
+    const faltantes = [];
+    if (!nombres)      faltantes.push('Nombres y apellidos');
+    if (!numId)        faltantes.push('Número de documento');
+    if (!empresa)      faltantes.push('Empresa empleadora');
+    if (!cargo)        faltantes.push('Cargo');
+    if (!area)         faltantes.push('Área');
+    if (!jefe)         faltantes.push('Jefe inmediato');
+    if (!tipoC)        faltantes.push('Tipo de contrato');
+    if (!fIngreso)     faltantes.push('Fecha de ingreso');
+    if (!salario)      faltantes.push('Salario');
+    if (!formaPago)    faltantes.push('Forma de pago');
+    if (!ciudad)       faltantes.push('Ciudad');
+    if (!direccion)    faltantes.push('Dirección');
+    if (!telefono)     faltantes.push('Teléfono');
+    if (!email)        faltantes.push('Correo electrónico');
+    if (!contactoEmerg) faltantes.push('Contacto de emergencia');
+    toast('Faltan campos: ' + faltantes.join(', '), 'warning');
+    return;
+  }
+
+  if (!jornada) {
+    toast('Selecciona la Jornada / Horario', 'warning'); return;
   }
 
   // Validar email
@@ -2093,9 +2178,9 @@ async function guardarOrden() {
     caja_id: caja_id||null, caja_nombre: fNombre(cajas, caja_id),
     checklist,
     // Heredados de requisición / candidato
-    requisicion_id: document.querySelector('#modalOrden input[name="ocReqId"]')?.value || null,
-    requisicion_num: req?.numero || d.requisicion_num || null,
-    candidato_id: document.querySelector('#modalOrden input[name="ocCandId"]')?.value || null,
+    requisicion_id:  document.querySelector('#modalOrden input[name="ocReqId"]')?.value  || null,
+    requisicion_num: document.querySelector('#modalOrden input[name="ocReqNum"]')?.value || null,
+    candidato_id:    document.querySelector('#modalOrden input[name="ocCandId"]')?.value || null,
   };
 
   showLoading(true);
@@ -2285,7 +2370,9 @@ function abrirFormBeneficiario(ocId) {
         <div class="form-group"><label class="form-label">Nombre completo <span class="req-star">*</span></label>
           <input type="text" class="form-input" id="bNombre"></div>
         <div class="form-group"><label class="form-label">Parentesco</label>
-          <input type="text" class="form-input" id="bParentesco" placeholder="Hijo(a), Cónyuge, etc."></div>
+          <select class="form-select" id="bParentesco">
+            ${selectOpts(PARENTESCOS, '', 'Seleccione...')}
+          </select></div>
         <div class="form-group"><label class="form-label">Tipo documento</label>
           <select class="form-select" id="bTipoId">
             <option value="CC">CC</option><option value="RC">RC</option>
@@ -2497,14 +2584,14 @@ async function abrirModalPortalCandidato(ocId) {
           </div>
           ${portalUrl && !expirado
             ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                 <input type="text" class="form-input" value="${portalUrl}" readonly
-                        style="flex:1;font-size:12px;font-family:monospace;min-width:200px" id="portalUrlInput">
+                 <input type="text" class="form-input" id="portalUrlInput" readonly
+                        style="flex:1;font-size:12px;font-family:monospace;min-width:200px">
                  <button class="btn" style="background:rgba(130,80,200,0.25);color:#a78bfa;font-weight:600;white-space:nowrap"
                          onclick="copiarPortalUrl()">📋 Copiar</button>
-                 <a href="${portalUrl}" target="_blank" class="btn"
-                    style="background:rgba(58,130,200,0.2);color:var(--accent);text-decoration:none;white-space:nowrap">
+                 <button class="btn" onclick="window.open(document.getElementById('portalUrlInput').value,'_blank')"
+                    style="background:rgba(58,130,200,0.2);color:var(--accent);white-space:nowrap">
                    🔍 Abrir
-                 </a>
+                 </button>
                </div>
                <div style="font-size:11px;color:var(--text-muted);margin-top:8px">
                  ⏰ Expira: ${new Date(tokenData.expira_en).toLocaleDateString('es-CO')}
@@ -2526,13 +2613,13 @@ async function abrirModalPortalCandidato(ocId) {
               : ''}
             ${oc.email
               ? `<button class="btn" style="background:rgba(58,170,128,0.15);color:var(--success)"
-                         onclick="compartirPorEmail('${oc.email}','${oc.nombres.replace(/'/g,"\\'")}','${portalUrl||''}','${ocId}')">
+                         onclick="compartirPorEmail('${oc.email}','${oc.nombres.replace(/'/g,"\\'")}',document.getElementById('portalUrlInput')?.value||'','${ocId}')">
                    📧 Enviar por correo
                  </button>`
               : '<span style="font-size:12px;color:var(--text-muted)">Sin email registrado para notificación</span>'}
             ${oc.telefono
               ? `<button class="btn" style="background:rgba(37,211,102,0.15);color:#25d366"
-                         onclick="compartirPorWhatsApp('${oc.telefono}','${oc.nombres.replace(/'/g,"\\'")}','${portalUrl||''}','${ocId}')">
+                         onclick="compartirPorWhatsApp('${oc.telefono}','${oc.nombres.replace(/'/g,"\\'")}',document.getElementById('portalUrlInput')?.value||'','${ocId}')">
                    💬 WhatsApp
                  </button>`
               : ''}
@@ -2575,6 +2662,12 @@ async function abrirModalPortalCandidato(ocId) {
   if (prev) prev.remove();
   document.body.insertAdjacentHTML('beforeend', html);
   document.body.style.overflow = 'hidden';
+
+  // Asignar URL por JS para evitar truncamiento en atributos HTML
+  if (portalUrl && !expirado) {
+    const inp = document.getElementById('portalUrlInput');
+    if (inp) inp.value = portalUrl;
+  }
 }
 
 async function generarLinkPortal(ocId, ocNum, nombre, email, tel) {

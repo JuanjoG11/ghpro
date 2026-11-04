@@ -1596,8 +1596,39 @@
           <datalist id="cargosDatalist"></datalist></div>
         <div class="form-group"><label>Proveedor / Área *</label><input type="text" id="tMarca" list="marcasDatalist" placeholder="Ej: Zenú, Fleischmann, General...">
           <datalist id="marcasDatalist"></datalist></div>
-        <div class="form-group"><label>Ciudad *</label><input type="text" id="tCiudad" list="ciudadesDatalist" placeholder="Pereira, Manizales, Armenia...">
-          <datalist id="ciudadesDatalist"><option value="Pereira"><option value="Manizales"><option value="Armenia"></datalist></div>
+        <div class="form-group"><label>Ciudad *</label>
+          <select id="tCiudad" class="form-select" style="width:100%">
+            <option value="">Seleccione ciudad...</option>
+            <option value="Armenia">Armenia</option>
+            <option value="Barranquilla">Barranquilla</option>
+            <option value="Bogotá D.C.">Bogotá D.C.</option>
+            <option value="Bucaramanga">Bucaramanga</option>
+            <option value="Buenaventura">Buenaventura</option>
+            <option value="Cali">Cali</option>
+            <option value="Cartagena">Cartagena</option>
+            <option value="Cúcuta">Cúcuta</option>
+            <option value="Dosquebradas">Dosquebradas</option>
+            <option value="Florencia">Florencia</option>
+            <option value="Ibagué">Ibagué</option>
+            <option value="Itagüí">Itagüí</option>
+            <option value="Manizales">Manizales</option>
+            <option value="Medellín">Medellín</option>
+            <option value="Montería">Montería</option>
+            <option value="Neiva">Neiva</option>
+            <option value="Palmira">Palmira</option>
+            <option value="Pasto">Pasto</option>
+            <option value="Pereira">Pereira</option>
+            <option value="Popayán">Popayán</option>
+            <option value="Rionegro">Rionegro</option>
+            <option value="Santa Marta">Santa Marta</option>
+            <option value="Santa Rosa de Cabal">Santa Rosa de Cabal</option>
+            <option value="Sincelejo">Sincelejo</option>
+            <option value="Soacha">Soacha</option>
+            <option value="Sogamoso">Sogamoso</option>
+            <option value="Tunja">Tunja</option>
+            <option value="Valledupar">Valledupar</option>
+            <option value="Villavicencio">Villavicencio</option>
+          </select></div>
         <div class="form-group"><label>Jefe Inmediato</label><input type="text" id="tJefe" list="jefesDatalist" placeholder="Nombre del jefe">
           <datalist id="jefesDatalist"></datalist></div>
         <div class="form-group"><label>Fecha de ingreso</label><input type="date" id="tFechaIngreso"></div>
@@ -2413,9 +2444,9 @@
           <label>Sede / Ciudad</label>
           <select id="exportAsistCiudad">
             <option value="">Todas las Sedes</option>
-            <option value="Pereira">Pereira</option>
-            <option value="Manizales">Manizales</option>
             <option value="Armenia">Armenia</option>
+            <option value="Dosquebradas">Dosquebradas</option>
+            <option value="Manizales">Manizales</option>
           </select>
         </div>
       </div>

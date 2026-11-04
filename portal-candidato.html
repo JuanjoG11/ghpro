@@ -320,12 +320,18 @@
         .from('portal_candidato_tokens')
         .select('*')
         .eq('token', _token)
-        .eq('activo', true)
         .single();
 
       if (tokenErr || !tokenRow) {
         showLoader(false);
+        console.error('Token error:', tokenErr, '| tokenRow:', tokenRow, '| token buscado:', _token);
         mostrarError('Acceso no válido', 'Este enlace no existe o ya fue desactivado. Comunícate con Gestión Humana para obtener un nuevo link.');
+        return;
+      }
+
+      if (!tokenRow.activo) {
+        showLoader(false);
+        mostrarError('Enlace desactivado', 'Este enlace fue reemplazado por uno nuevo. Solicita el link actualizado a Gestión Humana.');
         return;
       }
 
