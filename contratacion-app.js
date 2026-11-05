@@ -1816,18 +1816,22 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
   const isReadOnly = ['aprobada','contrato_generado','anulada'].includes(d.estado);
 
   const CHECKLIST_ITEMS = [
-    { key:'hv',           label:'Hoja de vida actualizada' },
-    { key:'id',           label:'Fotocopia cédula al 150%' },
-    { key:'estudios',     label:'Certificados de estudio' },
-    { key:'laborales',    label:'Certificados laborales' },
-    { key:'vr',           label:'Validación de referencias (GH-F02)' },
-    { key:'examen',       label:'Examen médico de ingreso' },
-    { key:'antecedentes', label:'Antecedentes (Policía, Procuraduría, Contraloría)' },
-    { key:'afiliaciones', label:'Certificados afiliación EPS/Pensión (si aplica)' },
-    { key:'cert_bancaria',label:'Certificación bancaria' },
-    { key:'licencia',     label:'Licencia conducción / Montacargas (si aplica)' },
-    { key:'autorizacion', label:'Autorización tratamiento de datos' },
-    { key:'foto',         label:'Fotografía para carné' },
+    { key:'hv',              label:'Hoja de Vida' },
+    { key:'cedula',          label:'Fotocopia de la Cédula' },
+    { key:'afil_hijos',      label:'Afiliación Hijos' },
+    { key:'afil_padres',     label:'Afiliación Padres' },
+    { key:'acta_grado',      label:'Fotocopia Acta de Grado y Diplomas' },
+    { key:'antecedentes',    label:'Antecedentes Contraloría, Procuraduría y Policía' },
+    { key:'eps',             label:'Certificado de E.P.S.' },
+    { key:'afp',             label:'Certificado de A.F.P.' },
+    { key:'ref_laborales',   label:'2 - Referencias Laborales' },
+    { key:'ref_personales',  label:'2 - Referencias Personales' },
+    { key:'foto',            label:'Foto fondo blanco' },
+    { key:'carnet_covid',    label:'Carnet COVID - 19' },
+    { key:'carnet_alimentos',label:'Carnet de Manipulación de Alimentos (vigencia mayor a 6 meses)' },
+    { key:'cuenta_bancaria', label:'Constancia de Apertura de Cuenta' },
+    { key:'soat',            label:'Copia Soat, Tecnomecánica, Licencia de Conducción y Tarjeta de Propiedad' },
+    { key:'funeraria',       label:'Certificado Funerario' },
   ];
   const checklist = d.checklist || {};
 
@@ -2123,7 +2127,9 @@ async function guardarOrden() {
 
   // Checklist
   const checklist = {};
-  ['hv','id','estudios','laborales','vr','examen','antecedentes','afiliaciones','cert_bancaria','licencia','autorizacion','foto'].forEach(k => {
+  ['hv','cedula','acta_grado','antecedentes','eps','afp','ref_laborales','ref_personales',
+   'foto','carnet_covid','carnet_alimentos','cuenta_bancaria','soat','funeraria',
+   'afil_hijos','afil_padres'].forEach(k => {
     const v = fv('ck_'+k); if (v) checklist[k] = v;
   });
 
@@ -2529,19 +2535,29 @@ async function abrirModalPortalCandidato(ocId) {
     pendiente: '⏳', pendiente_revision: '🔍', aprobado: '✅', rechazado: '❌', no_aplica: 'N/A',
   };
 
-  const filasChecklist = docs.map(doc => `
+  const filasChecklist = docs.map(doc => {
+    // Columna extra de info para funeraria
+    let extraInfo = '';
+    if (doc.item_key === 'funeraria') {
+      if (doc.funeraria_acepta === true) {
+        extraInfo = `<div style="font-size:11px;color:var(--purple);margin-top:2px">🕊️ Afiliación Los Olivos — $11.500/mes</div>`;
+      } else if (doc.funeraria_acepta === false) {
+        extraInfo = `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">Tiene certificado propio</div>`;
+      }
+    }
+    return `
     <tr>
-      <td style="font-size:13px">${doc.item_label}</td>
+      <td style="font-size:13px">${doc.item_label}${extraInfo}</td>
       <td style="text-align:center">
         <span style="font-weight:700;color:${estadoColor[doc.estado]||'var(--text-muted)'}">
           ${estadoIcon[doc.estado]||doc.estado}
         </span>
-        <div style="font-size:11px;color:var(--text-muted)">${doc.subido_por?`Subido por ${doc.subido_por}`:''}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${doc.subido_por?`por ${doc.subido_por}`:''}</div>
       </td>
       <td>
         ${doc.archivo_url
-          ? `<a href="${doc.archivo_url}" target="_blank" style="color:var(--accent);font-size:12px">📎 Ver archivo</a>`
-          : '<span style="color:var(--text-muted);font-size:12px">Sin archivo</span>'}
+          ? `<a href="${doc.archivo_url}" target="_blank" style="color:var(--accent);font-size:12px">📎 Ver</a>`
+          : '<span style="color:var(--text-muted);font-size:12px">—</span>'}
       </td>
       <td>
         ${doc.estado === 'pendiente_revision'
@@ -2560,7 +2576,8 @@ async function abrirModalPortalCandidato(ocId) {
                <option value="no_aplica">N/A</option>
              </select>`}
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   const html = `
   <div class="modal-overlay open" id="modalPortalCandidato">
@@ -2651,8 +2668,25 @@ async function abrirModalPortalCandidato(ocId) {
           4. GH también puede subir o actualizar documentos directamente desde este panel.
         </div>
 
+        <!-- Firma digital del candidato -->
+        ${tokenData?.firma_url ? `
+        <div style="margin-top:20px;padding:14px 16px;background:rgba(58,170,128,0.08);border:1px solid rgba(58,170,128,0.25);border-radius:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px">✍️ Firma digital del candidato</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">
+            Firmado por <strong>${tokenData.firma_nombre||oc.nombres}</strong> el
+            ${new Date(tokenData.firma_fecha).toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+          </div>
+          <img src="${tokenData.firma_url}" alt="Firma" style="max-width:280px;background:#fff;padding:8px;border-radius:8px;display:block">
+        </div>` : `
+        <div style="margin-top:16px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-muted)">
+          ✍️ El candidato aún no ha firmado digitalmente el documento.
+        </div>`}
+
       </div>
       <div class="modal-footer">
+        ${tokenData?.firma_url
+          ? `<button class="btn btn-success" onclick="generarListaChequeo('${ocId}')">📄 Descargar Lista de Chequeo</button>`
+          : ''}
         <button class="btn btn-secondary" onclick="cerrar('modalPortalCandidato')">Cerrar</button>
       </div>
     </div>
@@ -2763,6 +2797,373 @@ async function cambiarEstadoDocGH(docId, ocId, estado) {
   toast('Estado actualizado', 'success');
   cerrar('modalPortalCandidato');
   setTimeout(() => abrirModalPortalCandidato(ocId), 250);
+}
+
+/* ════════════════════════════════════════════════════════════
+   LISTA DE CHEQUEO PDF
+   ════════════════════════════════════════════════════════════ */
+async function generarListaChequeo(ocId) {
+  showLoading(true);
+  const [oc, docs, tokenData] = await Promise.all([
+    OrdenContratacion.getById(ocId),
+    ChecklistDocs.getByOrden(ocId),
+    PortalCandidato.getByOrden(ocId),
+  ]);
+  showLoading(false);
+  if (!oc) { toast('No se encontró la orden', 'error'); return; }
+
+  // Separar nombres y apellidos (primeras 2 palabras = nombres, resto = apellidos)
+  const palabras   = (oc.nombres || '').trim().split(/\s+/);
+  const nombres    = palabras.slice(0, 2).join(' ');
+  const apellidos  = palabras.slice(2).join(' ') || '';
+
+  // Tipo de documento
+  const tipoIdMap  = { CC: 'C.C.', TI: 'T.I.', CE: 'C.E.' };
+  const tipoIdKey  = oc.tipo_id || 'CC';
+
+  // Fecha actual
+  const hoy = new Date();
+  const dd  = String(hoy.getDate()).padStart(2, '0');
+  const mmm = hoy.toLocaleDateString('es-CO', { month: 'short' }).toUpperCase();
+  const aaaa = hoy.getFullYear();
+
+  // Estado de cada doc: Si=aprobado, No=rechazado/pendiente, vacío=sin info
+  const docMap = {};
+  docs.forEach(d => { docMap[d.item_key] = d; });
+
+  function checkSiNo(key) {
+    const d = docMap[key];
+    if (!d) return { si: '', no: '' };
+    if (d.estado === 'aprobado') return { si: '✓', no: '' };
+    if (d.estado === 'rechazado') return { si: '', no: '✗' };
+    if (d.estado === 'pendiente_revision') return { si: '○', no: '' };
+    return { si: '', no: '' };
+  }
+
+  function fila(key, label, obs = '') {
+    const c = checkSiNo(key);
+    // Observación especial para funeraria
+    let obsExtra = obs;
+    if (key === 'funeraria') {
+      const d = docMap['funeraria'];
+      if (d?.funeraria_acepta === true)  obsExtra = 'Afiliación Los Olivos $11.500/mes';
+      if (d?.funeraria_acepta === false) obsExtra = 'Certificado propio';
+    }
+    return `<tr>
+      <td class="cell-check">${c.si}</td>
+      <td class="cell-check">${c.no}</td>
+      <td class="cell-doc">${label}</td>
+      <td class="cell-obs">${obsExtra}</td>
+    </tr>`;
+  }
+
+  function filaSeccion(label) {
+    return `<tr class="row-seccion"><td colspan="4">${label}</td></tr>`;
+  }
+
+  const firmaImg = tokenData?.firma_url
+    ? `<img src="${tokenData.firma_url}" style="height:48px;max-width:160px;object-fit:contain" alt="Firma">`
+    : '';
+  const firmaNombre = tokenData?.firma_nombre || oc.nombres || '';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Lista de Chequeo — ${oc.nombres}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #000;
+    background: #fff;
+    padding: 18px 22px;
+  }
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    border: 2px solid #000;
+    padding: 12px 14px;
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .header-row img { height: 54px; }
+  .header-title {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .section-label {
+    font-weight: bold;
+    font-size: 10px;
+    margin: 6px 0 4px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border: 1px solid #000;
+    margin-bottom: 4px;
+  }
+  .info-grid .cell {
+    border-right: 1px solid #000;
+    padding: 4px 6px;
+  }
+  .info-grid .cell:last-child { border-right: none; }
+  .info-label { font-size: 8px; color: #555; margin-bottom: 2px; }
+  .info-value { font-size: 10px; font-weight: bold; min-height: 14px; }
+  .info-row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 0;
+    border: 1px solid #000;
+    border-top: none;
+    margin-bottom: 8px;
+  }
+  .info-row2 .cell {
+    border-right: 1px solid #000;
+    padding: 4px 6px;
+  }
+  .info-row2 .cell:last-child { border-right: none; }
+  .tipoid-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+  }
+  .tipoid-box {
+    border: 1px solid #555;
+    padding: 1px 4px;
+    font-size: 9px;
+    min-width: 24px;
+    text-align: center;
+  }
+  .tipoid-box.marcado { border-color: #000; font-weight: bold; }
+
+  /* Tabla checklist */
+  table.checklist {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+  }
+  table.checklist th {
+    background: #e0e0e0;
+    border: 1px solid #888;
+    padding: 3px 5px;
+    font-size: 9px;
+    text-align: center;
+  }
+  table.checklist td {
+    border: 1px solid #aaa;
+    padding: 3px 5px;
+    vertical-align: top;
+  }
+  .cell-check {
+    width: 24px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .cell-doc  { font-size: 9.5px; }
+  .cell-obs  { font-size: 9px; color: #333; min-width: 80px; }
+  .row-seccion td {
+    background: #d0d0d0;
+    font-weight: bold;
+    font-size: 9.5px;
+    padding: 3px 5px;
+    border: 1px solid #888;
+  }
+  /* Declaración */
+  .declaracion {
+    font-size: 9px;
+    color: #222;
+    line-height: 1.5;
+    margin: 8px 0;
+    text-align: justify;
+  }
+  .declaracion span { color: #0000cc; }
+  /* Pie */
+  .pie {
+    display: grid;
+    grid-template-columns: 55px 65px 65px 1fr 1fr 1fr;
+    gap: 0;
+    border: 1px solid #000;
+    margin-top: 6px;
+  }
+  .pie .pcell {
+    border-right: 1px solid #000;
+    padding: 4px 6px;
+    min-height: 52px;
+  }
+  .pie .pcell:last-child { border-right: none; }
+  .pie .plabel { font-size: 8px; font-weight: bold; margin-bottom: 4px; }
+  @media print {
+    body { padding: 0; }
+    .no-print { display: none !important; }
+    .page { border: 2px solid #000; }
+  }
+</style>
+</head>
+<body>
+<div class="no-print" style="text-align:center;margin-bottom:14px">
+  <button onclick="window.print()" style="padding:9px 28px;background:#1a5caa;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:bold;cursor:pointer">🖨️ Imprimir / Guardar PDF</button>
+  <button onclick="window.close()" style="padding:9px 18px;background:#888;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;margin-left:8px">✕ Cerrar</button>
+</div>
+
+<div class="page">
+
+  <!-- Encabezado -->
+  <div class="header-row">
+    <img src="icons/logo_tym.png" alt="Logo" onerror="this.style.display='none'">
+    <div class="header-title">LISTA DE CHEQUEO DE CONTRATACIÓN</div>
+  </div>
+
+  <!-- Información del empleado -->
+  <div class="section-label">Información del Empleado</div>
+  <div class="info-grid">
+    <div class="cell">
+      <div class="info-label">Nombre(s)</div>
+      <div class="info-value">${nombres}</div>
+    </div>
+    <div class="cell">
+      <div class="info-label">Apellido(s)</div>
+      <div class="info-value">${apellidos}</div>
+    </div>
+    <div class="cell">
+      <div class="info-label">Doc. Identidad</div>
+      <div class="tipoid-row">
+        <span class="tipoid-box ${tipoIdKey==='CC'?'marcado':''}">C.C.</span>
+        <span class="tipoid-box ${tipoIdKey==='TI'?'marcado':''}">T.I.</span>
+        <span class="tipoid-box ${tipoIdKey==='CE'?'marcado':''}">C.E.</span>
+      </div>
+      <div style="font-size:9px;margin-top:3px;font-weight:bold">${oc.numero_id || ''}</div>
+    </div>
+  </div>
+  <div class="info-row2">
+    <div class="cell">
+      <div class="info-label">Empresa</div>
+      <div class="info-value">${oc.empresa || ''}</div>
+    </div>
+    <div class="cell">
+      <div class="info-label">E.P.S.</div>
+      <div class="info-value">${oc.eps_nombre || ''}</div>
+    </div>
+    <div class="cell">
+      <div class="info-label">A.F.P.</div>
+      <div class="info-value">${oc.afp_nombre || ''}</div>
+    </div>
+    <div class="cell">
+      <div class="info-label">C.C.F.</div>
+      <div class="info-value">${oc.caja_nombre || ''}</div>
+    </div>
+  </div>
+
+  <!-- Verificación de documentos -->
+  <div class="section-label">Verificación de Documentos</div>
+  <table class="checklist">
+    <thead>
+      <tr>
+        <th colspan="3" style="text-align:center">Documentos Entregados</th>
+        <th rowspan="2" style="width:120px">Observaciones</th>
+      </tr>
+      <tr>
+        <th style="width:24px">Si</th>
+        <th style="width:24px">No</th>
+        <th>Documento</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${fila('hv',              'Hoja de Vida')}
+      ${fila('cedula',          'Fotocopia de la Cédula')}
+      ${fila('acta_grado',      'Fotocopia Acta de Grado y Diplomas')}
+      ${fila('antecedentes',    'Antecedentes contraloría, procuraduría y policía')}
+      ${fila('eps',             'Certificado de E.P.S.')}
+      ${fila('afp',             'Certificado de A.F.P.')}
+      ${fila('ref_laborales',   '2 - Referencias Laborales')}
+      ${fila('ref_personales',  '2 - Referencias Personales')}
+      ${fila('foto',            'Foto fondo blanco')}
+      ${fila('carnet_covid',    'Carnet COVID - 19')}
+      ${fila('carnet_alimentos','Carnet de Manipulación de Alimentos (vigencia mayor a 6 meses)')}
+      ${fila('cuenta_bancaria', 'Constancia de Apertura de Cuenta')}
+      ${fila('soat',            'Copia Soat, Tecnomecánica, licencia de conducción y tarjeta de propiedad')}
+      ${fila('funeraria',       'Certificado Funerario')}
+
+      ${filaSeccion('Afiliación Hijos')}
+      ${fila('afil_hijos',      'Registro Civil de Nacimiento')}
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Tarjeta de Identidad Mayores de 7 años</td><td class="cell-obs"></td></tr>
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Constancia de Estudio Mayores de 12 años</td><td class="cell-obs"></td></tr>
+
+      ${filaSeccion('Afiliación Padres')}
+      ${fila('afil_padres',     'Registro Civil de Nacimiento del Cotizante')}
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Fotocopia de Cédula de Padres Mayores a 58 años</td><td class="cell-obs"></td></tr>
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Declaración de Supervivencia</td><td class="cell-obs"></td></tr>
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Declaración de Dependencia Económica</td><td class="cell-obs"></td></tr>
+
+      ${filaSeccion('Afiliación Cónyugues — Unión Libre')}
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Fotocopia de la Cédula</td><td class="cell-obs"></td></tr>
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Declaración Extrajuicio</td><td class="cell-obs"></td></tr>
+
+      ${filaSeccion('Afiliación Cónyugues — Matrimonio')}
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Fotocopia de la Cédula</td><td class="cell-obs"></td></tr>
+      <tr><td class="cell-check"></td><td class="cell-check"></td><td class="cell-doc">Registro Civil de Matrimonio</td><td class="cell-obs"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- Declaración -->
+  <div class="declaracion">
+    <span>Declaro que he suministrado información real y precisa, y que conozco los efectos que causaría que ésta no lo sea, y los que se produzcan por la falta de documentos no entregados.</span>
+    <br><br>
+    <span>De igual manera, autorizo a que me sean pagadas las prestaciones sociales y mis pagos por concepto de nómina a la cuenta bancaria que certifico mediante constancia entregada.</span>
+  </div>
+
+  <!-- Pie: fecha, contrato, firma, doc identidad -->
+  <div class="pie">
+    <div class="pcell">
+      <div class="plabel">DD</div>
+      <div style="font-size:13px;font-weight:bold;margin-top:4px">${dd}</div>
+    </div>
+    <div class="pcell">
+      <div class="plabel">MMM</div>
+      <div style="font-size:11px;font-weight:bold;margin-top:4px">${mmm}</div>
+    </div>
+    <div class="pcell" style="grid-column:span 1">
+      <div class="plabel">AAAA</div>
+      <div style="font-size:11px;font-weight:bold;margin-top:4px">${aaaa}</div>
+    </div>
+    <div class="pcell">
+      <div class="plabel">Contrato</div>
+      <div style="font-size:9px;margin-top:4px">${oc.numero || ''}</div>
+      <div style="font-size:8px;color:#555">${oc.tipo_contrato ? oc.tipo_contrato.replace(/_/g,' ') : ''}</div>
+    </div>
+    <div class="pcell">
+      <div class="plabel">Firma Empleado</div>
+      <div style="margin-top:4px">${firmaImg}</div>
+      <div style="font-size:8px;color:#444;margin-top:2px">${firmaNombre}</div>
+    </div>
+    <div class="pcell">
+      <div class="plabel">Doc. Identidad</div>
+      <div style="font-size:10px;font-weight:bold;margin-top:4px">${oc.numero_id || ''}</div>
+      <div style="font-size:8px;color:#555">${tipoIdMap[tipoIdKey] || tipoIdKey}</div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>`;
+
+  // Abrir en ventana nueva para imprimir / guardar como PDF
+  const win = window.open('', '_blank');
+  if (!win) { toast('Permite las ventanas emergentes para generar el PDF', 'warning'); return; }
+  win.document.write(html);
+  win.document.close();
 }
 
 /* ════════════════════════════════════════════════════════════

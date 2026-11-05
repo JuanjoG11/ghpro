@@ -36,15 +36,9 @@
       padding: 20px 20px 16px;
       text-align: center;
     }
-    .header-logo {
-      display: flex; align-items: center; justify-content: center; gap: 12px;
-      margin-bottom: 12px;
-    }
+    .header-logo { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px; }
     .header-logo img { height: 40px; border-radius: 8px; }
-    .header-logo-text {
-      font-size: 18px; font-weight: 800; color: var(--text-primary);
-      letter-spacing: -0.3px;
-    }
+    .header-logo-text { font-size: 18px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
     .header-badge {
       display: inline-block; background: rgba(130,80,200,0.2);
       color: var(--purple); border: 1px solid rgba(130,80,200,0.35);
@@ -56,47 +50,25 @@
 
     /* ── Card candidato ── */
     .card-candidato {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px 20px;
-      margin-bottom: 24px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px; margin-bottom: 24px;
     }
-    .card-candidato .nombre {
-      font-size: 20px; font-weight: 800; margin-bottom: 4px;
-    }
-    .card-candidato .meta {
-      font-size: 13px; color: var(--text-muted);
-      display: flex; gap: 10px; flex-wrap: wrap;
-    }
-    .card-candidato .meta span {
-      background: rgba(255,255,255,0.06);
-      padding: 2px 10px; border-radius: 20px;
-    }
+    .card-candidato .nombre { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .card-candidato .meta { font-size: 13px; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+    .card-candidato .meta span { background: rgba(255,255,255,0.06); padding: 2px 10px; border-radius: 20px; }
 
     /* ── Progreso ── */
     .progreso-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 20px;
-      margin-bottom: 24px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 20px; margin-bottom: 24px;
     }
-    .progreso-label {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 8px;
-    }
+    .progreso-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .progreso-label span { font-size: 13px; font-weight: 600; }
     .progreso-label .pct { color: var(--accent); font-size: 15px; font-weight: 800; }
-    .progress-bar-bg {
-      height: 8px; background: rgba(255,255,255,0.06);
-      border-radius: 99px; overflow: hidden;
-    }
+    .progress-bar-bg { height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; }
     .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--purple));
-      border-radius: 99px;
-      transition: width 0.4s ease;
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple));
+      border-radius: 99px; transition: width 0.4s ease;
     }
 
     /* ── Sección título ── */
@@ -105,54 +77,72 @@
       color: var(--text-muted); margin-bottom: 12px;
       display: flex; align-items: center; gap: 6px;
     }
-    .section-title::after {
-      content: ''; flex: 1; height: 1px; background: var(--border);
-    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
     /* ── Item de documento ── */
     .doc-item {
-      background: var(--bg-item);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 10px;
+      background: var(--bg-item); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; margin-bottom: 10px;
       transition: border-color 0.2s;
     }
-    .doc-item.estado-aprobado  { border-color: rgba(58,170,128,0.35); }
-    .doc-item.estado-rechazado { border-color: rgba(224,85,85,0.35); }
-    .doc-item.estado-pendiente_revision { border-color: rgba(230,168,23,0.35); }
+    .doc-item.estado-aprobado          { border-color: rgba(58,170,128,0.35); }
+    .doc-item.estado-rechazado         { border-color: rgba(224,85,85,0.35); }
+    .doc-item.estado-pendiente_revision{ border-color: rgba(230,168,23,0.35); }
 
-    .doc-header {
-      display: flex; align-items: flex-start; gap: 10px;
-    }
+    .doc-header { display: flex; align-items: flex-start; gap: 10px; }
     .doc-icon {
       width: 38px; height: 38px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-      background: rgba(255,255,255,0.06);
+      font-size: 18px; flex-shrink: 0; background: rgba(255,255,255,0.06);
     }
-    .doc-icon.aprobado  { background: rgba(58,170,128,0.15); }
-    .doc-icon.rechazado { background: rgba(224,85,85,0.12); }
+    .doc-icon.aprobado           { background: rgba(58,170,128,0.15); }
+    .doc-icon.rechazado          { background: rgba(224,85,85,0.12); }
     .doc-icon.pendiente_revision { background: rgba(230,168,23,0.12); }
-
     .doc-info { flex: 1; min-width: 0; }
     .doc-label { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
     .doc-estado {
       font-size: 12px; font-weight: 700;
       display: inline-flex; align-items: center; gap: 4px;
     }
-    .doc-estado.pendiente         { color: var(--text-muted); }
-    .doc-estado.pendiente_revision{ color: var(--warning); }
-    .doc-estado.aprobado          { color: var(--success); }
-    .doc-estado.rechazado         { color: var(--danger); }
+    .doc-estado.pendiente          { color: var(--text-muted); }
+    .doc-estado.pendiente_revision { color: var(--warning); }
+    .doc-estado.aprobado           { color: var(--success); }
+    .doc-estado.rechazado          { color: var(--danger); }
     .doc-obs-rechazo {
       margin-top: 6px; padding: 8px 10px;
-      background: rgba(224,85,85,0.08);
-      border: 1px solid rgba(224,85,85,0.2);
+      background: rgba(224,85,85,0.08); border: 1px solid rgba(224,85,85,0.2);
       border-radius: 8px; font-size: 12px; color: var(--danger);
     }
-
     .doc-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Card funeraria ── */
+    .funeraria-card {
+      background: rgba(130,80,200,0.08);
+      border: 1px solid rgba(130,80,200,0.3);
+      border-radius: 10px; padding: 14px 16px; margin-top: 10px;
+    }
+    .funeraria-card h4 { font-size: 13px; font-weight: 700; color: var(--purple); margin-bottom: 10px; }
+    .funeraria-card p  { font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 10px; }
+    .funeraria-opciones { display: flex; flex-direction: column; gap: 8px; }
+    .funeraria-opcion {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .funeraria-opcion:hover { border-color: var(--purple); background: rgba(130,80,200,0.1); }
+    .funeraria-opcion.selected { border-color: var(--purple); background: rgba(130,80,200,0.15); }
+    .funeraria-opcion input[type=radio] { margin-top: 2px; accent-color: var(--purple); flex-shrink: 0; }
+    .funeraria-opcion label { font-size: 13px; cursor: pointer; line-height: 1.5; }
+    .funeraria-opcion label strong { color: var(--text-primary); display: block; margin-bottom: 2px; }
+    .funeraria-opcion label span { color: var(--text-muted); font-size: 12px; }
+    .btn-funeraria-guardar {
+      margin-top: 12px; width: 100%; padding: 10px;
+      background: rgba(130,80,200,0.25); color: var(--purple);
+      border: 1px solid rgba(130,80,200,0.4); border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-funeraria-guardar:hover { background: rgba(130,80,200,0.35); }
 
     /* ── Botones ── */
     .btn {
@@ -163,10 +153,9 @@
     }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary   { background: rgba(74,143,212,0.25); color: var(--accent); border: 1px solid rgba(74,143,212,0.4); }
-    .btn-success   { background: rgba(58,170,128,0.2);  color: var(--success); border: 1px solid rgba(58,170,128,0.35); }
-    .btn-danger    { background: rgba(224,85,85,0.12);  color: var(--danger);  border: 1px solid rgba(224,85,85,0.25); }
-    .btn-ghost     { background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-primary { background: rgba(74,143,212,0.25); color: var(--accent); border: 1px solid rgba(74,143,212,0.4); }
+    .btn-success { background: rgba(58,170,128,0.2);  color: var(--success); border: 1px solid rgba(58,170,128,0.35); }
+    .btn-ghost   { background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border); }
 
     /* ── File input oculto ── */
     .file-input-hidden { display: none; }
@@ -179,6 +168,57 @@
       border-radius: 6px; border: 1px solid rgba(74,143,212,0.2);
     }
     .archivo-link:hover { background: rgba(74,143,212,0.18); }
+
+    /* ── Upload progress ── */
+    .upload-progress {
+      height: 4px; background: rgba(255,255,255,0.06);
+      border-radius: 99px; overflow: hidden; margin-top: 8px; display: none;
+    }
+    .upload-progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple));
+      border-radius: 99px; transition: width 0.2s;
+    }
+
+    /* ── Firma digital ── */
+    .firma-section {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; margin-top: 28px;
+    }
+    .firma-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .firma-section p  { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
+    .firma-declaracion {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px; font-size: 12px;
+      color: var(--text-secondary); line-height: 1.75; margin-bottom: 16px;
+    }
+    #firmaCanvas {
+      width: 100%; height: 180px;
+      background: #fff; border-radius: 10px;
+      display: block; touch-action: none; cursor: crosshair;
+    }
+    .firma-controles {
+      display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .firma-nombre-input {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-primary); font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .firma-nombre-input:focus { outline: none; border-color: var(--accent); }
+    .firma-status {
+      font-size: 12px; color: var(--success); font-weight: 600;
+      margin-top: 8px; display: none;
+    }
+    .btn-firma-enviar {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, rgba(58,170,128,0.3), rgba(74,143,212,0.3));
+      color: var(--success); border: 1px solid rgba(58,170,128,0.5);
+      border-radius: 10px; font-size: 15px; font-weight: 700;
+      cursor: pointer; margin-top: 14px; transition: opacity 0.2s;
+    }
+    .btn-firma-enviar:hover { opacity: 0.85; }
+    .btn-firma-enviar:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* ── Toast ── */
     #toastPortal {
@@ -193,9 +233,8 @@
 
     /* ── Loading ── */
     #portalLoader {
-      position: fixed; inset: 0; background: rgba(10,10,26,0.8);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9998; display: none;
+      position: fixed; inset: 0; background: rgba(10,10,26,0.85);
+      display: none; align-items: center; justify-content: center; z-index: 9998;
     }
     .spinner {
       width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1);
@@ -204,32 +243,19 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Estado vacío / error ── */
-    .estado-pantalla {
-      text-align: center; padding: 60px 20px;
-    }
+    /* ── Estado pantalla ── */
+    .estado-pantalla { text-align: center; padding: 60px 20px; }
     .estado-pantalla .icon { font-size: 56px; margin-bottom: 16px; }
-    .estado-pantalla h2 { font-size: 20px; margin-bottom: 8px; }
-    .estado-pantalla p  { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+    .estado-pantalla h2   { font-size: 20px; margin-bottom: 8px; }
+    .estado-pantalla p    { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
 
     /* ── Instrucciones ── */
     .instrucciones {
-      background: rgba(74,143,212,0.06);
-      border: 1px solid rgba(74,143,212,0.2);
+      background: rgba(74,143,212,0.06); border: 1px solid rgba(74,143,212,0.2);
       border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;
       font-size: 13px; color: var(--text-secondary); line-height: 1.75;
     }
     .instrucciones strong { color: var(--text-primary); }
-
-    /* ── Upload progress ── */
-    .upload-progress {
-      height: 4px; background: rgba(255,255,255,0.06);
-      border-radius: 99px; overflow: hidden; margin-top: 8px; display: none;
-    }
-    .upload-progress-fill {
-      height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple));
-      border-radius: 99px; transition: width 0.2s;
-    }
 
     @media (max-width: 480px) {
       .doc-label { font-size: 13px; }
@@ -240,13 +266,11 @@
 </head>
 <body>
 
-  <!-- Loading -->
-  <div id="portalLoader"><div class="spinner"></div></div>
-
-  <!-- Toast -->
+  <div id="portalLoader" style="display:none;position:fixed;inset:0;background:rgba(10,10,26,0.85);align-items:center;justify-content:center;z-index:9998">
+    <div class="spinner"></div>
+  </div>
   <div id="toastPortal"></div>
 
-  <!-- Header -->
   <div class="header">
     <div class="header-logo">
       <img src="icons/logo_tym.png" alt="Logo" onerror="this.style.display='none'">
@@ -255,7 +279,6 @@
     <div class="header-badge">📋 Portal de Contratación</div>
   </div>
 
-  <!-- Contenido principal -->
   <div class="container" id="mainContent">
     <div class="estado-pantalla">
       <div class="icon">⏳</div>
@@ -264,313 +287,548 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    'use strict';
+  'use strict';
 
-    // ── Supabase ─────────────────────────────────────────────
-    const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
-    const { createClient } = supabase;
-    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+  // ── Supabase ─────────────────────────────────────────────
+  const SUPABASE_URL  = 'https://rvosdhqidjqxzcbcdgzl.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2b3NkaHFpZGpxeHpjYmNkZ3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzYwMjYsImV4cCI6MjEwMjkxMjAyNn0.CI2G80McLHoINOvAhrFT5t5ft7WX4H-H1BwdfPD--EM';
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    // ── Estado global ─────────────────────────────────────────
-    let _token   = null;
-    let _tokenData = null;
-    let _docs    = [];
+  // ── Estado global ─────────────────────────────────────────
+  let _token     = null;
+  let _tokenData = null;
+  let _docs      = [];
+  let _firmaCanvas = null;
+  let _firmaDibujando = false;
+  let _firmaUltimoPunto = null;
+  let _firmaTieneTrazos = false;
 
-    // ── Helpers ───────────────────────────────────────────────
-    function showLoader(v) {
-      document.getElementById('portalLoader').style.display = v ? 'flex' : 'none';
+  // ── Helpers ───────────────────────────────────────────────
+  function showLoader(v) {
+    const el = document.getElementById('portalLoader');
+    el.style.display = v ? 'flex' : 'none';
+  }
+
+  let _toastTimer = null;
+  function toast(msg, tipo = 'info') {
+    const el = document.getElementById('toastPortal');
+    const colores = { success:'#3aaa80', error:'#e05555', warning:'#e6a817', info:'#4a8fd4' };
+    el.style.borderColor = colores[tipo] || colores.info;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  function setContent(html) { document.getElementById('mainContent').innerHTML = html; }
+
+  // ── Inicializar ───────────────────────────────────────────
+  async function init() {
+    const params = new URLSearchParams(window.location.search);
+    _token = params.get('t');
+
+    if (!_token) {
+      mostrarError('Link inválido', 'Este enlace no es válido o está incompleto. Solicita un nuevo link a Gestión Humana.');
+      return;
     }
 
-    let _toastTimer = null;
-    function toast(msg, tipo = 'info') {
-      const el = document.getElementById('toastPortal');
-      const colores = { success:'#3aaa80', error:'#e05555', warning:'#e6a817', info:'#4a8fd4' };
-      el.style.borderColor = colores[tipo] || colores.info;
-      el.textContent = msg;
-      el.classList.add('show');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
-    }
+    showLoader(true);
+    const { data: tokenRow, error: tokenErr } = await sb
+      .from('portal_candidato_tokens')
+      .select('*')
+      .eq('token', _token)
+      .single();
 
-    function setContent(html) {
-      document.getElementById('mainContent').innerHTML = html;
-    }
-
-    function nombreArchivo(url) {
-      try { return decodeURIComponent(url.split('/').pop().split('?')[0]); }
-      catch { return 'archivo'; }
-    }
-
-    // ── Inicializar ───────────────────────────────────────────
-    async function init() {
-      const params = new URLSearchParams(window.location.search);
-      _token = params.get('t');
-
-      if (!_token) {
-        mostrarError('Link inválido', 'Este enlace no es válido o está incompleto. Solicita un nuevo link a Gestión Humana.');
-        return;
-      }
-
-      showLoader(true);
-      // Validar token
-      const { data: tokenRow, error: tokenErr } = await sb
-        .from('portal_candidato_tokens')
-        .select('*')
-        .eq('token', _token)
-        .single();
-
-      if (tokenErr || !tokenRow) {
-        showLoader(false);
-        console.error('Token error:', tokenErr, '| tokenRow:', tokenRow, '| token buscado:', _token);
-        mostrarError('Acceso no válido', 'Este enlace no existe o ya fue desactivado. Comunícate con Gestión Humana para obtener un nuevo link.');
-        return;
-      }
-
-      if (!tokenRow.activo) {
-        showLoader(false);
-        mostrarError('Enlace desactivado', 'Este enlace fue reemplazado por uno nuevo. Solicita el link actualizado a Gestión Humana.');
-        return;
-      }
-
-      if (new Date(tokenRow.expira_en) < new Date()) {
-        showLoader(false);
-        mostrarError('Enlace expirado', `Este enlace venció el ${new Date(tokenRow.expira_en).toLocaleDateString('es-CO')}. Solicita un nuevo link a Gestión Humana.`);
-        return;
-      }
-
-      _tokenData = tokenRow;
-
-      // Cargar documentos del checklist
-      const { data: docs, error: docsErr } = await sb
-        .from('checklist_documentos')
-        .select('*')
-        .eq('orden_id', tokenRow.orden_id)
-        .order('item_key');
-
+    if (tokenErr || !tokenRow) {
       showLoader(false);
-
-      if (docsErr || !docs) {
-        mostrarError('Error al cargar', 'No se pudieron cargar los documentos. Intenta de nuevo más tarde.');
-        return;
-      }
-
-      _docs = docs;
-      renderPortal();
+      console.error('Token error:', tokenErr, '| token:', _token);
+      mostrarError('Acceso no válido', 'Este enlace no existe o ya fue desactivado. Comunícate con Gestión Humana para obtener un nuevo link.');
+      return;
     }
 
-    // ── Render principal ──────────────────────────────────────
-    function renderPortal() {
-      const total    = _docs.length;
-      const aprobados = _docs.filter(d => d.estado === 'aprobado').length;
-      const subidos  = _docs.filter(d => ['pendiente_revision','aprobado'].includes(d.estado)).length;
-      const pct      = total ? Math.round((subidos / total) * 100) : 0;
-
-      const html = `
-        <!-- Card candidato -->
-        <div class="card-candidato">
-          <div class="nombre">👋 Hola, ${_tokenData.candidato_nombre.split(' ')[0]}</div>
-          <div class="meta">
-            <span>📋 ${_tokenData.orden_num}</span>
-            ${_tokenData.candidato_email ? `<span>✉️ ${_tokenData.candidato_email}</span>` : ''}
-          </div>
-        </div>
-
-        <!-- Instrucciones -->
-        <div class="instrucciones">
-          <strong>¿Cómo funciona?</strong><br>
-          Aquí puedes cargar los documentos requeridos para tu proceso de contratación.<br>
-          Toca el botón <strong>📎 Subir</strong> en cada documento, selecciona el archivo desde tu celular o computador,
-          y Gestión Humana lo revisará. Una vez aprobado verás ✅.<br>
-          Si un documento es rechazado verás el motivo y podrás volver a subirlo.
-        </div>
-
-        <!-- Barra de progreso -->
-        <div class="progreso-wrap">
-          <div class="progreso-label">
-            <span>📊 Documentos subidos</span>
-            <span class="pct">${subidos} / ${total}</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width:${pct}%"></div>
-          </div>
-          ${aprobados === total
-            ? `<div style="margin-top:8px;font-size:12px;color:var(--success);font-weight:700">
-                 🎉 ¡Todos los documentos han sido aprobados!
-               </div>`
-            : `<div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
-                 ${aprobados} aprobados · ${_docs.filter(d=>d.estado==='pendiente').length} pendientes de subir
-               </div>`}
-        </div>
-
-        <!-- Lista de documentos -->
-        <div class="section-title">📁 Documentos requeridos</div>
-        <div id="docList">
-          ${_docs.map(renderDocItem).join('')}
-        </div>
-
-        <div style="text-align:center;margin-top:28px;font-size:12px;color:var(--text-muted)">
-          Si tienes dudas comunícate con Gestión Humana.<br>
-          Este portal vence el <strong>${new Date(_tokenData.expira_en).toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'})}</strong>.
-        </div>`;
-
-      setContent(html);
+    if (!tokenRow.activo) {
+      showLoader(false);
+      mostrarError('Enlace desactivado', 'Este enlace fue reemplazado por uno nuevo. Solicita el link actualizado a Gestión Humana.');
+      return;
     }
 
-    // ── Render de un item de documento ────────────────────────
-    function renderDocItem(doc) {
-      const iconos = {
-        hv: '📄', id: '🪪', estudios: '🎓', laborales: '🏢',
-        vr: '🔍', examen: '🏥', antecedentes: '🚔', afiliaciones: '🏦',
-        cert_bancaria: '💳', licencia: '🚗', autorizacion: '✍️', foto: '📷',
-      };
-      const icono = iconos[doc.item_key] || '📁';
+    if (new Date(tokenRow.expira_en) < new Date()) {
+      showLoader(false);
+      mostrarError('Enlace expirado', `Este enlace venció el ${new Date(tokenRow.expira_en).toLocaleDateString('es-CO')}. Solicita un nuevo link a Gestión Humana.`);
+      return;
+    }
 
-      const estadoTexto = {
-        pendiente:           '⏳ Pendiente',
-        pendiente_revision:  '🔍 En revisión',
-        aprobado:            '✅ Aprobado',
-        rechazado:           '❌ Rechazado — volver a subir',
-        no_aplica:           'N/A',
-      };
-      const estado = doc.estado || 'pendiente';
-      const esFinal = estado === 'aprobado' || estado === 'no_aplica';
+    _tokenData = tokenRow;
 
-      const archivoLink = doc.archivo_url
-        ? `<div style="margin-top:8px">
-             <a href="${doc.archivo_url}" target="_blank" class="archivo-link">
-               📎 Ver archivo cargado
-             </a>
-           </div>` : '';
+    const { data: docs, error: docsErr } = await sb
+      .from('checklist_documentos')
+      .select('*')
+      .eq('orden_id', tokenRow.orden_id)
+      .order('item_key');
 
-      const obsRechazo = doc.estado === 'rechazado' && doc.obs_gh
-        ? `<div class="doc-obs-rechazo">💬 Observación: ${doc.obs_gh}</div>` : '';
+    showLoader(false);
 
-      const botonSubir = !esFinal
-        ? `<button class="btn btn-primary" onclick="elegirArchivo('${doc.id}')">
-             📎 ${doc.archivo_url ? 'Reemplazar' : 'Subir documento'}
-           </button>
-           <div class="upload-progress" id="prog_${doc.id}">
-             <div class="upload-progress-fill" id="progFill_${doc.id}" style="width:0%"></div>
-           </div>
-           <input type="file" class="file-input-hidden" id="file_${doc.id}"
-                  accept=".pdf,.jpg,.jpeg,.png,.heic,.webp"
-                  onchange="subirArchivo('${doc.id}', this)">` : '';
+    if (docsErr || !docs) {
+      mostrarError('Error al cargar', 'No se pudieron cargar los documentos. Intenta de nuevo más tarde.');
+      return;
+    }
 
+    _docs = docs;
+    renderPortal();
+  }
+
+  // ── Render principal ──────────────────────────────────────
+  function renderPortal() {
+    const total    = _docs.length;
+    const subidos  = _docs.filter(d => ['pendiente_revision','aprobado'].includes(d.estado)).length;
+    const aprobados = _docs.filter(d => d.estado === 'aprobado').length;
+    const pct      = total ? Math.round((subidos / total) * 100) : 0;
+
+    // Verificar si tiene funeraria guardada
+    const docFuneraria = _docs.find(d => d.item_key === 'funeraria');
+    const funerariaResuelta = docFuneraria &&
+      (docFuneraria.archivo_url || docFuneraria.funeraria_acepta !== null && docFuneraria.funeraria_acepta !== undefined);
+
+    const html = `
+      <div class="card-candidato">
+        <div class="nombre">👋 Hola, ${_tokenData.candidato_nombre.split(' ')[0]}</div>
+        <div class="meta">
+          <span>📋 ${_tokenData.orden_num}</span>
+          ${_tokenData.candidato_email ? `<span>✉️ ${_tokenData.candidato_email}</span>` : ''}
+        </div>
+      </div>
+
+      <div class="instrucciones">
+        <strong>¿Cómo funciona?</strong><br>
+        Carga cada documento tocando el botón <strong>📎 Subir</strong>. Gestión Humana revisará cada archivo y verás ✅ cuando esté aprobado.<br>
+        Al terminar de cargar todos los documentos aparecerá la sección de <strong>firma digital</strong> para completar tu proceso.
+      </div>
+
+      <div class="progreso-wrap">
+        <div class="progreso-label">
+          <span>📊 Documentos subidos</span>
+          <span class="pct">${subidos} / ${total}</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width:${pct}%"></div>
+        </div>
+        ${aprobados === total && total > 0
+          ? `<div style="margin-top:8px;font-size:12px;color:var(--success);font-weight:700">🎉 ¡Todos los documentos han sido aprobados!</div>`
+          : `<div style="margin-top:6px;font-size:11px;color:var(--text-muted)">${aprobados} aprobados · ${_docs.filter(d=>d.estado==='pendiente').length} pendientes de subir</div>`}
+      </div>
+
+      <div class="section-title">📁 Documentos requeridos</div>
+      <div id="docList">
+        ${_docs.map(renderDocItem).join('')}
+      </div>
+
+      ${renderSeccionFirma()}
+
+      <div style="text-align:center;margin-top:28px;font-size:12px;color:var(--text-muted)">
+        Si tienes dudas comunícate con Gestión Humana.<br>
+        Este portal vence el <strong>${new Date(_tokenData.expira_en).toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'})}</strong>.
+      </div>`;
+
+    setContent(html);
+    inicializarFirmaCanvas();
+  }
+
+  // ── Render de un item de documento ────────────────────────
+  function renderDocItem(doc) {
+    const iconos = {
+      hv: '📄', cedula: '🪪', acta_grado: '🎓', antecedentes: '🚔',
+      eps: '🏥', afp: '🏦', ref_laborales: '🏢', ref_personales: '👥',
+      foto: '📷', carnet_covid: '💉', carnet_alimentos: '🍽️',
+      cuenta_bancaria: '💳', soat: '🚗', funeraria: '🕊️',
+      afil_hijos: '👶', afil_padres: '👴',
+    };
+    const icono = iconos[doc.item_key] || '📁';
+    const estadoTexto = {
+      pendiente:           '⏳ Pendiente',
+      pendiente_revision:  '🔍 En revisión',
+      aprobado:            '✅ Aprobado',
+      rechazado:           '❌ Rechazado — volver a subir',
+      no_aplica:           'N/A',
+    };
+    const estado = doc.estado || 'pendiente';
+    const esFinal = estado === 'aprobado' || estado === 'no_aplica';
+
+    const archivoLink = doc.archivo_url
+      ? `<div style="margin-top:8px"><a href="${doc.archivo_url}" target="_blank" class="archivo-link">📎 Ver archivo cargado</a></div>` : '';
+
+    const obsRechazo = doc.estado === 'rechazado' && doc.obs_gh
+      ? `<div class="doc-obs-rechazo">💬 ${doc.obs_gh}</div>` : '';
+
+    // Bloque especial del certificado funerario
+    const funerariaExtra = doc.item_key === 'funeraria' ? renderFunerariaExtra(doc) : '';
+
+    const botonSubir = !esFinal
+      ? `<button class="btn btn-primary" onclick="elegirArchivo('${doc.id}')">
+           📎 ${doc.archivo_url ? 'Reemplazar' : 'Subir documento'}
+         </button>
+         <div class="upload-progress" id="prog_${doc.id}">
+           <div class="upload-progress-fill" id="progFill_${doc.id}" style="width:0%"></div>
+         </div>
+         <input type="file" class="file-input-hidden" id="file_${doc.id}"
+                accept=".pdf,.jpg,.jpeg,.png,.heic,.webp"
+                onchange="subirArchivo('${doc.id}', this)">` : '';
+
+    return `
+      <div class="doc-item estado-${estado}" id="item_${doc.id}">
+        <div class="doc-header">
+          <div class="doc-icon ${estado}">${icono}</div>
+          <div class="doc-info">
+            <div class="doc-label">${doc.item_label}</div>
+            <div class="doc-estado ${estado}">${estadoTexto[estado] || estado}</div>
+            ${archivoLink}
+            ${obsRechazo}
+          </div>
+        </div>
+        ${funerariaExtra}
+        ${botonSubir ? `<div class="doc-actions">${botonSubir}</div>` : ''}
+      </div>`;
+  }
+
+  // ── Bloque especial funeraria ──────────────────────────────
+  function renderFunerariaExtra(doc) {
+    // Si ya fue guardada la opción, mostrar el estado guardado
+    if (doc.funeraria_acepta !== null && doc.funeraria_acepta !== undefined) {
+      const txt = doc.funeraria_acepta
+        ? '✅ Afiliación Los Olivos aceptada — se descontará $11.500 de nómina'
+        : '✅ Presentará certificado funerario propio';
+      return `<div style="margin-top:10px;padding:10px 12px;background:rgba(58,170,128,0.1);border:1px solid rgba(58,170,128,0.3);border-radius:8px;font-size:13px;color:var(--success)">${txt}</div>`;
+    }
+
+    // Si tiene archivo subido, no necesita la opción de afiliación
+    if (doc.archivo_url) return '';
+
+    return `
+      <div class="funeraria-card" id="funerariaCard_${doc.id}">
+        <h4>🕊️ ¿Tienes certificado funerario vigente?</h4>
+        <p>Si no tienes certificado funerario, la empresa puede afiliarte a <strong>Los Olivos</strong> descontando <strong>$11.500 de nómina mensual</strong>.</p>
+        <div class="funeraria-opciones">
+          <div class="funeraria-opcion" onclick="seleccionarFuneraria('${doc.id}', true, this)">
+            <input type="radio" name="funeraria_${doc.id}" value="true">
+            <label>
+              <strong>Quiero que la empresa me afilie a Los Olivos</strong>
+              <span>Se descontarán $11.500 de nómina mensual. No necesito subir ningún documento.</span>
+            </label>
+          </div>
+          <div class="funeraria-opcion" onclick="seleccionarFuneraria('${doc.id}', false, this)">
+            <input type="radio" name="funeraria_${doc.id}" value="false">
+            <label>
+              <strong>Ya tengo certificado funerario propio</strong>
+              <span>Subiré el certificado con vigencia actual.</span>
+            </label>
+          </div>
+        </div>
+        <button class="btn-funeraria-guardar" id="btnFuneraria_${doc.id}" onclick="guardarOpcionFuneraria('${doc.id}')" disabled>
+          💾 Guardar selección
+        </button>
+      </div>`;
+  }
+
+  // ── Lógica funeraria ──────────────────────────────────────
+  let _funerariaSeleccion = {};
+
+  function seleccionarFuneraria(docId, valor, el) {
+    _funerariaSeleccion[docId] = valor;
+    // Marcar radio y estilo
+    const card = document.getElementById('funerariaCard_' + docId);
+    if (card) {
+      card.querySelectorAll('.funeraria-opcion').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      el.querySelector('input[type=radio]').checked = true;
+    }
+    const btn = document.getElementById('btnFuneraria_' + docId);
+    if (btn) btn.disabled = false;
+  }
+
+  async function guardarOpcionFuneraria(docId) {
+    const acepta = _funerariaSeleccion[docId];
+    if (acepta === undefined) return;
+
+    showLoader(true);
+    const { error } = await sb.from('checklist_documentos')
+      .update({
+        funeraria_acepta: acepta,
+        estado: 'pendiente_revision',
+        obs_gh: acepta ? 'Candidato solicitó afiliación Los Olivos ($11.500/mes)' : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', docId);
+    showLoader(false);
+
+    if (error) { toast('Error al guardar. Intenta de nuevo.', 'error'); return; }
+
+    const idx = _docs.findIndex(d => d.id === docId);
+    if (idx !== -1) {
+      _docs[idx].funeraria_acepta = acepta;
+      _docs[idx].estado = 'pendiente_revision';
+    }
+
+    toast(acepta
+      ? '✅ Afiliación Los Olivos registrada correctamente'
+      : '✅ Selección guardada. Ahora sube tu certificado funerario.', 'success');
+    renderPortal();
+  }
+
+  // ── Sección firma digital ─────────────────────────────────
+  function renderSeccionFirma() {
+    // Ver si ya firmó
+    const yaFirmo = _tokenData.firma_url;
+    if (yaFirmo) {
       return `
-        <div class="doc-item estado-${estado}" id="item_${doc.id}">
-          <div class="doc-header">
-            <div class="doc-icon ${estado}">${icono}</div>
-            <div class="doc-info">
-              <div class="doc-label">${doc.item_label}</div>
-              <div class="doc-estado ${estado}">${estadoTexto[estado] || estado}</div>
-              ${archivoLink}
-              ${obsRechazo}
-            </div>
+        <div class="firma-section">
+          <h3>✍️ Firma Digital</h3>
+          <div style="padding:12px;background:rgba(58,170,128,0.1);border:1px solid rgba(58,170,128,0.3);border-radius:8px;font-size:13px;color:var(--success)">
+            ✅ Documento firmado digitalmente el ${new Date(_tokenData.firma_fecha||Date.now()).toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'})}
           </div>
-          ${botonSubir ? `<div class="doc-actions">${botonSubir}</div>` : ''}
         </div>`;
     }
 
-    // ── Elegir archivo ────────────────────────────────────────
-    function elegirArchivo(docId) {
-      document.getElementById('file_' + docId)?.click();
+    return `
+      <div class="firma-section" id="seccionFirma">
+        <h3>✍️ Firma Digital</h3>
+        <p>Al firmar, declaras que la información suministrada es real y precisa, y autorizas el tratamiento de tus datos personales y el pago de tus prestaciones sociales a la cuenta bancaria certificada.</p>
+
+        <div class="firma-declaracion">
+          <em>
+            "Declaro que he suministrado información real y precisa, y que conozco los efectos que causaría que ésta no lo sea, y los que se produzcan por la falta de documentos no entregados.<br><br>
+            De igual manera, autorizo a que me sean pagadas las prestaciones sociales y mis pagos por concepto de nómina a la cuenta bancaria que certifico mediante constancia entregada."
+          </em>
+        </div>
+
+        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Nombre completo (como aparece en la cédula)</label>
+        <input type="text" id="firmaNombre" class="firma-nombre-input"
+               placeholder="Ej: Juan Carlos Pérez García"
+               value="${_tokenData.candidato_nombre || ''}">
+
+        <label style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block">Firma (dibuja con el dedo o el mouse)</label>
+        <canvas id="firmaCanvas" width="640" height="180"></canvas>
+        <div class="firma-controles">
+          <button class="btn btn-ghost" onclick="limpiarFirma()">🗑️ Borrar firma</button>
+          <span id="firmaHint" style="font-size:11px;color:var(--text-muted);align-self:center">Dibuja tu firma en el recuadro blanco</span>
+        </div>
+
+        <button class="btn-firma-enviar" id="btnFirmar" onclick="enviarFirma()">
+          ✅ Firmar y completar proceso
+        </button>
+        <div class="firma-status" id="firmaStatus">✅ Firma guardada exitosamente</div>
+      </div>`;
+  }
+
+  // ── Canvas de firma ───────────────────────────────────────
+  function inicializarFirmaCanvas() {
+    const canvas = document.getElementById('firmaCanvas');
+    if (!canvas) return;
+    _firmaCanvas = canvas;
+    _firmaTieneTrazos = false;
+
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#1a1a35';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const src = e.touches ? e.touches[0] : e;
+      return {
+        x: (src.clientX - rect.left) * scaleX,
+        y: (src.clientY - rect.top)  * scaleY,
+      };
     }
 
-    // ── Subir archivo a Supabase Storage ─────────────────────
-    async function subirArchivo(docId, inputEl) {
-      const file = inputEl.files[0];
-      if (!file) return;
+    function iniciar(e) {
+      e.preventDefault();
+      _firmaDibujando = true;
+      const p = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      _firmaUltimoPunto = p;
+    }
+    function dibujar(e) {
+      e.preventDefault();
+      if (!_firmaDibujando) return;
+      const p = getPos(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      _firmaUltimoPunto = p;
+      _firmaTieneTrazos = true;
+    }
+    function terminar(e) {
+      e.preventDefault();
+      _firmaDibujando = false;
+    }
 
-      // Validar tamaño (máx 10 MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast('El archivo supera el límite de 10 MB', 'error');
-        inputEl.value = '';
-        return;
-      }
+    canvas.addEventListener('mousedown',  iniciar,   { passive: false });
+    canvas.addEventListener('mousemove',  dibujar,   { passive: false });
+    canvas.addEventListener('mouseup',    terminar,  { passive: false });
+    canvas.addEventListener('mouseleave', terminar,  { passive: false });
+    canvas.addEventListener('touchstart', iniciar,   { passive: false });
+    canvas.addEventListener('touchmove',  dibujar,   { passive: false });
+    canvas.addEventListener('touchend',   terminar,  { passive: false });
+  }
 
-      // Mostrar barra de progreso
-      const progWrap = document.getElementById('prog_' + docId);
-      const progFill = document.getElementById('progFill_' + docId);
-      if (progWrap) progWrap.style.display = 'block';
-      if (progFill) progFill.style.width = '30%';
+  function limpiarFirma() {
+    if (!_firmaCanvas) return;
+    const ctx = _firmaCanvas.getContext('2d');
+    ctx.clearRect(0, 0, _firmaCanvas.width, _firmaCanvas.height);
+    _firmaTieneTrazos = false;
+    document.getElementById('firmaHint').textContent = 'Dibuja tu firma en el recuadro blanco';
+  }
 
-      // Nombre del archivo en Storage
-      const ext  = file.name.split('.').pop().toLowerCase();
-      const path = `contratacion/${_tokenData.orden_id}/${docId}_${Date.now()}.${ext}`;
+  async function enviarFirma() {
+    const nombre = (document.getElementById('firmaNombre')?.value || '').trim();
+    if (!nombre) { toast('Escribe tu nombre completo antes de firmar', 'warning'); return; }
+    if (!_firmaTieneTrazos) { toast('Dibuja tu firma en el recuadro blanco', 'warning'); return; }
 
-      showLoader(true);
+    const btn = document.getElementById('btnFirmar');
+    if (btn) btn.disabled = true;
 
-      // Subir a Supabase Storage (bucket: contratacion-docs)
-      const { error: uploadErr } = await sb.storage
-        .from('contratacion-docs')
-        .upload(path, file, { upsert: true, contentType: file.type });
+    showLoader(true);
 
-      if (uploadErr) {
-        showLoader(false);
-        if (progWrap) progWrap.style.display = 'none';
-        inputEl.value = '';
-        toast('Error al subir el archivo: ' + uploadErr.message, 'error');
-        return;
-      }
+    // Convertir canvas a blob y subir a Storage
+    const dataUrl = _firmaCanvas.toDataURL('image/png');
+    const blob = await (await fetch(dataUrl)).blob();
+    const path = `firmas/${_tokenData.orden_id}/firma_${Date.now()}.png`;
 
-      if (progFill) progFill.style.width = '80%';
+    const { error: uploadErr } = await sb.storage
+      .from('contratacion-docs')
+      .upload(path, blob, { upsert: true, contentType: 'image/png' });
 
-      // Obtener URL pública
-      const { data: urlData } = sb.storage
-        .from('contratacion-docs')
-        .getPublicUrl(path);
-      const archivoUrl = urlData?.publicUrl || '';
-
-      // Actualizar registro en BD
-      const { error: dbErr } = await sb.from('checklist_documentos')
-        .update({
-          archivo_url:   archivoUrl,
-          archivo_nombre: file.name,
-          estado:         'pendiente_revision',
-          subido_por:     'candidato',
-          updated_at:     new Date().toISOString(),
-        })
-        .eq('id', docId);
-
+    if (uploadErr) {
       showLoader(false);
+      if (btn) btn.disabled = false;
+      toast('Error al guardar la firma. Intenta de nuevo.', 'error');
+      return;
+    }
+
+    const { data: urlData } = sb.storage.from('contratacion-docs').getPublicUrl(path);
+    const firmaUrl = urlData?.publicUrl || '';
+
+    // Guardar en el token
+    const { error: dbErr } = await sb.from('portal_candidato_tokens')
+      .update({
+        firma_url:    firmaUrl,
+        firma_nombre: nombre,
+        firma_fecha:  new Date().toISOString(),
+      })
+      .eq('id', _tokenData.id);
+
+    showLoader(false);
+
+    if (dbErr) {
+      if (btn) btn.disabled = false;
+      toast('Error al registrar la firma. Intenta de nuevo.', 'error');
+      return;
+    }
+
+    _tokenData.firma_url   = firmaUrl;
+    _tokenData.firma_nombre = nombre;
+    _tokenData.firma_fecha  = new Date().toISOString();
+
+    toast('✅ ¡Proceso completado! Tu firma ha sido guardada.', 'success');
+
+    const sec = document.getElementById('seccionFirma');
+    if (sec) {
+      sec.innerHTML = `
+        <h3>✍️ Firma Digital</h3>
+        <div style="padding:16px;background:rgba(58,170,128,0.1);border:1px solid rgba(58,170,128,0.3);border-radius:10px;text-align:center">
+          <div style="font-size:32px;margin-bottom:8px">🎉</div>
+          <div style="font-size:15px;font-weight:700;color:var(--success);margin-bottom:4px">¡Proceso completado exitosamente!</div>
+          <div style="font-size:13px;color:var(--text-secondary)">Firmado por <strong>${nombre}</strong> el ${new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'})}</div>
+          <img src="${firmaUrl}" style="max-width:280px;margin-top:12px;border-radius:8px;background:#fff;padding:8px" alt="Firma">
+        </div>`;
+    }
+  }
+
+  // ── Elegir archivo ────────────────────────────────────────
+  function elegirArchivo(docId) { document.getElementById('file_' + docId)?.click(); }
+
+  // ── Subir archivo ─────────────────────────────────────────
+  async function subirArchivo(docId, inputEl) {
+    const file = inputEl.files[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast('El archivo supera el límite de 10 MB', 'error');
       inputEl.value = '';
-
-      if (dbErr) {
-        toast('Archivo subido pero error al guardar. Contacta GH.', 'warning');
-        return;
-      }
-
-      if (progFill) progFill.style.width = '100%';
-      setTimeout(() => { if (progWrap) progWrap.style.display = 'none'; }, 600);
-
-      // Actualizar en memoria y re-render
-      const idx = _docs.findIndex(d => d.id === docId);
-      if (idx !== -1) {
-        _docs[idx].archivo_url    = archivoUrl;
-        _docs[idx].archivo_nombre = file.name;
-        _docs[idx].estado         = 'pendiente_revision';
-        _docs[idx].subido_por     = 'candidato';
-      }
-
-      toast('✅ Documento subido correctamente. Estará en revisión.', 'success');
-      renderPortal();
+      return;
     }
 
-    // ── Error pantalla ────────────────────────────────────────
-    function mostrarError(titulo, mensaje) {
-      setContent(`
-        <div class="estado-pantalla">
-          <div class="icon">🔒</div>
-          <h2>${titulo}</h2>
-          <p>${mensaje}</p>
-        </div>`);
+    const progWrap = document.getElementById('prog_' + docId);
+    const progFill = document.getElementById('progFill_' + docId);
+    if (progWrap) progWrap.style.display = 'block';
+    if (progFill) progFill.style.width = '30%';
+
+    const ext  = file.name.split('.').pop().toLowerCase();
+    const path = `contratacion/${_tokenData.orden_id}/${docId}_${Date.now()}.${ext}`;
+
+    showLoader(true);
+    const { error: uploadErr } = await sb.storage
+      .from('contratacion-docs')
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadErr) {
+      showLoader(false);
+      if (progWrap) progWrap.style.display = 'none';
+      inputEl.value = '';
+      toast('Error al subir el archivo: ' + uploadErr.message, 'error');
+      return;
     }
 
-    // ── Arrancar ──────────────────────────────────────────────
-    init();
+    if (progFill) progFill.style.width = '80%';
+
+    const { data: urlData } = sb.storage.from('contratacion-docs').getPublicUrl(path);
+    const archivoUrl = urlData?.publicUrl || '';
+
+    const { error: dbErr } = await sb.from('checklist_documentos')
+      .update({
+        archivo_url:    archivoUrl,
+        archivo_nombre: file.name,
+        estado:         'pendiente_revision',
+        subido_por:     'candidato',
+        updated_at:     new Date().toISOString(),
+      })
+      .eq('id', docId);
+
+    showLoader(false);
+    inputEl.value = '';
+
+    if (dbErr) { toast('Archivo subido pero error al guardar. Contacta GH.', 'warning'); return; }
+
+    if (progFill) progFill.style.width = '100%';
+    setTimeout(() => { if (progWrap) progWrap.style.display = 'none'; }, 600);
+
+    const idx = _docs.findIndex(d => d.id === docId);
+    if (idx !== -1) {
+      _docs[idx].archivo_url    = archivoUrl;
+      _docs[idx].archivo_nombre = file.name;
+      _docs[idx].estado         = 'pendiente_revision';
+      _docs[idx].subido_por     = 'candidato';
+    }
+
+    toast('✅ Documento subido. Estará en revisión.', 'success');
+    renderPortal();
+  }
+
+  // ── Error pantalla ────────────────────────────────────────
+  function mostrarError(titulo, mensaje) {
+    setContent(`
+      <div class="estado-pantalla">
+        <div class="icon">🔒</div>
+        <h2>${titulo}</h2>
+        <p>${mensaje}</p>
+      </div>`);
+  }
+
+  init();
   </script>
 </body>
 </html>

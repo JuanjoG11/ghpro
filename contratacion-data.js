@@ -541,23 +541,27 @@ const ReportesContratacion = {
 /* ── Checklist de documentos (portal candidato) ─────────────*/
 const ChecklistDocs = {
   ITEMS: [
-    { key:'hv',           label:'Hoja de vida actualizada' },
-    { key:'id',           label:'Fotocopia cédula al 150%' },
-    { key:'estudios',     label:'Certificados de estudio' },
-    { key:'laborales',    label:'Certificados laborales' },
-    { key:'vr',           label:'Validación de referencias (GH-F02)' },
-    { key:'examen',       label:'Examen médico de ingreso' },
-    { key:'antecedentes', label:'Antecedentes (Policía, Procuraduría, Contraloría)' },
-    { key:'afiliaciones', label:'Certificado afiliación EPS/Pensión (si aplica)' },
-    { key:'cert_bancaria',label:'Certificación bancaria' },
-    { key:'licencia',     label:'Licencia conducción / Montacargas (si aplica)' },
-    { key:'autorizacion', label:'Autorización tratamiento de datos' },
-    { key:'foto',        label:'Fotografía para carné' },
+    { key:'hv',              label:'Hoja de Vida',                                                                              sort_order: 1  },
+    { key:'cedula',          label:'Fotocopia de la Cédula',                                                                   sort_order: 2  },
+    { key:'afil_hijos',      label:'Afiliación Hijos',                                                                         sort_order: 3  },
+    { key:'afil_padres',     label:'Afiliación Padres',                                                                        sort_order: 4  },
+    { key:'acta_grado',      label:'Fotocopia Acta de Grado y Diplomas',                                                       sort_order: 5  },
+    { key:'antecedentes',    label:'Antecedentes Contraloría, Procuraduría y Policía',                                         sort_order: 6  },
+    { key:'eps',             label:'Certificado de E.P.S.',                                                                    sort_order: 7  },
+    { key:'afp',             label:'Certificado de A.F.P.',                                                                    sort_order: 8  },
+    { key:'ref_laborales',   label:'2 - Referencias Laborales',                                                                sort_order: 9  },
+    { key:'ref_personales',  label:'2 - Referencias Personales',                                                               sort_order: 10 },
+    { key:'foto',            label:'Foto fondo blanco',                                                                        sort_order: 11 },
+    { key:'carnet_covid',    label:'Carnet COVID - 19',                                                                        sort_order: 12 },
+    { key:'carnet_alimentos',label:'Carnet de Manipulación de Alimentos (vigencia mayor a 6 meses)',                           sort_order: 13 },
+    { key:'cuenta_bancaria', label:'Constancia de Apertura de Cuenta',                                                         sort_order: 14 },
+    { key:'soat',            label:'Copia Soat, Tecnomecánica, Licencia de Conducción y Tarjeta de Propiedad',                 sort_order: 15 },
+    { key:'funeraria',       label:'Certificado Funerario',                                                                    sort_order: 16 },
   ],
 
   async getByOrden(orden_id) {
     const { data, error } = await sb
-      .from('checklist_documentos').select('*').eq('orden_id', orden_id).order('item_key');
+      .from('checklist_documentos').select('*').eq('orden_id', orden_id).order('sort_order').order('item_key');
     if (sbErr(error, 'checklist.getByOrden')) return [];
     return data;
   },
@@ -584,7 +588,7 @@ const ChecklistDocs = {
   async inicializar(orden_id, orden_num, candidato_nombre) {
     for (const item of this.ITEMS) {
       await this.upsert(orden_id, item.key, item.label, candidato_nombre, orden_num, {
-        estado: 'pendiente', subido_por: null,
+        estado: 'pendiente', subido_por: null, sort_order: item.sort_order,
       });
     }
   },
