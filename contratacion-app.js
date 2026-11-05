@@ -1818,8 +1818,6 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
   const CHECKLIST_ITEMS = [
     { key:'hv',              label:'Hoja de Vida' },
     { key:'cedula',          label:'Fotocopia de la Cédula' },
-    { key:'afil_hijos',      label:'Afiliación Hijos' },
-    { key:'afil_padres',     label:'Afiliación Padres' },
     { key:'acta_grado',      label:'Fotocopia Acta de Grado y Diplomas' },
     { key:'antecedentes',    label:'Antecedentes Contraloría, Procuraduría y Policía' },
     { key:'eps',             label:'Certificado de E.P.S.' },
@@ -2128,8 +2126,7 @@ async function guardarOrden() {
   // Checklist
   const checklist = {};
   ['hv','cedula','acta_grado','antecedentes','eps','afp','ref_laborales','ref_personales',
-   'foto','carnet_covid','carnet_alimentos','cuenta_bancaria','soat','funeraria',
-   'afil_hijos','afil_padres'].forEach(k => {
+   'foto','carnet_covid','carnet_alimentos','cuenta_bancaria','soat','funeraria'].forEach(k => {
     const v = fv('ck_'+k); if (v) checklist[k] = v;
   });
 
