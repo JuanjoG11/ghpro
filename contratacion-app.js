@@ -189,6 +189,7 @@ function switchContratacionTab(tab) {
     requisiciones: renderRequisiciones,
     referencias: renderValidaciones,
     ordenes: renderOrdenes,
+    seguimiento: renderSeguimiento,
   };
   if (renders[tab]) renders[tab]();
 }
@@ -211,6 +212,29 @@ async function renderContratacion() {
         </a>
       </div>
     </div>
+    <!-- KPIs rápidos -->
+    <div id="contratacionKPIs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--accent)" id="kpiReqPendientes">…</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Req. pendientes</div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--warning)" id="kpiOCPendientes">…</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">OC por aprobar</div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--success)" id="kpiOCAprobadas">…</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">OC aprobadas</div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--danger)" id="kpiContratosPorVencer">…</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Contratos ≤30 días</div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--purple)" id="kpiPeriodoPrueba">…</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Prueba ≤15 días</div>
+      </div>
+    </div>
     <!-- Sub-tabs -->
     <div id="contratacionTabs" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
       <button class="ctab-btn btn btn-secondary active" data-ctab="requisiciones"
@@ -219,15 +243,23 @@ async function renderContratacion() {
               onclick="switchContratacionTab('referencias')">🔍 Referencias</button>
       <button class="ctab-btn btn btn-secondary" data-ctab="ordenes"
               onclick="switchContratacionTab('ordenes')">✅ Órdenes</button>
+      <button class="ctab-btn btn btn-secondary" data-ctab="seguimiento"
+              onclick="switchContratacionTab('seguimiento')">📅 Seguimiento</button>
     </div>
     <div id="contratacionContent">
       <div class="ctab-panel" data-ctab="requisiciones" id="panelRequisiciones"></div>
       <div class="ctab-panel" data-ctab="referencias"   id="panelValidaciones" style="display:none"></div>
       <div class="ctab-panel" data-ctab="ordenes"       id="panelOrdenes"      style="display:none"></div>
+      <div class="ctab-panel" data-ctab="seguimiento"   id="panelSeguimiento"  style="display:none"></div>
     </div>`;
 
   // Mostrar tab activo
   switchContratacionTab(_contratacionTab);
+
+  // Cargar KPIs en segundo plano sin bloquear
+  _cargarKPIsContratacion();
+  // Notificaciones automáticas (solo si el navegador lo soporta, no intrusivo)
+  _notificarAlertas();
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -966,6 +998,7 @@ async function marcarEntrevista(reqId, candidatoNombre, estado) {
 }
 
 async function actualizarEstadoEntrevista(entId, nuevoEstado, reqId) {
+  // Alias de marcarEntrevista por compatibilidad
   showLoading(true);
   await Entrevistas.update(entId, { estado: nuevoEstado });
   showLoading(false);
@@ -974,6 +1007,7 @@ async function actualizarEstadoEntrevista(entId, nuevoEstado, reqId) {
 }
 
 async function actualizarResultadoEntrevista(entId, resultado, reqId) {
+  // Alias para registrar resultado de entrevista
   showLoading(true);
   await Entrevistas.update(entId, { resultado });
   showLoading(false);
@@ -1712,6 +1746,11 @@ function renderOrdenesFiltered() {
                 ${o.estado==='pendiente_aprobacion'?`
                 <button class="btn" style="padding:5px 8px;font-size:11px;background:rgba(58,170,128,0.2);color:var(--success)"
                         onclick="abrirModalAprobacionOC('${o.id}')">✔ Aprobar</button>`:''}
+                ${o.estado==='aprobada'?`
+                <button class="btn" style="padding:5px 8px;font-size:11px;background:rgba(130,80,200,0.25);color:#a78bfa;font-weight:600"
+                        onclick="marcarContratoGenerado('${o.id}')">📄 Contrato</button>`:''}
+                ${o.estado==='contrato_generado'?`
+                <span style="font-size:11px;color:var(--success);font-weight:600">✅ En nómina</span>`:''}
                 ${!['anulada','contrato_generado'].includes(o.estado)?`
                 <button class="btn btn-secondary" style="padding:5px 8px;font-size:11px;color:var(--danger)"
                         onclick="anularOrden('${o.id}')">🚫</button>`:''}
@@ -1743,6 +1782,91 @@ async function anularOrden(ocId) {
 }
 
 /* ════════════════════════════════════════════════════════════
+   MARCAR CONTRATO GENERADO + ALTA DE TRABAJADOR
+   ════════════════════════════════════════════════════════════ */
+async function marcarContratoGenerado(ocId) {
+  if (!confirm('¿Confirmar que el contrato fue firmado y el trabajador ingresa a nómina?\n\nEsto marcará la orden como "Contrato Generado" y creará el trabajador automáticamente en el sistema.')) return;
+
+  showLoading(true);
+  const oc = await OrdenContratacion.getById(ocId);
+  if (!oc) { showLoading(false); toast('No se encontró la orden', 'error'); return; }
+
+  if (oc.estado !== 'aprobada') {
+    showLoading(false);
+    toast('Solo se puede generar el contrato de una orden aprobada', 'warning');
+    return;
+  }
+
+  // 1. Verificar si el trabajador ya existe (por cédula)
+  let trabajadorExistente = null;
+  if (oc.numero_id) {
+    const { data: tw } = await sb.from('trabajadores').select('id,nombre,cedula').eq('cedula', oc.numero_id).maybeSingle();
+    trabajadorExistente = tw;
+  }
+
+  // 2. Determinar proveedor/marca desde la sede o empresa
+  const marcaMap = { TYM: 'TYM – Tiendas y Marcas', TAT: 'TAT Distribuciones' };
+  const marca = marcaMap[oc.empresa] || oc.empresa || '';
+
+  // 3. Crear o actualizar trabajador
+  const rowTrabajador = {
+    nombre:                oc.nombres || '',
+    cedula:                oc.numero_id || '',
+    tipo_id:               oc.tipo_id || 'CC',
+    cargo:                 oc.cargo || '',
+    marca,
+    ciudad:                oc.ciudad || oc.sede_nombre || '',
+    jefe:                  oc.jefe_inmediato || '',
+    fecha_ingreso:         oc.fecha_ingreso || null,
+    telefono:              oc.telefono || '',
+    estado:                'activo',
+    unidad_organizacional: oc.empresa || '',
+    obs:                   `Alta automática desde orden ${oc.numero}`,
+  };
+
+  let trabajadorOk = false;
+  if (trabajadorExistente) {
+    // Ya existe — actualizar datos
+    const updated = await Trabajadores.update(trabajadorExistente.id, {
+      ...rowTrabajador,
+      obs: `Actualizado desde orden ${oc.numero}`,
+    });
+    trabajadorOk = !!updated;
+  } else {
+    // Crear nuevo
+    const nuevo = await Trabajadores.insert(rowTrabajador);
+    trabajadorOk = !!nuevo;
+  }
+
+  if (!trabajadorOk) {
+    showLoading(false);
+    toast('Error al crear el trabajador. Verifica los datos de la orden.', 'error');
+    return;
+  }
+
+  // 4. Marcar la orden como contrato_generado
+  const ocActualizada = await OrdenContratacion.update(ocId, { estado: 'contrato_generado' });
+
+  // 5. Invalidar cache de trabajadores para que aparezca inmediatamente
+  Cache.invalidate('trabajadores');
+
+  showLoading(false);
+
+  if (ocActualizada) {
+    toast(
+      trabajadorExistente
+        ? `✅ Contrato generado — trabajador ${oc.nombres} actualizado en el sistema`
+        : `✅ Contrato generado — ${oc.nombres} dado de alta en trabajadores`,
+      'success'
+    );
+    renderOrdenes();
+  } else {
+    toast('El trabajador fue creado pero hubo un error al actualizar la orden.', 'warning');
+    renderOrdenes();
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
    MODAL ORDEN DE CONTRATACIÓN (GH-F03)
    ════════════════════════════════════════════════════════════ */
 let _ocEditId = null;
@@ -1766,7 +1890,7 @@ async function crearOrdenDesdeVR(vrId, reqId, candidatoId) {
   await abrirModalOrden(null, vr.requisicion_id, vr.candidato_id);
 }
 
-async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = null) {
+async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = null, ocIdBase = null) {
   _ocEditId = ocId;
   _paramVigente = _paramVigente || await MaestrasContratacion.getParametroVigente();
 
@@ -1787,6 +1911,34 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
   if (ocId) {
     d = await OrdenContratacion.getById(ocId) || {};
     if (d.requisicion_id) req = await Requisicion.getById(d.requisicion_id);
+  } else if (ocIdBase) {
+    // Renovación: precargar datos del contrato anterior como nueva orden
+    const base = await OrdenContratacion.getById(ocIdBase) || {};
+    d = {
+      nombres: base.nombres, tipo_id: base.tipo_id, numero_id: base.numero_id,
+      lugar_expedicion: base.lugar_expedicion, fecha_nacimiento: base.fecha_nacimiento,
+      lugar_nacimiento: base.lugar_nacimiento, direccion: base.direccion,
+      barrio: base.barrio, ciudad: base.ciudad, telefono: base.telefono,
+      email: base.email, estado_civil: base.estado_civil,
+      contacto_emergencia: base.contacto_emergencia,
+      parentesco_emergencia: base.parentesco_emergencia,
+      telefono_emergencia: base.telefono_emergencia,
+      empresa: base.empresa, cargo: base.cargo, area: base.area,
+      jefe_inmediato: base.jefe_inmediato, tipo_contrato: base.tipo_contrato,
+      salario: base.salario, tipo_salario: base.tipo_salario,
+      auxilio_transporte: base.auxilio_transporte,
+      jornada: base.jornada, forma_pago: base.forma_pago,
+      sede_id: base.sede_id, sede_nombre: base.sede_nombre,
+      banco_id: base.banco_id, banco_nombre: base.banco_nombre,
+      tipo_cuenta: base.tipo_cuenta, numero_cuenta: base.numero_cuenta,
+      eps_id: base.eps_id, eps_nombre: base.eps_nombre,
+      afp_id: base.afp_id, afp_nombre: base.afp_nombre,
+      cesantias_id: base.cesantias_id, cesantias_nombre: base.cesantias_nombre,
+      arl_id: base.arl_id, arl_nombre: base.arl_nombre,
+      clase_riesgo: base.clase_riesgo,
+      caja_id: base.caja_id, caja_nombre: base.caja_nombre,
+      // fecha de ingreso se deja en blanco para que GH la defina
+    };
   } else if (reqIdPre) {
     req = await Requisicion.getById(reqIdPre);
     if (candidatoIdPre) {
@@ -2122,6 +2274,17 @@ async function guardarOrden() {
   // Validar salario integral
   const errIntegral = ReglasContratacion.validarSalarioIntegral(tipoSal, salario, _paramVigente?.smmlv||1560000);
   if (errIntegral) { toast(errIntegral, 'warning'); return; }
+
+  // Validar fecha de ingreso vs aprobación (solo en edición de orden ya aprobada)
+  if (_ocEditId) {
+    const ocActual = await OrdenContratacion.getById(_ocEditId);
+    const aprobaciones = await Aprobaciones.get('orden_contratacion', _ocEditId);
+    const aprobGerencia = aprobaciones.find(a => a.rol === 'gerencia' && a.decision === 'aprobado');
+    if (aprobGerencia) {
+      const errFecha = ReglasContratacion.validarFechaIngreso(fIngreso, aprobGerencia.fecha);
+      if (errFecha) { toast(errFecha, 'warning'); return; }
+    }
+  }
 
   // Checklist
   const checklist = {};
@@ -3161,6 +3324,312 @@ async function generarListaChequeo(ocId) {
   if (!win) { toast('Permite las ventanas emergentes para generar el PDF', 'warning'); return; }
   win.document.write(html);
   win.document.close();
+}
+
+/* ════════════════════════════════════════════════════════════
+   KPIs DEL MÓDULO
+   ════════════════════════════════════════════════════════════ */
+async function _cargarKPIsContratacion() {
+  try {
+    const [resumen, ocs] = await Promise.all([
+      ReportesContratacion.resumen(),
+      OrdenContratacion.getAll(),
+    ]);
+    const hoy = new Date();
+
+    // Contratos por vencer en ≤30 días
+    const porVencer = ocs.filter(o => {
+      if (!o.fecha_terminacion || o.estado === 'anulada') return false;
+      const dias = Math.ceil((new Date(o.fecha_terminacion) - hoy) / 86400000);
+      return dias >= 0 && dias <= 30;
+    }).length;
+
+    // Periodo de prueba venciendo en ≤15 días
+    const enPrueba = ocs.filter(o => {
+      if (!o.fecha_ingreso || !o.periodo_prueba_dias || o.estado !== 'contrato_generado') return false;
+      const fin = new Date(o.fecha_ingreso);
+      fin.setDate(fin.getDate() + (o.periodo_prueba_dias || 0));
+      const dias = Math.ceil((fin - hoy) / 86400000);
+      return dias >= 0 && dias <= 15;
+    }).length;
+
+    const set = (id, val, alerta = false) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = val;
+        if (alerta && val > 0) el.style.color = 'var(--danger)';
+      }
+    };
+
+    set('kpiReqPendientes',    resumen.pendientes);
+    set('kpiOCPendientes',     resumen.ordenes_pendientes, true);
+    set('kpiOCAprobadas',      resumen.ordenes_aprobadas);
+    set('kpiContratosPorVencer', porVencer, true);
+    set('kpiPeriodoPrueba',    enPrueba, true);
+  } catch(e) {
+    // Silencioso — los KPIs no bloquean el módulo
+    console.warn('[KPIs contratación]', e);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SEGUIMIENTO — PERIODO DE PRUEBA + CONTRATOS POR VENCER
+   ════════════════════════════════════════════════════════════ */
+async function renderSeguimiento() {
+  const panel = document.getElementById('panelSeguimiento');
+  if (!panel) return;
+  panel.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><div>Cargando...</div></div>';
+
+  const ocs = await OrdenContratacion.getAll();
+  const hoy = new Date();
+
+  // ── Periodo de prueba activo ───────────────────────────────
+  const enPrueba = ocs
+    .filter(o => o.fecha_ingreso && o.periodo_prueba_dias && o.estado === 'contrato_generado')
+    .map(o => {
+      const inicio = new Date(o.fecha_ingreso);
+      const fin    = new Date(o.fecha_ingreso);
+      fin.setDate(fin.getDate() + (o.periodo_prueba_dias || 0));
+      const diasRestantes = Math.ceil((fin - hoy) / 86400000);
+      return { ...o, _finPrueba: fin, _diasPrueba: diasRestantes };
+    })
+    .filter(o => o._diasPrueba >= -5) // incluye hasta 5 días vencido
+    .sort((a, b) => a._diasPrueba - b._diasPrueba);
+
+  // ── Contratos por vencer ───────────────────────────────────
+  const porVencer = ocs
+    .filter(o => o.fecha_terminacion && !['anulada','rechazada'].includes(o.estado))
+    .map(o => {
+      const dias = Math.ceil((new Date(o.fecha_terminacion) - hoy) / 86400000);
+      return { ...o, _diasVencer: dias };
+    })
+    .filter(o => o._diasVencer <= 60)
+    .sort((a, b) => a._diasVencer - b._diasVencer);
+
+  const colorDias = (dias) => {
+    if (dias < 0)  return 'var(--danger)';
+    if (dias <= 7) return 'var(--danger)';
+    if (dias <= 15) return 'var(--warning)';
+    return 'var(--text-muted)';
+  };
+
+  const filaPrueba = (o) => `
+    <tr>
+      <td style="font-size:13px;font-weight:600">${o.nombres}</td>
+      <td style="font-size:12px">${o.cargo}</td>
+      <td style="font-size:12px">${o.empresa}</td>
+      <td style="font-size:12px">${fmtDate(o.fecha_ingreso?.split('T')[0])}</td>
+      <td style="font-size:12px">${o.periodo_prueba_dias} días</td>
+      <td style="font-size:12px">${fmtDate(o._finPrueba.toISOString().split('T')[0])}</td>
+      <td style="font-weight:700;color:${colorDias(o._diasPrueba)}">
+        ${o._diasPrueba < 0 ? `Venció hace ${Math.abs(o._diasPrueba)} días` : `${o._diasPrueba} días`}
+      </td>
+      <td>
+        <button class="btn" style="padding:4px 8px;font-size:11px;background:rgba(58,170,128,0.2);color:var(--success)"
+                onclick="registrarResultadoPrueba('${o.id}','${o.nombres.replace(/'/g,"\\'")}')">
+          ✍️ Registrar resultado
+        </button>
+      </td>
+    </tr>`;
+
+  const filaVencer = (o) => `
+    <tr>
+      <td style="font-size:13px;font-weight:600">${o.nombres}</td>
+      <td style="font-size:12px">${o.cargo}</td>
+      <td style="font-size:12px">${o.empresa}</td>
+      <td style="font-size:12px">${o.tipo_contrato?.replace(/_/g,' ') || '—'}</td>
+      <td style="font-size:12px">${fmtDate(o.fecha_ingreso?.split('T')[0])}</td>
+      <td style="font-size:12px">${fmtDate(o.fecha_terminacion)}</td>
+      <td style="font-weight:700;color:${colorDias(o._diasVencer)}">
+        ${o._diasVencer < 0 ? `Vencido hace ${Math.abs(o._diasVencer)} días` : `${o._diasVencer} días`}
+      </td>
+      <td>
+        <button class="btn" style="padding:4px 8px;font-size:11px;background:rgba(224,85,85,0.2);color:var(--danger)"
+                onclick="iniciarRetiro('${o.id}','${o.nombres.replace(/'/g,"\\'")}')">
+          📤 Retirar
+        </button>
+        <button class="btn" style="padding:4px 8px;font-size:11px;background:rgba(58,130,200,0.2);color:var(--accent);margin-left:4px"
+                onclick="renovarContrato('${o.id}','${o.nombres.replace(/'/g,"\\'")}')">
+          🔄 Renovar
+        </button>
+      </td>
+    </tr>`;
+
+  panel.innerHTML = `
+    <!-- Periodo de prueba -->
+    <div class="form-section-title" style="margin-bottom:12px">🧪 Periodo de prueba activo (${enPrueba.length})</div>
+    ${enPrueba.length ? `
+    <div class="table-wrap" style="margin-bottom:28px">
+      <table>
+        <thead><tr>
+          <th>Trabajador</th><th>Cargo</th><th>Empresa</th>
+          <th>Ingreso</th><th>Periodo</th><th>Vence</th><th>Días rest.</th><th>Acción</th>
+        </tr></thead>
+        <tbody>${enPrueba.map(filaPrueba).join('')}</tbody>
+      </table>
+    </div>` : `
+    <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:28px">
+      ✅ Sin trabajadores en periodo de prueba activo
+    </div>`}
+
+    <!-- Contratos por vencer -->
+    <div class="form-section-title" style="margin-bottom:12px">⏰ Contratos por vencer (próximos 60 días) — ${porVencer.length}</div>
+    ${porVencer.length ? `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Trabajador</th><th>Cargo</th><th>Empresa</th>
+          <th>Tipo</th><th>Ingreso</th><th>Vence</th><th>Días rest.</th><th>Acción</th>
+        </tr></thead>
+        <tbody>${porVencer.map(filaVencer).join('')}</tbody>
+      </table>
+    </div>` : `
+    <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">
+      ✅ Sin contratos por vencer en los próximos 60 días
+    </div>`}`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESULTADO DE PERIODO DE PRUEBA
+   ════════════════════════════════════════════════════════════ */
+async function registrarResultadoPrueba(ocId, nombre) {
+  const resultado = prompt(
+    `Resultado del periodo de prueba para ${nombre}:\n\n` +
+    `Escribe: SUPERA, NO_SUPERA o EXTIENDE`
+  );
+  if (!resultado) return;
+  const r = resultado.trim().toUpperCase();
+  if (!['SUPERA', 'NO_SUPERA', 'EXTIENDE'].includes(r)) {
+    toast('Escribe SUPERA, NO_SUPERA o EXTIENDE', 'warning'); return;
+  }
+
+  const obsMap = {
+    SUPERA:    '✅ Superó el periodo de prueba',
+    NO_SUPERA: '❌ No superó el periodo de prueba',
+    EXTIENDE:  '⏳ Periodo de prueba extendido',
+  };
+  const obs = prompt(`Observación (opcional):`) || obsMap[r];
+
+  showLoading(true);
+  await Historial.log('orden_contratacion', ocId, 'resultado_prueba', '', r + ' — ' + obs, 'GH');
+  // Si no supera → marcar el trabajador como inactivo (por cédula)
+  if (r === 'NO_SUPERA') {
+    const oc = await OrdenContratacion.getById(ocId);
+    if (oc?.numero_id) {
+      const { data: tw } = await sb.from('trabajadores').select('id').eq('cedula', oc.numero_id).maybeSingle();
+      if (tw) {
+        await Trabajadores.update(tw.id, { estado: 'inactivo', obs: 'No superó periodo de prueba — ' + obs });
+        Cache.invalidate('trabajadores');
+      }
+    }
+  }
+  showLoading(false);
+  toast(`Resultado registrado: ${obsMap[r]}`, r === 'NO_SUPERA' ? 'warning' : 'success');
+  renderSeguimiento();
+  _cargarKPIsContratacion();
+}
+
+/* ════════════════════════════════════════════════════════════
+   #6 — RETIRO / DESVINCULACIÓN
+   ════════════════════════════════════════════════════════════ */
+async function iniciarRetiro(ocId, nombre) {
+  const motivos = ['Renuncia voluntaria', 'Terminación de contrato', 'Despido con justa causa',
+                   'Despido sin justa causa', 'Mutuo acuerdo', 'Otro'];
+  const motivoStr = motivos.map((m, i) => `${i+1}. ${m}`).join('\n');
+  const sel = prompt(`Retiro de ${nombre}\n\nSelecciona el motivo (escribe el número):\n${motivoStr}`);
+  if (!sel) return;
+  const idx = parseInt(sel) - 1;
+  if (idx < 0 || idx >= motivos.length) { toast('Número inválido', 'warning'); return; }
+  const motivo = motivos[idx];
+  const obs = prompt(`Fecha de retiro (DD/MM/AAAA) y observaciones (opcional):\nEj: 15/11/2026 — Acuerdo amistoso`) || '';
+
+  showLoading(true);
+  const oc = await OrdenContratacion.getById(ocId);
+
+  // 1. Registrar en historial
+  await Historial.log('orden_contratacion', ocId, 'retiro', oc?.estado || '', motivo + (obs ? ' | ' + obs : ''), 'GH');
+
+  // 2. Marcar trabajador como inactivo
+  if (oc?.numero_id) {
+    const { data: tw } = await sb.from('trabajadores').select('id').eq('cedula', oc.numero_id).maybeSingle();
+    if (tw) {
+      await Trabajadores.update(tw.id, {
+        estado: 'inactivo',
+        obs: `Retiro: ${motivo}${obs ? ' | ' + obs : ''}`,
+      });
+      Cache.invalidate('trabajadores');
+    }
+  }
+
+  // 3. Actualizar orden (anular si aún está activa)
+  if (oc && !['anulada'].includes(oc.estado)) {
+    await OrdenContratacion.update(ocId, {
+      estado: 'anulada',
+      motivo_anulacion: `Retiro: ${motivo}`,
+    }, 'GH');
+  }
+
+  showLoading(false);
+  toast(`Retiro registrado para ${nombre} — ${motivo}`, 'warning');
+  renderSeguimiento();
+  _cargarKPIsContratacion();
+}
+
+/* ════════════════════════════════════════════════════════════
+   RENOVACIÓN DE CONTRATO
+   ════════════════════════════════════════════════════════════ */
+async function renovarContrato(ocId, nombre) {
+  if (!confirm(`¿Iniciar proceso de renovación de contrato para ${nombre}?\n\nEsto abrirá una nueva Orden de Contratación precargada con los datos actuales.`)) return;
+  // Abrir modal de nueva orden usando los datos de la existente como base
+  await abrirModalOrden(null, null, null, ocId);
+}
+
+/* ════════════════════════════════════════════════════════════
+   #8 — NOTIFICACIONES AUTOMÁTICAS
+   ════════════════════════════════════════════════════════════ */
+async function _notificarAlertas() {
+  try {
+    const ocs = await OrdenContratacion.getAll();
+    const hoy = new Date();
+    const alertas = [];
+
+    ocs.forEach(o => {
+      // Periodo de prueba venciendo en ≤7 días
+      if (o.fecha_ingreso && o.periodo_prueba_dias && o.estado === 'contrato_generado') {
+        const fin = new Date(o.fecha_ingreso);
+        fin.setDate(fin.getDate() + (o.periodo_prueba_dias || 0));
+        const dias = Math.ceil((fin - hoy) / 86400000);
+        if (dias >= 0 && dias <= 7) {
+          alertas.push(`⚠️ Periodo de prueba de ${o.nombres} vence en ${dias} día(s)`);
+        }
+      }
+      // Contrato por vencer en ≤15 días
+      if (o.fecha_terminacion && !['anulada','rechazada'].includes(o.estado)) {
+        const dias = Math.ceil((new Date(o.fecha_terminacion) - hoy) / 86400000);
+        if (dias >= 0 && dias <= 15) {
+          alertas.push(`📋 Contrato de ${o.nombres} vence en ${dias} día(s)`);
+        }
+      }
+    });
+
+    if (!alertas.length) return;
+
+    // Mostrar toast agrupado (no intrusivo)
+    const msg = alertas.length === 1
+      ? alertas[0]
+      : `${alertas.length} alertas de contratación — ve a 📅 Seguimiento`;
+
+    // Toast con duración mayor para que sea visible
+    const el = document.getElementById('toast');
+    if (el) {
+      el.textContent = msg;
+      el.style.borderColor = 'var(--warning)';
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 6000);
+    }
+  } catch(e) {
+    // Silencioso
+  }
 }
 
 /* ════════════════════════════════════════════════════════════

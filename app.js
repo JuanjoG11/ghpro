@@ -1484,15 +1484,21 @@ async function guardarBPM() {
   if (!trabajadorId) return toast('Selecciona un trabajador', 'error');
   if (!vencimiento) return toast('La fecha de vencimiento es obligatoria', 'error');
 
+
+  // Entidad: si eligio 'Otro', usar el campo libre
+  const entidadSel = document.getElementById('bEntidad').value;
+  const entidad = entidadSel === 'Otro'
+    ? (document.getElementById('bEntidadOtro')?.value.trim() || 'Otro')
+    : entidadSel;
   const trabajador = (Cache.trabajadores || []).find(t => t.id === trabajadorId);
   const row = {
     trabajador_id: trabajadorId,
     trabajador_nombre: trabajador?.nombre || '',
-    numero: document.getElementById('bNumero').value.trim(),
+    numero: '',
     emision: document.getElementById('bEmision').value || null,
     vencimiento,
-    entidad: document.getElementById('bEntidad').value.trim(),
-    capacitacion: document.getElementById('bCapacitacion').value.trim(),
+    entidad,
+    capacitacion: document.getElementById('bCapacitacion').value.trim() || 'Plan de Capacitacion Anual',
     obs: document.getElementById('bObs').value.trim(),
   };
 
@@ -1512,11 +1518,22 @@ function editarBPM(id) {
   if (!b) return;
   document.getElementById('bId').value = b.id;
   document.getElementById('bTrabajador').value = b.trabajador_id;
-  document.getElementById('bNumero').value = b.numero || '';
+  // numero eliminado
   document.getElementById('bEmision').value = b.emision ? b.emision.split('T')[0] : '';
   document.getElementById('bVencimiento').value = b.vencimiento ? b.vencimiento.split('T')[0] : '';
-  document.getElementById('bEntidad').value = b.entidad || '';
-  document.getElementById('bCapacitacion').value = b.capacitacion || '';
+  const entidadSelE = document.getElementById('bEntidad');
+  const entidadOtroGrpE = document.getElementById('bEntidadOtroGrp');
+  const entidadOtroInpE = document.getElementById('bEntidadOtro');
+  const opcionesE = ['', 'BPM CONSULTING', 'Otro'];
+  if (b.entidad && !opcionesE.includes(b.entidad)) {
+    entidadSelE.value = 'Otro';
+    if (entidadOtroInpE) entidadOtroInpE.value = b.entidad;
+    if (entidadOtroGrpE) entidadOtroGrpE.style.display = '';
+  } else {
+    entidadSelE.value = b.entidad || '';
+    if (entidadOtroGrpE) entidadOtroGrpE.style.display = 'none';
+  }
+  document.getElementById('bCapacitacion').value = b.capacitacion || 'Plan de Capacitacion Anual';
   document.getElementById('bObs').value = b.obs || '';
   document.getElementById('modalBPMTitle').textContent = '✏️ Editar Carnet BPM';
   openModal('modalBPM');
@@ -1534,11 +1551,14 @@ async function eliminarBPM(id) {
 }
 
 function resetBPMForm() {
-  ['bId', 'bNumero', 'bEmision', 'bVencimiento', 'bEntidad', 'bCapacitacion', 'bObs'].forEach(id => {
+  ['bId', 'bEmision', 'bVencimiento', 'bObs'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const sel = document.getElementById('bTrabajador'); if (sel) sel.value = '';
-  document.getElementById('modalBPMTitle').textContent = '📋 Carnet BPM';
+  const entSel = document.getElementById('bEntidad'); if (entSel) entSel.value = '';
+  const entOtro = document.getElementById('bEntidadOtro'); if (entOtro) entOtro.value = '';
+  const entOtroGrp = document.getElementById('bEntidadOtroGrp'); if (entOtroGrp) entOtroGrp.style.display = 'none';
+  const cap = document.getElementById('bCapacitacion'); if (cap) cap.value = 'Plan de Capacitacion Anual';
 }
 
 async function exportarBPM() {

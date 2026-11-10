@@ -1805,11 +1805,20 @@
       <div class="form-grid">
         <div class="form-group"><label>Trabajador *</label>
           <select id="bTrabajador"><option value="">Seleccionar...</option></select></div>
-        <div class="form-group"><label>N° Carnet</label><input type="text" id="bNumero" placeholder="BPM-2024-001"></div>
         <div class="form-group"><label>Fecha de emisión *</label><input type="date" id="bEmision"></div>
         <div class="form-group"><label>Fecha de vencimiento *</label><input type="date" id="bVencimiento"></div>
-        <div class="form-group"><label>Entidad emisora</label><input type="text" id="bEntidad" placeholder="Nombre entidad..."></div>
-        <div class="form-group"><label>Capacitación</label><input type="text" id="bCapacitacion" placeholder="Tema de capacitación"></div>
+        <div class="form-group"><label>Entidad emisora</label>
+          <select id="bEntidad" onchange="document.getElementById('bEntidadOtroGrp').style.display=this.value==='Otro'?'':'none'">
+            <option value="">Seleccionar...</option>
+            <option value="BPM CONSULTING">BPM CONSULTING</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group" id="bEntidadOtroGrp" style="display:none">
+          <label>Especificar entidad</label>
+          <input type="text" id="bEntidadOtro" placeholder="Nombre de la entidad...">
+        </div>
+        <div class="form-group"><label>Capacitación</label><input type="text" id="bCapacitacion" value="Plan de Capacitación Anual" placeholder="Plan de Capacitación Anual"></div>
         <div class="form-group full"><label>Observaciones</label><textarea id="bObs" placeholder="Notas..."></textarea></div>
       </div>
     </div>
