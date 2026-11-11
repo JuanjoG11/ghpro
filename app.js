@@ -1495,8 +1495,7 @@ async function guardarBPM() {
     trabajador_id: trabajadorId,
     trabajador_nombre: trabajador?.nombre || '',
     numero: '',
-    emision: document.getElementById('bEmision').value || null,
-    vencimiento,
+        vencimiento,
     entidad,
     capacitacion: document.getElementById('bCapacitacion').value.trim() || 'Plan de Capacitacion Anual',
     obs: document.getElementById('bObs').value.trim(),
@@ -1519,7 +1518,6 @@ function editarBPM(id) {
   document.getElementById('bId').value = b.id;
   document.getElementById('bTrabajador').value = b.trabajador_id;
   // numero eliminado
-  document.getElementById('bEmision').value = b.emision ? b.emision.split('T')[0] : '';
   document.getElementById('bVencimiento').value = b.vencimiento ? b.vencimiento.split('T')[0] : '';
   const entidadSelE = document.getElementById('bEntidad');
   const entidadOtroGrpE = document.getElementById('bEntidadOtroGrp');
@@ -1551,7 +1549,7 @@ async function eliminarBPM(id) {
 }
 
 function resetBPMForm() {
-  ['bId', 'bEmision', 'bVencimiento', 'bObs'].forEach(id => {
+  ['bId', 'bVencimiento', 'bObs'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const sel = document.getElementById('bTrabajador'); if (sel) sel.value = '';
@@ -1565,10 +1563,10 @@ async function exportarBPM() {
   if (!Cache.bpm) Cache.bpm = await BPM.getAll();
   const data = Cache.bpm;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Trabajador', 'N° Carnet', 'Emisión', 'Vencimiento', 'Estado', 'Días', 'Entidad', 'Capacitación'];
+  const headers = ['Trabajador', 'N° Carnet', 'Vencimiento', 'Estado', 'Días', 'Entidad', 'Capacitación'];
   const rows = data.map(b => {
     const days = daysUntil(b.vencimiento);
-    return [b.trabajador_nombre, b.numero, b.emision, b.vencimiento, getDocEstado(days), days ?? '', b.entidad, b.capacitacion];
+    return [b.trabajador_nombre, b.numero, b.vencimiento, getDocEstado(days), days ?? '', b.entidad, b.capacitacion];
   });
   downloadCSV('bpm_carnets', headers, rows);
 }
