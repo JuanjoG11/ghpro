@@ -528,6 +528,10 @@
       <div class="nav-item" data-page="asistencia">
         <span class="nav-icon">🕐</span> Asistencia
       </div>
+      <div class="nav-item" data-page="visitas">
+        <span class="nav-icon">🧑‍💼</span> Visitas
+        <span class="nav-badge warning" id="visitasBadge" style="display:none">0</span>
+      </div>
     </div>
 
     <div class="nav-section">
@@ -1324,6 +1328,82 @@
     </div>
   </div>
 </div><!-- /page-asistencia -->
+
+    <!-- ===== VISITAS ===== -->
+    <div class="page" id="page-visitas">
+      <div class="page-header">
+        <div class="page-title">🧑‍💼 <span>Control de Visitas</span></div>
+        <div class="page-subtitle">Registro de visitantes que ingresan a las instalaciones</div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="abrirModalVisitaApp()">➕ Nueva Visita</button>
+          <button class="btn btn-secondary" onclick="exportarVisitas()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="visitasStats" style="margin-bottom:24px"></div>
+
+      <!-- Historial -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 Historial de visitas</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:3px 8px;">
+              <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Desde</span>
+              <input type="date" id="visitasFiltroDesde" onchange="renderTablaVisitas()"
+                style="background:transparent;border:none;color:var(--text-primary);padding:4px;font-size:12px;outline:none;">
+              <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Hasta</span>
+              <input type="date" id="visitasFiltroHasta" onchange="renderTablaVisitas()"
+                style="background:transparent;border:none;color:var(--text-primary);padding:4px;font-size:12px;outline:none;">
+            </div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoVisitasRapido('hoy')" style="padding:4px 8px;font-size:11px">Hoy</button>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoVisitasRapido('semana')" style="padding:4px 8px;font-size:11px">Semana</button>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoVisitasRapido('mes')" style="padding:4px 8px;font-size:11px">Mes</button>
+              <button class="btn btn-secondary btn-sm" type="button" onclick="setRangoVisitasRapido('todos')" style="padding:4px 8px;font-size:11px">Todo</button>
+            </div>
+            <div class="search-input-wrap" style="min-width:180px">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="search-input" id="visitasSearch"
+                placeholder="Buscar visitante, cédula, empresa..."
+                oninput="renderTablaVisitas()">
+            </div>
+            <select id="visitasFiltroEstado" onchange="renderTablaVisitas()"
+              style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
+                     color:var(--text-primary);padding:6px 10px;font-size:12px">
+              <option value="">Todos los estados</option>
+              <option value="activo">Dentro (activos)</option>
+              <option value="salido">Ya salieron</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Visitante</th>
+                  <th class="hide-mobile">Cédula</th>
+                  <th class="hide-mobile">Empresa</th>
+                  <th>Visita a</th>
+                  <th class="hide-mobile">Teléfono</th>
+                  <th>Estado</th>
+                  <th class="hide-mobile">Salida</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="visitasTbody"></tbody>
+            </table>
+          </div>
+          <div id="visitasEmpty" class="empty-state" style="display:none">
+            <div class="empty-state-icon">🧑‍💼</div>
+            <div class="empty-state-text">Sin visitas registradas</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /page-visitas -->
 
     <!-- ===== EXAMENES MEDICOS ===== -->
     <div class="page" id="page-examenes">
@@ -2665,6 +2745,37 @@
     .prenda-btns button { font-size: 11px; padding: 1px 4px; }
   }
 </style>
+
+<!-- ═══ MODAL NUEVA VISITA (desde app principal) ═══ -->
+<div class="modal-overlay" id="modalVisitaApp">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">🧑‍💼 Nueva Visita</div>
+      <button class="modal-close" onclick="cerrarModalVisitaApp()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Cédula *</label><input type="text" id="visAppCedula" placeholder="Número de cédula"></div>
+        <div class="form-group"><label>Nombre completo *</label><input type="text" id="visAppNombre" placeholder="Nombres y apellidos"></div>
+        <div class="form-group"><label>Empresa de donde viene</label><input type="text" id="visAppEmpresa" placeholder="Empresa u organización"></div>
+        <div class="form-group"><label>A quién visita *</label>
+          <select id="visAppAQuien" class="form-select" style="width:100%">
+            <option value="">Seleccione un trabajador...</option>
+          </select>
+        </div>
+        <div class="form-group"><label>EPS</label><input type="text" id="visAppEps" placeholder="Ej: Sura, Sanitas..."></div>
+        <div class="form-group"><label>ARL</label><input type="text" id="visAppArl" placeholder="Ej: Positiva, Sura..."></div>
+        <div class="form-group"><label>Teléfono</label><input type="text" id="visAppTelefono" placeholder="Número de contacto"></div>
+        <div class="form-group"><label>Nombre de contacto</label><input type="text" id="visAppContactoNombre" placeholder="Persona de referencia"></div>
+        <div class="form-group"><label>Número de emergencia</label><input type="text" id="visAppContactoEmergencia" placeholder="Teléfono de emergencia"></div>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="cerrarModalVisitaApp()">Cancelar</button>
+      <button class="btn btn-primary" onclick="registrarVisitaApp()">✅ Registrar Visita</button>
+    </div>
+  </div>
+</div>
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

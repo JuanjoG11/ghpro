@@ -92,6 +92,80 @@
     .recent-flash { position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:rgba(67,233,123,0.15);border:1px solid rgba(67,233,123,0.4);border-radius:14px;padding:clamp(12px,2vh,20px) clamp(20px,3vw,40px);display:flex;align-items:center;gap:14px;font-size:clamp(15px,2.5vw,32px);font-weight:600;opacity:0;transition:opacity 0.4s ease;pointer-events:none;z-index:10;white-space:nowrap; }
     .recent-flash.show   { opacity:1; }
     .recent-flash.salida { background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.4); }
+
+    /* ── Botón Visitante ── */
+    .visitante-btn {
+      background: linear-gradient(135deg, #c87c3a, #e0a050);
+      border: none; color: #fff; border-radius: 14px;
+      padding: clamp(12px,2vh,20px) clamp(24px,3vw,44px);
+      font-size: clamp(15px,2.2vw,26px); font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 4px 24px rgba(200,124,58,0.45);
+      transition: all 0.25s ease;
+    }
+    .visitante-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 32px rgba(200,124,58,0.6); }
+    .visitante-btn:active { transform: translateY(0); }
+
+    /* ── Modal Visitante ── */
+    .vis-modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .vis-modal-overlay.open { display: flex; }
+    .vis-modal {
+      background: #12122a; border: 1px solid rgba(108,99,255,0.35);
+      border-radius: 20px; width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto; padding: 28px 24px;
+      animation: visModalIn 0.3s ease;
+    }
+    @keyframes visModalIn { from { opacity:0; transform: translateY(20px) scale(0.97); } to { opacity:1; transform: translateY(0) scale(1); } }
+    .vis-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .vis-modal-title { font-size: 22px; font-weight: 800; }
+    .vis-modal-title span { color: var(--accent3); }
+    .vis-close { background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer; padding:4px 8px; border-radius:8px; }
+    .vis-close:hover { background:rgba(255,255,255,0.08); color:var(--text); }
+    .vis-form { display:flex; flex-direction:column; gap:14px; }
+    .vis-field { display:flex; flex-direction:column; gap:5px; }
+    .vis-label { font-size:12px; font-weight:700; color:#7070a0; text-transform:uppercase; letter-spacing:0.5px; }
+    .vis-input, .vis-select {
+      width:100%; padding:12px 14px; border-radius:10px; font-size:15px;
+      background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1);
+      color: #f0f0ff; transition: all 0.2s; -webkit-appearance:none;
+    }
+    .vis-input:focus, .vis-select:focus {
+      outline:none; border-color:#6c63ff; background:rgba(255,255,255,0.09);
+      box-shadow:0 0 0 3px rgba(108,99,255,0.15);
+    }
+    .vis-input::placeholder { color:#5050a0; }
+    .vis-select option { background:#12122a; }
+    .vis-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .vis-btn-submit {
+      width:100%; padding:15px; border-radius:10px; border:none; cursor:pointer;
+      font-size:16px; font-weight:700; color:#fff; margin-top:6px;
+      background:linear-gradient(135deg,#6c63ff,#43e97b);
+      box-shadow:0 4px 20px rgba(108,99,255,0.35);
+      transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .vis-btn-submit:hover { transform:translateY(-1px); box-shadow:0 6px 28px rgba(108,99,255,0.5); }
+    .vis-btn-submit:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+    .vis-toast {
+      position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+      z-index:600; padding:14px 24px; border-radius:12px; font-size:15px; font-weight:600;
+      background:#1a1a35; border:1px solid rgba(255,255,255,0.1);
+      box-shadow:0 8px 30px rgba(0,0,0,0.5); opacity:0; transition:opacity 0.3s;
+      pointer-events:none;
+    }
+    .vis-toast.show { opacity:1; }
+    .vis-toast.success { border-left:3px solid #43e97b; }
+    .vis-toast.error { border-left:3px solid #ff4757; }
+    .vis-success-msg { text-align:center; padding:20px 0; }
+    .vis-success-msg .icon { font-size:48px; }
+    .vis-success-msg .title { font-size:20px; font-weight:800; margin-top:10px; }
+    .vis-success-msg .sub { font-size:14px; color:var(--muted); margin-top:6px; }
+
+    @media (max-width:600px) { .vis-grid2 { grid-template-columns:1fr; } }
   </style>
   <script>
     // Auto-agrega ?v=FECHA a la URL para forzar recarga fresca en el TV (Hora Colombia).
@@ -149,7 +223,83 @@
     Escanea este QR con tu celular o abre el link de registro.<br>
     Ingresa tu cédula y confirma tu asistencia.
   </div>
+
+  <button class="visitante-btn" onclick="abrirModalVisitante()">
+    🧑‍💼 ¿Eres Visitante? Regístra tu ingreso
+  </button>
 </div>
+
+<!-- ═══ MODAL VISITANTE ═══ -->
+<div class="vis-modal-overlay" id="visModal">
+  <div class="vis-modal">
+    <div class="vis-modal-header">
+      <div class="vis-modal-title">🧑‍💼 Registro de <span>Visitante</span></div>
+      <button class="vis-close" onclick="cerrarModalVisitante()">✕</button>
+    </div>
+    <div id="visFormWrap">
+      <div class="vis-form">
+        <div class="vis-field">
+          <label class="vis-label">Cédula *</label>
+          <input type="tel" class="vis-input" id="visCedula" placeholder="Número de cédula" inputmode="numeric" maxlength="15">
+        </div>
+        <div class="vis-field">
+          <label class="vis-label">Nombre completo *</label>
+          <input type="text" class="vis-input" id="visNombre" placeholder="Nombres y apellidos completos">
+        </div>
+        <div class="vis-field">
+          <label class="vis-label">Empresa de donde viene</label>
+          <input type="text" class="vis-input" id="visEmpresa" placeholder="Empresa u organización">
+        </div>
+        <div class="vis-field">
+          <label class="vis-label">A quién visita *</label>
+          <select class="vis-select" id="visAQuien">
+            <option value="">Seleccione un trabajador...</option>
+          </select>
+        </div>
+        <div class="vis-grid2">
+          <div class="vis-field">
+            <label class="vis-label">EPS</label>
+            <input type="text" class="vis-input" id="visEps" placeholder="Ej: Sura, Sanitas...">
+          </div>
+          <div class="vis-field">
+            <label class="vis-label">ARL</label>
+            <input type="text" class="vis-input" id="visArl" placeholder="Ej: Positiva, Sura...">
+          </div>
+        </div>
+        <div class="vis-field">
+          <label class="vis-label">Teléfono</label>
+          <input type="tel" class="vis-input" id="visTelefono" placeholder="Número de contacto" inputmode="tel">
+        </div>
+        <div class="vis-grid2">
+          <div class="vis-field">
+            <label class="vis-label">Nombre de contacto</label>
+            <input type="text" class="vis-input" id="visContactoNombre" placeholder="Persona de referencia">
+          </div>
+          <div class="vis-field">
+            <label class="vis-label">Número de emergencia</label>
+            <input type="tel" class="vis-input" id="visContactoEmergencia" placeholder="Teléfono de emergencia" inputmode="tel">
+          </div>
+        </div>
+        <button class="vis-btn-submit" id="visBtnSubmit" onclick="registrarVisitante()">
+          ✅ Registrar Ingreso de Visitante
+        </button>
+      </div>
+    </div>
+    <div id="visSuccessWrap" style="display:none">
+      <div class="vis-success-msg">
+        <div class="icon">✅</div>
+        <div class="title">¡Registro exitoso!</div>
+        <div class="sub" id="visSuccessSub">Tu ingreso ha sido registrado correctamente.</div>
+      </div>
+      <button class="vis-btn-submit" onclick="cerrarModalVisitante()" style="margin-top:16px">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast visitante -->
+<div class="vis-toast" id="visToast"></div>
 
 <div class="recent-flash" id="recentFlash">
   <span id="recentIcon">🟢</span>
@@ -326,6 +476,157 @@ window.addEventListener('load', function() {
       })
       .catch(function() {});
   }, 5 * 60 * 1000);
+});
+
+// ═══════════════════════════════════════════════════════
+// LÓGICA DE VISITANTES
+// ═══════════════════════════════════════════════════════
+var visTrabajadores = [];
+var visTrabajadoresLoaded = false;
+
+function horaBogota() {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).format(new Date());
+}
+
+function fechaBogota() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+}
+
+function abrirModalVisitante() {
+  document.getElementById('visModal').classList.add('open');
+  document.getElementById('visFormWrap').style.display = '';
+  document.getElementById('visSuccessWrap').style.display = 'none';
+  // Cargar trabajadores para el select
+  cargarTrabajadoresVisita();
+}
+
+function cerrarModalVisitante() {
+  document.getElementById('visModal').classList.remove('open');
+  // Limpiar formulario después de cerrar
+  setTimeout(function() {
+    ['visCedula','visNombre','visEmpresa','visEps','visArl','visTelefono','visContactoNombre','visContactoEmergencia'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    var sel = document.getElementById('visAQuien');
+    if (sel) sel.value = '';
+    var btn = document.getElementById('visBtnSubmit');
+    if (btn) { btn.disabled = false; btn.innerHTML = '✅ Registrar Ingreso de Visitante'; }
+  }, 300);
+}
+
+async function cargarTrabajadoresVisita() {
+  if (visTrabajadoresLoaded) {
+    poblarSelectVisita();
+    return;
+  }
+  var sel = document.getElementById('visAQuien');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Cargando trabajadores...</option>';
+  try {
+    var { data, error } = await sb
+      .from('trabajadores')
+      .select('id,nombre,cedula,cargo,ciudad')
+      .eq('estado', 'activo')
+      .order('nombre');
+    if (error) throw error;
+    visTrabajadores = data || [];
+    visTrabajadoresLoaded = true;
+    poblarSelectVisita();
+  } catch(e) {
+    sel.innerHTML = '<option value="">Error al cargar — reintente</option>';
+  }
+}
+
+function poblarSelectVisita() {
+  var sel = document.getElementById('visAQuien');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Seleccione un trabajador...</option>';
+  visTrabajadores.forEach(function(t) {
+    var txt = t.nombre + ' — ' + (t.cedula || '');
+    if (t.cargo) txt += ' (' + t.cargo + ')';
+    var opt = document.createElement('option');
+    opt.value = t.id + '|' + t.nombre;
+    opt.textContent = txt;
+    sel.appendChild(opt);
+  });
+}
+
+function visToast(msg, type) {
+  var el = document.getElementById('visToast');
+  if (!el) return;
+  el.className = 'vis-toast ' + (type || 'success');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 3500);
+}
+
+async function registrarVisitante() {
+  var cedula   = document.getElementById('visCedula').value.trim();
+  var nombre   = document.getElementById('visNombre').value.trim();
+  var empresa  = document.getElementById('visEmpresa').value.trim();
+  var aQuien   = document.getElementById('visAQuien').value;
+  var eps      = document.getElementById('visEps').value.trim();
+  var arl      = document.getElementById('visArl').value.trim();
+  var telefono = document.getElementById('visTelefono').value.trim();
+  var contactoNombre    = document.getElementById('visContactoNombre').value.trim();
+  var contactoEmergencia = document.getElementById('visContactoEmergencia').value.trim();
+
+  if (!cedula) { visToast('Ingresa tu cédula', 'error'); return; }
+  if (!nombre) { visToast('Ingresa tu nombre completo', 'error'); return; }
+  if (!aQuien) { visToast('Selecciona a quién visitas', 'error'); return; }
+
+  var partes = aQuien.split('|');
+  var visitaAId = partes[0];
+  var visitaANombre = partes.slice(1).join('|');
+
+  var btn = document.getElementById('visBtnSubmit');
+  btn.disabled = true;
+  btn.innerHTML = 'Guardando...';
+
+  var row = {
+    cedula: cedula,
+    nombre_completo: nombre,
+    empresa: empresa || null,
+    visita_a_id: visitaAId,
+    visita_a_nombre: visitaANombre,
+    eps: eps || null,
+    arl: arl || null,
+    telefono: telefono || null,
+    contacto_nombre: contactoNombre || null,
+    contacto_emergencia: contactoEmergencia || null,
+    fecha: fechaBogota(),
+    hora: horaBogota(),
+    estado: 'activo',
+  };
+
+  try {
+    var { data, error } = await sb.from('visitas').insert([row]).select().single();
+    if (error) throw error;
+    // Mostrar mensaje de éxito
+    document.getElementById('visFormWrap').style.display = 'none';
+    document.getElementById('visSuccessWrap').style.display = '';
+    document.getElementById('visSuccessSub').textContent =
+      'Bienvenido ' + nombre + '. Tu ingreso fue registrado a las ' + horaBogota().slice(0,5) + '.';
+    visToast('Visitante registrado correctamente', 'success');
+    // Flash en la pantalla
+    mostrarFlash('Visitante: ' + nombre, 'entrada');
+  } catch(e) {
+    visToast('Error: ' + (e.message || 'No se pudo registrar'), 'error');
+    btn.disabled = false;
+    btn.innerHTML = '✅ Registrar Ingreso de Visitante';
+  }
+}
+
+// Cerrar modal al hacer clic fuera
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'visModal') cerrarModalVisitante();
 });
 </script>
 </body>

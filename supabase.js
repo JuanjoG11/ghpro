@@ -1320,3 +1320,83 @@ const DotacionPrendas = {
     return map;
   },
 };
+
+/* ============================================================
+   VISITAS — capa de datos
+   Tabla: visitas
+   ============================================================ */
+const Visitas = {
+
+  async getAll() {
+    const { data, error } = await sb
+      .from('visitas')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .order('hora', { ascending: false });
+    if (sbErr(error, 'visitas.getAll')) return [];
+    return data || [];
+  },
+
+  async getByRango(desde, hasta) {
+    let query = sb.from('visitas').select('*');
+    if (desde) query = query.gte('fecha', desde);
+    if (hasta) query = query.lte('fecha', hasta);
+    query = query.order('fecha', { ascending: false }).order('hora', { ascending: false });
+    const { data, error } = await query;
+    if (sbErr(error, 'visitas.getByRango')) return [];
+    return data || [];
+  },
+
+  async getByFecha(fecha) {
+    const { data, error } = await sb
+      .from('visitas')
+      .select('*')
+      .eq('fecha', fecha)
+      .order('hora', { ascending: false });
+    if (sbErr(error, 'visitas.getByFecha')) return [];
+    return data || [];
+  },
+
+  async getActivas() {
+    const { data, error } = await sb
+      .from('visitas')
+      .select('*')
+      .eq('estado', 'activo')
+      .order('hora', { ascending: false });
+    if (sbErr(error, 'visitas.getActivas')) return [];
+    return data || [];
+  },
+
+  async insert(row) {
+    const { data, error } = await sb
+      .from('visitas')
+      .insert([row])
+      .select()
+      .single();
+    if (sbErr(error, 'visitas.insert')) return null;
+    return data;
+  },
+
+  async registrarSalida(id) {
+    const hora = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/Bogota',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    }).format(new Date());
+    const { data, error } = await sb
+      .from('visitas')
+      .update({ estado: 'salido', hora_salida: hora })
+      .eq('id', id)
+      .select()
+      .single();
+    if (sbErr(error, 'visitas.registrarSalida')) return null;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await sb
+      .from('visitas')
+      .delete()
+      .eq('id', id);
+    return !sbErr(error, 'visitas.delete');
+  },
+};
