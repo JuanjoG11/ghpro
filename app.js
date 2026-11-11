@@ -1,10 +1,10 @@
-??/* ============================================================
-   GH PRO � app.js
-   L�gica principal � usa Supabase como backend
+﻿﻿﻿/* ============================================================
+   GH PRO — app.js
+   Lógica principal — usa Supabase como backend
    ============================================================ */
 'use strict';
 
-// -- Date helpers (Zona horaria Colombia: America/Bogota) -------
+// ── Date helpers (Zona horaria Colombia: America/Bogota) ───────
 const today = (date = new Date()) => {
   const d = date instanceof Date ? date : new Date(date);
   return new Intl.DateTimeFormat('en-CA', {
@@ -33,7 +33,7 @@ const daysUntil = (dateStr) => {
 };
 
 const fmtDate = (d) => {
-  if (!d) return '�';
+  if (!d) return '—';
   const [y, m, dd] = d.split('T')[0].split('-');
   return `${dd}/${m}/${y}`;
 };
@@ -46,21 +46,21 @@ const fmtDateLong = (d) => {
   });
 };
 
-// -- Avatar color -----------------------------------------------
+// ── Avatar color ───────────────────────────────────────────────
 const avatarColors = ['#6c63ff', '#ff6584', '#43e97b', '#f7971e', '#1e90ff', '#ff9f43', '#a29bfe', '#fd79a8'];
 const avatarColor = (str) => avatarColors[(str || '').charCodeAt(0) % avatarColors.length];
 
-// -- Badge helpers ----------------------------------------------
+// ── Badge helpers ──────────────────────────────────────────────
 function estadoBadge(days) {
   if (days === null) return '<span class="badge badge-neutral">Sin fecha</span>';
   if (days < 0) return '<span class="badge badge-danger"><span class="dot"></span>Vencido</span>';
-  if (days <= 7) return '<span class="badge badge-danger"><span class="dot"></span>Cr�tico</span>';
+  if (days <= 7) return '<span class="badge badge-danger"><span class="dot"></span>Crítico</span>';
   if (days <= 30) return '<span class="badge badge-warning"><span class="dot"></span>Por vencer</span>';
   return '<span class="badge badge-success"><span class="dot"></span>Vigente</span>';
 }
 
 function diasBadge(days) {
-  if (days === null) return '�';
+  if (days === null) return '—';
   if (days < 0) return `<span style="color:var(--danger);font-weight:700">${Math.abs(days)}d venc.</span>`;
   if (days <= 7) return `<span style="color:var(--danger);font-weight:700">${days}d</span>`;
   if (days <= 30) return `<span style="color:var(--warning);font-weight:700">${days}d</span>`;
@@ -75,7 +75,7 @@ function getDocEstado(days) {
   return 'vigente';
 }
 
-// -- In-memory cache (evita refetch en cada render) -------------
+// ── In-memory cache (evita refetch en cada render) ─────────────
 const Cache = {
   trabajadores: null,
   dotacion: null,
@@ -87,9 +87,9 @@ const Cache = {
   invalidate(key) { if (key) this[key] = null; else Object.keys(this).forEach(k => this[k] = null); },
 };
 
-// -------------------------------------------
-// NAVEGACI�N
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════
 function navigate(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -118,9 +118,9 @@ function navigate(pageId) {
   if (window.innerWidth <= 768) closeSidebar();
 }
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // MODAL HELPERS
-// -------------------------------------------
+// ═══════════════════════════════════════════
 function openModal(id) {
   if (id === 'modalEntrega') {
     iniciarModalEntrega();
@@ -152,14 +152,14 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // TOAST
-// -------------------------------------------
+// ═══════════════════════════════════════════
 function toast(msg, type = 'success', duration = 3500) {
-  const icons = { success: '?', error: '?', warning: '??', info: '??' };
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.innerHTML = `<span class="toast-icon">${icons[type] || '??'}</span><span class="toast-msg">${msg}</span>`;
+  el.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(() => {
     el.style.opacity = '0'; el.style.transform = 'translateX(100px)'; el.style.transition = '0.3s';
@@ -167,9 +167,9 @@ function toast(msg, type = 'success', duration = 3500) {
   }, duration);
 }
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // SIDEBAR MOBILE
-// -------------------------------------------
+// ═══════════════════════════════════════════
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('mobileOverlay').classList.remove('show');
@@ -207,9 +207,9 @@ document.addEventListener('click', (e) => {
   if (target) target.classList.add('active');
 });
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // DASHBOARD
-// -------------------------------------------
+// ═══════════════════════════════════════════
 async function renderDashboard() {
   showLoading(true);
   try {
@@ -232,11 +232,11 @@ async function renderDashboard() {
     const ciudades = [...new Set(trabajadores.map(t => t.ciudad).filter(Boolean))].length;
 
     document.getElementById('statsGrid').innerHTML = [
-      { icon: '??', value: trabajadores.length, label: 'Trabajadores', color: 'var(--accent)' },
-      { icon: '?', value: activos, label: 'Activos', color: 'var(--success)' },
-      { icon: '??', value: ciudades, label: 'Ciudades', color: 'var(--info)' },
-      { icon: '??', value: entregas.length, label: 'Entregas', color: 'var(--accent4)' },
-      { icon: '??', value: alertCount, label: 'Alertas', color: alertCount > 0 ? 'var(--danger)' : 'var(--success)' },
+      { icon: '👥', value: trabajadores.length, label: 'Trabajadores', color: 'var(--accent)' },
+      { icon: '✅', value: activos, label: 'Activos', color: 'var(--success)' },
+      { icon: '📍', value: ciudades, label: 'Ciudades', color: 'var(--info)' },
+      { icon: '📦', value: entregas.length, label: 'Entregas', color: 'var(--accent4)' },
+      { icon: '🔔', value: alertCount, label: 'Alertas', color: alertCount > 0 ? 'var(--danger)' : 'var(--success)' },
     ].map(s => `
       <div class="stat-card" style="--card-color:${s.color}">
         <div class="stat-icon">${s.icon}</div>
@@ -248,7 +248,7 @@ async function renderDashboard() {
     const recent = alertas.filter(a => a.days !== null && a.days <= 30).slice(0, 4);
     document.getElementById('dashAlerts').innerHTML = recent.length
       ? recent.map(alertCard).join('')
-      : '<div class="empty-state"><div class="empty-state-icon">?</div><div class="empty-state-text">Sin alertas pendientes</div></div>';
+      : '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Sin alertas pendientes</div></div>';
 
     // Recent entregas timeline
     const lastE = [...entregas].slice(0, 5);
@@ -258,10 +258,10 @@ async function renderDashboard() {
             <div class="timeline-date">${fmtDate(e.fecha)}</div>
             <div class="timeline-content">
               <div class="timeline-title">${e.trabajador_nombre}</div>
-              <div class="timeline-desc">${e.cantidad}� ${e.articulo_nombre}${e.talla ? ' � ' + e.talla : ''}</div>
+              <div class="timeline-desc">${e.cantidad}× ${e.articulo_nombre}${e.talla ? ' · ' + e.talla : ''}</div>
             </div>
           </div>`).join('') + '</div>'
-      : '<div class="empty-state"><div class="empty-state-icon">??</div><div class="empty-state-text">Sin entregas</div></div>';
+      : '<div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">Sin entregas</div></div>';
 
     if (window.innerWidth <= 768)
       document.getElementById('dashCards').style.gridTemplateColumns = '1fr';
@@ -269,9 +269,9 @@ async function renderDashboard() {
   } finally { showLoading(false); }
 }
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // TRABAJADORES
-// -------------------------------------------
+// ═══════════════════════════════════════════
 async function renderTrabajadores() {
   showLoading(true);
   try {
@@ -324,7 +324,7 @@ function _renderTrabajadoresFiltered(trabajadores) {
   empty.style.display = 'none';
 
   const estadoMap = { activo: 'badge-success', inactivo: 'badge-neutral', licencia: 'badge-warning' };
-  const ciudadIcon = { Pereira: '??', Manizales: '??', Armenia: '??' };
+  const ciudadIcon = { Pereira: '🟣', Manizales: '🟡', Armenia: '🟢' };
 
   tbody.innerHTML = filtered.map(t => `
     <tr>
@@ -333,18 +333,18 @@ function _renderTrabajadoresFiltered(trabajadores) {
           <div class="avatar" style="background:${avatarColor(t.nombre)}">${(t.nombre || '?').slice(0, 2).toUpperCase()}</div>
           <div>
             <div style="font-weight:600">${t.nombre}</div>
-            <div style="font-size:11px;color:var(--text-muted)">CC ${t.cedula || ''}${t.fecha_ingreso ? ' � Ingreso: ' + fmtDate(t.fecha_ingreso) : ''}</div>
+            <div style="font-size:11px;color:var(--text-muted)">CC ${t.cedula || ''}${t.fecha_ingreso ? ' · Ingreso: ' + fmtDate(t.fecha_ingreso) : ''}</div>
           </div>
         </div>
       </td>
-      <td><span style="font-size:12px">${t.cargo || '�'}</span></td>
+      <td><span style="font-size:12px">${t.cargo || '—'}</span></td>
       <td><span class="chip">${t.marca || 'General'}</span></td>
-      <td><span class="chip">${ciudadIcon[t.ciudad] || '??'} ${t.ciudad || '�'}</span></td>
-      <td>${t.jefe || '<span style="color:var(--text-muted)">�</span>'}</td>
+      <td><span class="chip">${ciudadIcon[t.ciudad] || '📍'} ${t.ciudad || '—'}</span></td>
+      <td>${t.jefe || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td><span class="badge ${estadoMap[t.estado] || 'badge-neutral'}">${t.estado || 'activo'}</span></td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarTrabajador('${t.id}')">??</button>
-        <button class="btn btn-danger btn-sm btn-icon"   title="Eliminar" onclick="eliminarTrabajador('${t.id}')">???</button>
+        <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarTrabajador('${t.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon"   title="Eliminar" onclick="eliminarTrabajador('${t.id}')">🗑️</button>
       </div></td>
     </tr>`).join('');
 }
@@ -380,7 +380,7 @@ async function guardarTrabajador() {
   closeModal('modalTrabajador');
   resetTrabajadorForm();
   await renderTrabajadores();
-  toast(id ? 'Trabajador actualizado ?' : 'Trabajador registrado ?');
+  toast(id ? 'Trabajador actualizado ✅' : 'Trabajador registrado ✅');
 }
 
 function editarTrabajador(id) {
@@ -398,12 +398,12 @@ function editarTrabajador(id) {
   document.getElementById('tTelefono').value = t.telefono || '';
   document.getElementById('tEstado').value = t.estado || 'activo';
   document.getElementById('tObs').value = t.obs || '';
-  document.getElementById('modalTrabajadorTitle').textContent = '?? Editar Trabajador';
+  document.getElementById('modalTrabajadorTitle').textContent = '✏️ Editar Trabajador';
   openModal('modalTrabajador');
 }
 
 async function eliminarTrabajador(id) {
-  if (!confirm('�Eliminar este trabajador? Esta acci�n no se puede deshacer.')) return;
+  if (!confirm('¿Eliminar este trabajador? Esta acción no se puede deshacer.')) return;
   showLoading(true);
   const ok = await Trabajadores.delete(id);
   showLoading(false);
@@ -417,22 +417,22 @@ function resetTrabajadorForm() {
   ['tId', 'tNombre', 'tCedula', 'tCargo', 'tMarca', 'tCiudad', 'tJefe', 'tFechaIngreso', 'tTelefono', 'tObs']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const est = document.getElementById('tEstado'); if (est) est.value = 'activo';
-  document.getElementById('modalTrabajadorTitle').textContent = '?? Nuevo Trabajador';
+  document.getElementById('modalTrabajadorTitle').textContent = '👤 Nuevo Trabajador';
 }
 
 async function exportarTrabajadores() {
   if (!Cache.trabajadores) Cache.trabajadores = await Trabajadores.getAll();
   const data = Cache.trabajadores;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Nombre', 'C�dula', 'Cargo', 'Proveedor', 'Ciudad', 'Jefe', 'Fecha Ingreso', 'Tel�fono', 'Estado', 'Unidad Organizacional'];
+  const headers = ['Nombre', 'Cédula', 'Cargo', 'Proveedor', 'Ciudad', 'Jefe', 'Fecha Ingreso', 'Teléfono', 'Estado', 'Unidad Organizacional'];
   const rows = data.map(t => [t.nombre, t.cedula, t.cargo, t.marca, t.ciudad, t.jefe, t.fecha_ingreso, t.telefono, t.estado, t.unidad_organizacional]);
   downloadCSV('trabajadores', headers, rows);
 }
 
-// -------------------------------------------
-// DOTACION � INVENTARIO
-// -------------------------------------------
-const dotacionIcons = { ropa: '??', calzado: '??', epp: '??', accesorio: '??', otro: '??' };
+// ═══════════════════════════════════════════
+// DOTACION — INVENTARIO
+// ═══════════════════════════════════════════
+const dotacionIcons = { ropa: '👕', calzado: '👟', epp: '⛑️', accesorio: '🎒', otro: '📦' };
 
 async function renderDotacion() {
   showLoading(true);
@@ -451,7 +451,7 @@ async function renderDotacion() {
       return `
       <div class="dotacion-card" style="${lowStock ? 'border-color:rgba(255,165,2,0.4)' : ''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="dotacion-card-icon">${d.emoji || dotacionIcons[d.categoria] || '??'}</div>
+          <div class="dotacion-card-icon">${d.emoji || dotacionIcons[d.categoria] || '📦'}</div>
           ${lowStock ? '<span class="badge badge-warning">Stock bajo</span>' : ''}
         </div>
         <div class="dotacion-card-name">${d.nombre}</div>
@@ -461,15 +461,15 @@ async function renderDotacion() {
         </div>
         <div class="dotacion-progress">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)">
-            <span>M�n: ${d.stock_min || 0}</span><span>${d.categoria || 'otro'}</span>
+            <span>Mín: ${d.stock_min || 0}</span><span>${d.categoria || 'otro'}</span>
           </div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
         </div>
         <div style="display:flex;gap:6px;margin-top:14px">
-          <button class="btn btn-secondary btn-sm" onclick="editarDotacion('${d.id}')">?? Editar</button>
+          <button class="btn btn-secondary btn-sm" onclick="editarDotacion('${d.id}')">✏️ Editar</button>
           <button class="btn btn-success btn-sm"   onclick="ajustarStock('${d.id}',1)">+</button>
-          <button class="btn btn-danger btn-sm"    onclick="ajustarStock('${d.id}',-1)">-</button>
-          <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarDotacion('${d.id}')">???</button>
+          <button class="btn btn-danger btn-sm"    onclick="ajustarStock('${d.id}',-1)">−</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarDotacion('${d.id}')">🗑️</button>
         </div>
       </div>`;
     }).join('');
@@ -499,7 +499,7 @@ async function guardarDotacion() {
   closeModal('modalDotacion');
   resetDotacionForm();
   await renderDotacion();
-  toast(id ? '�tem actualizado ?' : '�tem agregado al inventario ?');
+  toast(id ? 'Ítem actualizado ✅' : 'Ítem agregado al inventario ✅');
 }
 
 async function ajustarStock(id, delta) {
@@ -522,19 +522,19 @@ function editarDotacion(id) {
   document.getElementById('dUnidad').value = d.unidad || '';
   document.getElementById('dEmoji').value = d.emoji || '';
   document.getElementById('dDesc').value = d.descripcion || '';
-  document.getElementById('modalDotacionTitle').textContent = '?? Editar �tem';
+  document.getElementById('modalDotacionTitle').textContent = '✏️ Editar Ítem';
   openModal('modalDotacion');
 }
 
 async function eliminarDotacion(id) {
-  if (!confirm('�Eliminar este �tem?')) return;
+  if (!confirm('¿Eliminar este ítem?')) return;
   showLoading(true);
   const ok = await Dotacion.delete(id);
   showLoading(false);
   if (!ok) return;
   Cache.invalidate('dotacion');
   await renderDotacion();
-  toast('�tem eliminado', 'warning');
+  toast('Ítem eliminado', 'warning');
 }
 
 function resetDotacionForm() {
@@ -542,12 +542,12 @@ function resetDotacionForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const cat = document.getElementById('dCategoria'); if (cat) cat.value = 'ropa';
-  document.getElementById('modalDotacionTitle').textContent = '?? Nuevo �tem de Dotaci�n';
+  document.getElementById('modalDotacionTitle').textContent = '👕 Nuevo Ítem de Dotación';
 }
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // ENTREGAS DE DOTACION (Prendas del Stock)
-// -------------------------------------------
+// ═══════════════════════════════════════════
 let vistaEntregasModo = 'agrupada'; // 'agrupada' (por entrega consolidada) o 'detallada' (por prenda)
 
 function cambiarVistaEntregas(modo) {
@@ -583,7 +583,7 @@ function cambiarVistaEntregas(modo) {
         <tr>
           <th>Fecha</th>
           <th>Trabajador</th>
-          <th>Art�culo</th>
+          <th>Artículo</th>
           <th style="text-align:center;">Cantidad</th>
           <th>Talla</th>
           <th>Entregado por</th>
@@ -596,11 +596,11 @@ function cambiarVistaEntregas(modo) {
   renderEntregas();
 }
 
-// -- Agrupador inteligente de entregas -------------------------
+// ── Agrupador inteligente de entregas ─────────────────────────
 function agruparEntregas(lista) {
   const grupos = {};
 
-  // Ordenar cronol�gicamente descendente
+  // Ordenar cronológicamente descendente
   const ordenados = [...lista].sort((a, b) => new Date(b.created_at || b.fecha) - new Date(a.created_at || a.fecha));
 
   ordenados.forEach(e => {
@@ -611,13 +611,13 @@ function agruparEntregas(lista) {
     const key = `${normTrab}_${e.fecha}_${normResp}_${tTime}`;
 
     if (!grupos[key]) {
-      const obsLimpia = (e.obs || '').replace(/\[�tem\s+\d+\/\d+\]/g, '').trim();
+      const obsLimpia = (e.obs || '').replace(/\[Ítem\s+\d+\/\d+\]/g, '').trim();
       grupos[key] = {
         grupoId: key,
         trabajador_id: e.trabajador_id,
         trabajador_nombre: e.trabajador_nombre,
         fecha: e.fecha,
-        entregado_por: e.entregado_por || '�',
+        entregado_por: e.entregado_por || '—',
         obs: obsLimpia,
         created_at: e.created_at,
         totalCantidad: 0,
@@ -627,14 +627,14 @@ function agruparEntregas(lista) {
 
     grupos[key].totalCantidad += (e.cantidad || 1);
 
-    // Icono seg�n tipo de prenda
-    let icono = '??';
+    // Icono según tipo de prenda
+    let icono = '📦';
     const artLower = (e.articulo_nombre || '').toLowerCase();
-    if (artLower.includes('camisa') || artLower.includes('polo') || artLower.includes('oxford')) icono = '??';
-    else if (artLower.includes('pantalon') || artLower.includes('jean')) icono = '??';
-    else if (artLower.includes('chaqueta')) icono = '??';
-    else if (artLower.includes('bota') || artLower.includes('calzado')) icono = '??';
-    else if (artLower.includes('casco') || artLower.includes('guante') || artLower.includes('epp')) icono = '??';
+    if (artLower.includes('camisa') || artLower.includes('polo') || artLower.includes('oxford')) icono = '👕';
+    else if (artLower.includes('pantalon') || artLower.includes('jean')) icono = '👖';
+    else if (artLower.includes('chaqueta')) icono = '🧥';
+    else if (artLower.includes('bota') || artLower.includes('calzado')) icono = '🥾';
+    else if (artLower.includes('casco') || artLower.includes('guante') || artLower.includes('epp')) icono = '⛑️';
 
     let nombreCorto = (e.articulo_nombre || '').split('(')[0].trim();
     if (!nombreCorto) nombreCorto = e.articulo_nombre;
@@ -645,7 +645,7 @@ function agruparEntregas(lista) {
       articulo_nombre: e.articulo_nombre,
       nombreCorto,
       icono,
-      talla: e.talla || '�',
+      talla: e.talla || '—',
       cantidad: e.cantidad || 1,
       obs: e.obs || '',
       raw: e
@@ -655,7 +655,7 @@ function agruparEntregas(lista) {
   return Object.values(grupos);
 }
 
-// -- Render Principal de Entregas ------------------------------
+// ── Render Principal de Entregas ──────────────────────────────
 async function renderEntregas() {
   showLoading(true);
   try {
@@ -679,7 +679,7 @@ async function renderEntregas() {
     if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
     empty.style.display = 'none';
 
-    // -- VISTA AGRUPADA (Por entrega consolidada) --------------
+    // ── VISTA AGRUPADA (Por entrega consolidada) ──────────────
     if (vistaEntregasModo === 'agrupada') {
       const grupos = agruparEntregas(filtered);
       window._gruposEntregasCache = grupos;
@@ -705,7 +705,7 @@ async function renderEntregas() {
                   <span>${it.icono}</span>
                   <span style="color:var(--text-primary);font-weight:500;">${it.nombreCorto}</span>
                   <span style="color:var(--accent3);font-weight:700;">(${it.talla})</span>
-                  <span style="background:rgba(58,130,200,0.22);color:var(--accent3);border-radius:4px;padding:0 5px;font-size:11px;font-weight:700;">�${it.cantidad}</span>
+                  <span style="background:rgba(58,130,200,0.22);color:var(--accent3);border-radius:4px;padding:0 5px;font-size:11px;font-weight:700;">×${it.cantidad}</span>
                 </span>
               `).join('')}
             </div>
@@ -716,23 +716,23 @@ async function renderEntregas() {
           </td>
           <td>
             <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:14px;">??</span>
+              <span style="font-size:14px;">👤</span>
               <span style="font-weight:600;color:var(--text-primary);">${g.entregado_por}</span>
             </div>
           </td>
           <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-muted);" title="${g.obs || ''}">
-            ${g.obs || '�'}
+            ${g.obs || '—'}
           </td>
           <td>
             <div class="td-actions" style="display:flex;gap:6px;justify-content:center;">
-              <button class="btn btn-primary btn-sm btn-icon" onclick="imprimirActaEntregaGrupo('${g.grupoId}')" title="Imprimir Acta de Entrega (PDF)" style="background:linear-gradient(135deg,#1a5c99,#2a8a6e);border:none;color:#fff;">???</button>
-              <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaGrupo('${g.grupoId}')" title="Editar esta entrega">??</button>
-              <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntregaGrupo('${g.grupoId}')" title="Eliminar entrega y restaurar stock">???</button>
+              <button class="btn btn-primary btn-sm btn-icon" onclick="imprimirActaEntregaGrupo('${g.grupoId}')" title="Imprimir Acta de Entrega (PDF)" style="background:linear-gradient(135deg,#1a5c99,#2a8a6e);border:none;color:#fff;">🖨️</button>
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaGrupo('${g.grupoId}')" title="Editar esta entrega">✏️</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntregaGrupo('${g.grupoId}')" title="Eliminar entrega y restaurar stock">🗑️</button>
             </div>
           </td>
         </tr>`).join('');
     } else {
-      // -- VISTA DETALLADA (L�nea por l�nea de prenda) -----------
+      // ── VISTA DETALLADA (Línea por línea de prenda) ───────────
       tbody.innerHTML = filtered.map(e => `
         <tr>
           <td style="white-space:nowrap;">${fmtDate(e.fecha)}</td>
@@ -744,19 +744,19 @@ async function renderEntregas() {
           </td>
           <td>${e.articulo_nombre}</td>
           <td style="text-align:center;"><strong>${e.cantidad}</strong></td>
-          <td>${e.talla || '�'}</td>
+          <td>${e.talla || '—'}</td>
           <td>
             <div style="display:flex;align-items:center;gap:6px;">
-              <span>??</span>
-              <span>${e.entregado_por || '�'}</span>
+              <span>👤</span>
+              <span>${e.entregado_por || '—'}</span>
             </div>
           </td>
-          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs || ''}">${e.obs || '�'}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.obs || ''}">${e.obs || '—'}</td>
           <td>
             <div class="td-actions" style="display:flex;gap:6px;justify-content:center;">
-              <button class="btn btn-primary btn-sm btn-icon" onclick="imprimirActaEntregaIndividual('${e.id}')" title="Imprimir Acta de Entrega (PDF)" style="background:linear-gradient(135deg,#1a5c99,#2a8a6e);border:none;color:#fff;">???</button>
-              <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaIndividual('${e.id}')" title="Editar esta prenda">??</button>
-              <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntrega('${e.id}')" title="Eliminar entrega y restaurar stock">???</button>
+              <button class="btn btn-primary btn-sm btn-icon" onclick="imprimirActaEntregaIndividual('${e.id}')" title="Imprimir Acta de Entrega (PDF)" style="background:linear-gradient(135deg,#1a5c99,#2a8a6e);border:none;color:#fff;">🖨️</button>
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEntregaIndividual('${e.id}')" title="Editar esta prenda">✏️</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEntrega('${e.id}')" title="Eliminar entrega y restaurar stock">🗑️</button>
             </div>
           </td>
         </tr>`).join('');
@@ -764,7 +764,7 @@ async function renderEntregas() {
   } finally { showLoading(false); }
 }
 
-// -- Inicializar Modal de Entrega (Nueva Entrega) --------------
+// ── Inicializar Modal de Entrega (Nueva Entrega) ──────────────
 async function iniciarModalEntrega() {
   const f = document.getElementById('eFecha');
   if (f && !f.value) f.value = today();
@@ -783,13 +783,13 @@ async function iniciarModalEntrega() {
   agregarFilaPrendaEntrega();
 }
 
-// -- Generar Opciones agrupadas de Prendas ---------------------
+// ── Generar Opciones agrupadas de Prendas ─────────────────────
 function _generarOptgroupsPrendas(prendaSelTipoRef = '') {
   const lista = Cache.prendas || [];
   const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado', 'epp'];
   const meta = DotacionPrendas.TIPO_LABEL;
 
-  let optgroupsHtml = '<option value="">Seleccionar art�culo...</option>';
+  let optgroupsHtml = '<option value="">Seleccionar artículo...</option>';
   tipos.forEach(tipo => {
     const items = lista.filter(r => r.tipo === tipo);
     if (!items.length) return;
@@ -800,7 +800,7 @@ function _generarOptgroupsPrendas(prendaSelTipoRef = '') {
       refs[r.referencia].stockTotal += (r.stock || 0);
     });
 
-    const m = meta[tipo] || { icon: '??', label: tipo };
+    const m = meta[tipo] || { icon: '📦', label: tipo };
     optgroupsHtml += `<optgroup label="${m.icon} ${m.label}">`;
     Object.values(refs).forEach(r => {
       const stockBadge = r.stockTotal > 0 ? `(Stock total: ${r.stockTotal})` : '(Sin stock)';
@@ -813,7 +813,7 @@ function _generarOptgroupsPrendas(prendaSelTipoRef = '') {
   return optgroupsHtml;
 }
 
-// -- Agregar fila din�mica de prenda (Nueva Entrega) -----------
+// ── Agregar fila dinámica de prenda (Nueva Entrega) ───────────
 function agregarFilaPrendaEntrega() {
   const contenedor = document.getElementById('contenedorPrendasEntrega');
   if (!contenedor) return;
@@ -833,7 +833,7 @@ function agregarFilaPrendaEntrega() {
         </select>
       </div>
       <div class="form-group">
-        <label style="font-size:11px;font-weight:700;">G�nero y Talla *</label>
+        <label style="font-size:11px;font-weight:700;">Género y Talla *</label>
         <select class="ep-talla" onchange="entregaTallaCambiada(this)">
           <option value="">Selecciona prenda primero</option>
         </select>
@@ -843,18 +843,18 @@ function agregarFilaPrendaEntrega() {
         <input type="number" class="ep-cantidad" min="1" value="1" oninput="entregaCantidadCambiada(this)">
       </div>
       <div style="padding-bottom:1px;">
-        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaPrendaEntrega(this)" title="Quitar prenda de esta entrega" style="padding:0;border-radius:8px;font-size:14px;width:100%;height:38px;display:flex;align-items:center;justify-content:center;">?</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaPrendaEntrega(this)" title="Quitar prenda de esta entrega" style="padding:0;border-radius:8px;font-size:14px;width:100%;height:38px;display:flex;align-items:center;justify-content:center;">✕</button>
       </div>
     </div>
     <div class="ep-stock-info" style="font-size:12px;margin-top:8px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-      <span>?? Selecciona prenda y talla para consultar el stock disponible en bodega.</span>
+      <span>ℹ️ Selecciona prenda y talla para consultar el stock disponible en bodega.</span>
     </div>
   `;
 
   contenedor.appendChild(filaDiv);
 }
 
-// -- Cambio de prenda en una fila ------------------------------
+// ── Cambio de prenda en una fila ──────────────────────────────
 function entregaPrendaCambiada(selPrenda) {
   const fila = selPrenda.closest('.entrega-prenda-fila');
   if (!fila) return;
@@ -871,19 +871,19 @@ function entregaPrendaCambiada(selPrenda) {
   const lista = Cache.prendas || [];
   const variantes = lista.filter(p => p.tipo === tipo && p.referencia === ref);
 
-  let opts = '<option value="">Seleccionar g�nero / talla...</option>';
+  let opts = '<option value="">Seleccionar género / talla...</option>';
   variantes.forEach(p => {
-    const genLabel = p.genero === 'hombre' ? '?? Hombre' : p.genero === 'mujer' ? '?? Mujer' : (p.genero === 'bodega' ? '?? Bodega' : '?? Cuarto Fr�o');
+    const genLabel = p.genero === 'hombre' ? '👨 Hombre' : p.genero === 'mujer' ? '👩 Mujer' : (p.genero === 'bodega' ? '🏭 Bodega' : '❄️ Cuarto Frío');
     const stock = p.stock || 0;
     const stockTxt = stock > 0 ? `(Stock: ${stock})` : `(Agotado - 0)`;
-    opts += `<option value="${p.id}" data-stock="${stock}">${genLabel} � Talla ${p.talla} ${stockTxt}</option>`;
+    opts += `<option value="${p.id}" data-stock="${stock}">${genLabel} · Talla ${p.talla} ${stockTxt}</option>`;
   });
 
   selTalla.innerHTML = opts;
   entregaTallaCambiada(selTalla);
 }
 
-// -- Cambio de talla en una fila -------------------------------
+// ── Cambio de talla en una fila ───────────────────────────────
 function entregaTallaCambiada(selTalla) {
   const fila = selTalla.closest('.entrega-prenda-fila');
   if (!fila) return;
@@ -893,7 +893,7 @@ function entregaTallaCambiada(selTalla) {
   const prendaId = selTalla.value;
 
   if (!prendaId || !opt) {
-    if (infoEl) infoEl.innerHTML = '<span>?? Selecciona prenda y talla para consultar el stock disponible en bodega.</span>';
+    if (infoEl) infoEl.innerHTML = '<span>ℹ️ Selecciona prenda y talla para consultar el stock disponible en bodega.</span>';
     if (inputCant) inputCant.max = '';
     return;
   }
@@ -902,15 +902,15 @@ function entregaTallaCambiada(selTalla) {
   if (inputCant) inputCant.max = stock > 0 ? stock : 1;
 
   if (stock <= 0) {
-    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;display:flex;align-items:center;gap:4px;">?? Sin stock disponible en bodega (0 unidades).</span>`;
+    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;display:flex;align-items:center;gap:4px;">⚠️ Sin stock disponible en bodega (0 unidades).</span>`;
   } else {
-    infoEl.innerHTML = `<span style="color:var(--success);font-weight:600;display:flex;align-items:center;gap:4px;">? Stock disponible en bodega: ${stock} unidad(es).</span>`;
+    infoEl.innerHTML = `<span style="color:var(--success);font-weight:600;display:flex;align-items:center;gap:4px;">✅ Stock disponible en bodega: ${stock} unidad(es).</span>`;
   }
 
   entregaCantidadCambiada(inputCant);
 }
 
-// -- Validaci�n de cantidad en una fila ------------------------
+// ── Validación de cantidad en una fila ────────────────────────
 function entregaCantidadCambiada(inputCant) {
   const fila = inputCant.closest('.entrega-prenda-fila');
   if (!fila) return;
@@ -923,19 +923,19 @@ function entregaCantidadCambiada(inputCant) {
   if (!selTalla?.value) return;
 
   if (stock <= 0) {
-    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">?? Agotado: No hay stock disponible de esta talla.</span>`;
+    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">⚠️ Agotado: No hay stock disponible de esta talla.</span>`;
     return;
   }
 
   if (cant > stock) {
-    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">? La cantidad solicitada (${cant}) supera el stock disponible (${stock} unid.).</span>`;
+    infoEl.innerHTML = `<span style="color:var(--danger);font-weight:600;">❌ La cantidad solicitada (${cant}) supera el stock disponible (${stock} unid.).</span>`;
   } else if (cant >= 1) {
     const restante = stock - cant;
-    infoEl.innerHTML = `<span style="color:var(--success);font-weight:600;">? Cantidad v�lida. Quedar�n ${restante} unidad(es) en inventario tras la entrega.</span>`;
+    infoEl.innerHTML = `<span style="color:var(--success);font-weight:600;">✅ Cantidad válida. Quedarán ${restante} unidad(es) en inventario tras la entrega.</span>`;
   }
 }
 
-// -- Quitar fila de prendas (Nueva Entrega) --------------------
+// ── Quitar fila de prendas (Nueva Entrega) ────────────────────
 function eliminarFilaPrendaEntrega(btn) {
   const contenedor = document.getElementById('contenedorPrendasEntrega');
   if (!contenedor) return;
@@ -947,7 +947,7 @@ function eliminarFilaPrendaEntrega(btn) {
   if (fila) fila.remove();
 }
 
-// -- Guardar Entrega (Nueva) -----------------------------------
+// ── Guardar Entrega (Nueva) ───────────────────────────────────
 async function guardarEntrega() {
   const trabajadorId = document.getElementById('eTrabajador').value;
   const fecha = document.getElementById('eFecha').value;
@@ -970,10 +970,10 @@ async function guardarEntrega() {
     const cantidad = parseInt(inputCant?.value) || 0;
 
     if (!selPrenda?.value) {
-      return toast(`En la prenda #${i + 1}: selecciona un art�culo`, 'error');
+      return toast(`En la prenda #${i + 1}: selecciona un artículo`, 'error');
     }
     if (!prendaId) {
-      return toast(`En la prenda #${i + 1}: selecciona el g�nero y talla`, 'error');
+      return toast(`En la prenda #${i + 1}: selecciona el género y talla`, 'error');
     }
     if (cantidad < 1) {
       return toast(`En la prenda #${i + 1}: la cantidad debe ser mayor a 0`, 'error');
@@ -981,7 +981,7 @@ async function guardarEntrega() {
 
     const prenda = (Cache.prendas || []).find(p => p.id === prendaId);
     if (!prenda) {
-      return toast(`No se encontr� la prenda seleccionada en la fila #${i + 1}`, 'error');
+      return toast(`No se encontró la prenda seleccionada en la fila #${i + 1}`, 'error');
     }
 
     itemsAEntregar.push({ prenda, cantidad });
@@ -1007,7 +1007,7 @@ async function guardarEntrega() {
 
   for (let i = 0; i < itemsAEntregar.length; i++) {
     const { prenda, cantidad } = itemsAEntregar[i];
-    const genLabel = prenda.genero === 'hombre' ? 'Hombre' : prenda.genero === 'mujer' ? 'Mujer' : (prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Fr�o');
+    const genLabel = prenda.genero === 'hombre' ? 'Hombre' : prenda.genero === 'mujer' ? 'Mujer' : (prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Frío');
     const tipoLabel = DotacionPrendas.TIPO_LABEL[prenda.tipo]?.label || prenda.tipo;
     const articuloNombre = `${prenda.referencia} (${tipoLabel} - ${genLabel})`;
 
@@ -1041,9 +1041,9 @@ async function guardarEntrega() {
   if (document.getElementById('page-prendas')?.classList.contains('active')) {
     await renderDotacionPrendas();
   }
-  toast(`Entrega registrada ? (${totalExitosos} prenda(s) entregadas y descontadas del stock)`);
+  toast(`Entrega registrada ✅ (${totalExitosos} prenda(s) entregadas y descontadas del stock)`);
 
-  // ??? Generar e imprimir autom�ticamente el Acta de Entrega en PDF
+  // 🖨️ Generar e imprimir automáticamente el Acta de Entrega en PDF
   try {
     generarActaEntregaPDF({
       trabajadorId: trabajadorId,
@@ -1052,7 +1052,7 @@ async function guardarEntrega() {
       entregadoPor: entregadoPor,
       obs: obsGeneral,
       items: itemsAEntregar.map(it => {
-        const genLabel = it.prenda.genero === 'hombre' ? 'Hombre' : it.prenda.genero === 'mujer' ? 'Mujer' : (it.prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Fr�o');
+        const genLabel = it.prenda.genero === 'hombre' ? 'Hombre' : it.prenda.genero === 'mujer' ? 'Mujer' : (it.prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Frío');
         const tipoLabel = DotacionPrendas.TIPO_LABEL[it.prenda.tipo]?.label || it.prenda.tipo;
         return {
           referencia: it.prenda.referencia,
@@ -1069,22 +1069,22 @@ async function guardarEntrega() {
   }
 }
 
-// ---------------------------------------------------------------
-// EDICI�N DE ENTREGAS
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
+// EDICIÓN DE ENTREGAS
+// ═══════════════════════════════════════════════════════════════
 
-// -- Abrir Modal de Edici�n para una Entrega Agrupada -----------
+// ── Abrir Modal de Edición para una Entrega Agrupada ───────────
 function editarEntregaGrupo(grupoId) {
   const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
   const grupo = grupos.find(g => g.grupoId === grupoId);
-  if (!grupo) return toast('No se encontr� la informaci�n de la entrega', 'error');
+  if (!grupo) return toast('No se encontró la información de la entrega', 'error');
 
   window._grupoEnEdicion = JSON.parse(JSON.stringify(grupo));
 
   document.getElementById('eeTrabajadorNombre').value = grupo.trabajador_nombre;
   document.getElementById('eeTrabajadorId').value = grupo.trabajador_id;
   document.getElementById('eeFecha').value = grupo.fecha;
-  document.getElementById('eeEntregadoPor').value = grupo.entregado_por === '�' ? '' : grupo.entregado_por;
+  document.getElementById('eeEntregadoPor').value = grupo.entregado_por === '—' ? '' : grupo.entregado_por;
   document.getElementById('eeObs').value = grupo.obs || '';
 
   const contenedor = document.getElementById('contenedorPrendasEdicion');
@@ -1098,7 +1098,7 @@ function editarEntregaGrupo(grupoId) {
   document.body.style.overflow = 'hidden';
 }
 
-// -- Abrir Edici�n para una Fila Individual --------------------
+// ── Abrir Edición para una Fila Individual ────────────────────
 function editarEntregaIndividual(entregaId) {
   const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
   const grupo = grupos.find(g => g.items.some(it => it.id === entregaId));
@@ -1107,7 +1107,7 @@ function editarEntregaIndividual(entregaId) {
   }
 }
 
-// -- Agregar Fila de Prenda en el Modal de Edici�n -------------
+// ── Agregar Fila de Prenda en el Modal de Edición ─────────────
 function agregarFilaPrendaEdicion(itemData = null) {
   const contenedor = document.getElementById('contenedorPrendasEdicion');
   if (!contenedor) return;
@@ -1145,7 +1145,7 @@ function agregarFilaPrendaEdicion(itemData = null) {
         </select>
       </div>
       <div class="form-group">
-        <label style="font-size:11px;font-weight:700;">G�nero y Talla *</label>
+        <label style="font-size:11px;font-weight:700;">Género y Talla *</label>
         <select class="ep-talla" onchange="entregaTallaCambiada(this)">
           <option value="">Selecciona prenda primero</option>
         </select>
@@ -1155,11 +1155,11 @@ function agregarFilaPrendaEdicion(itemData = null) {
         <input type="number" class="ep-cantidad" min="1" value="${cantidadVal}" oninput="entregaCantidadCambiada(this)">
       </div>
       <div style="padding-bottom:1px;">
-        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaPrendaEdicion(this)" title="Quitar prenda de esta entrega" style="padding:0;border-radius:8px;font-size:14px;width:100%;height:38px;display:flex;align-items:center;justify-content:center;">?</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaPrendaEdicion(this)" title="Quitar prenda de esta entrega" style="padding:0;border-radius:8px;font-size:14px;width:100%;height:38px;display:flex;align-items:center;justify-content:center;">✕</button>
       </div>
     </div>
     <div class="ep-stock-info" style="font-size:12px;margin-top:8px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-      <span>?? Selecciona prenda y talla para consultar el stock disponible en bodega.</span>
+      <span>ℹ️ Selecciona prenda y talla para consultar el stock disponible en bodega.</span>
     </div>
   `;
 
@@ -1177,7 +1177,7 @@ function agregarFilaPrendaEdicion(itemData = null) {
   }
 }
 
-// -- Quitar Fila en Edici�n ------------------------------------
+// ── Quitar Fila en Edición ────────────────────────────────────
 function eliminarFilaPrendaEdicion(btn) {
   const contenedor = document.getElementById('contenedorPrendasEdicion');
   if (!contenedor) return;
@@ -1189,10 +1189,10 @@ function eliminarFilaPrendaEdicion(btn) {
   if (fila) fila.remove();
 }
 
-// -- Guardar Cambios de la Edici�n de Entrega -------------------
+// ── Guardar Cambios de la Edición de Entrega ───────────────────
 async function guardarEdicionEntrega() {
   const grupoOriginal = window._grupoEnEdicion;
-  if (!grupoOriginal) return toast('Error: no hay informaci�n de entrega en edici�n', 'error');
+  if (!grupoOriginal) return toast('Error: no hay información de entrega en edición', 'error');
 
   const fecha = document.getElementById('eeFecha').value;
   const entregadoPor = document.getElementById('eeEntregadoPor').value.trim();
@@ -1214,11 +1214,11 @@ async function guardarEdicionEntrega() {
     const prendaId = selTalla?.value;
     const cantidad = parseInt(inputCant?.value) || 0;
 
-    if (!prendaId) return toast(`En la prenda #${i + 1}: selecciona art�culo y talla`, 'error');
+    if (!prendaId) return toast(`En la prenda #${i + 1}: selecciona artículo y talla`, 'error');
     if (cantidad < 1) return toast(`En la prenda #${i + 1}: la cantidad debe ser mayor a 0`, 'error');
 
     const prenda = (Cache.prendas || []).find(p => p.id === prendaId);
-    if (!prenda) return toast(`No se encontr� la prenda seleccionada #${i + 1}`, 'error');
+    if (!prenda) return toast(`No se encontró la prenda seleccionada #${i + 1}`, 'error');
 
     itemsNuevos.push({
       entregaId,
@@ -1257,7 +1257,7 @@ async function guardarEdicionEntrega() {
 
   // 2. Procesar actualizaciones e inserciones
   for (const it of itemsNuevos) {
-    const genLabel = it.prenda.genero === 'hombre' ? 'Hombre' : it.prenda.genero === 'mujer' ? 'Mujer' : (it.prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Fr�o');
+    const genLabel = it.prenda.genero === 'hombre' ? 'Hombre' : it.prenda.genero === 'mujer' ? 'Mujer' : (it.prenda.genero === 'bodega' ? 'Bodega' : 'Cuarto Frío');
     const tipoLabel = DotacionPrendas.TIPO_LABEL[it.prenda.tipo]?.label || it.prenda.tipo;
     const articuloNombre = `${it.prenda.referencia} (${tipoLabel} - ${genLabel})`;
 
@@ -1285,7 +1285,7 @@ async function guardarEdicionEntrega() {
         obs: obs
       });
     } else {
-      // Nueva fila agregada durante la edici�n
+      // Nueva fila agregada durante la edición
       const newRow = {
         trabajador_id: grupoOriginal.trabajador_id,
         trabajador_nombre: grupoOriginal.trabajador_nombre,
@@ -1310,16 +1310,16 @@ async function guardarEdicionEntrega() {
   if (document.getElementById('page-prendas')?.classList.contains('active')) {
     await renderDotacionPrendas();
   }
-  toast('Entrega actualizada con �xito ?');
+  toast('Entrega actualizada con éxito ✅');
 }
 
-// -- Eliminar Entrega Completa (Grupo) y Restaurar Stock -------
+// ── Eliminar Entrega Completa (Grupo) y Restaurar Stock ───────
 async function eliminarEntregaGrupo(grupoId) {
   const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
   const grupo = grupos.find(g => g.grupoId === grupoId);
-  if (!grupo) return toast('No se encontr� la entrega', 'error');
+  if (!grupo) return toast('No se encontró la entrega', 'error');
 
-  const msg = `�Eliminar la entrega de ${grupo.trabajador_nombre} (${grupo.items.length} prenda(s), ${grupo.totalCantidad} unidad(es) en total)? El stock de todas las prendas ser� restaurado en el inventario.`;
+  const msg = `¿Eliminar la entrega de ${grupo.trabajador_nombre} (${grupo.items.length} prenda(s), ${grupo.totalCantidad} unidad(es) en total)? El stock de todas las prendas será restaurado en el inventario.`;
   if (!confirm(msg)) return;
 
   showLoading(true);
@@ -1334,14 +1334,14 @@ async function eliminarEntregaGrupo(grupoId) {
   if (document.getElementById('page-prendas')?.classList.contains('active')) {
     await renderDotacionPrendas();
   }
-  toast('Entrega eliminada y stock restaurado en el inventario ?', 'warning');
+  toast('Entrega eliminada y stock restaurado en el inventario ✅', 'warning');
 }
 
-// -- Eliminar Entrega Individual -------------------------------
+// ── Eliminar Entrega Individual ───────────────────────────────
 async function eliminarEntrega(id) {
   const entrega = (Cache.entregas || []).find(e => e.id === id);
   const infoExtra = entrega ? ` (${entrega.cantidad} und. de ${entrega.articulo_nombre || 'prenda'})` : '';
-  if (!confirm(`�Eliminar este registro de entrega? El stock${infoExtra} ser� restaurado en el inventario.`)) return;
+  if (!confirm(`¿Eliminar este registro de entrega? El stock${infoExtra} será restaurado en el inventario.`)) return;
 
   showLoading(true);
   const ok = await Entregas.delete(id);
@@ -1354,7 +1354,7 @@ async function eliminarEntrega(id) {
   if (document.getElementById('page-prendas')?.classList.contains('active')) {
     await renderDotacionPrendas();
   }
-  toast('Entrega eliminada y stock restaurado ?', 'warning');
+  toast('Entrega eliminada y stock restaurado ✅', 'warning');
 }
 
 function resetEntregaForm() {
@@ -1370,12 +1370,12 @@ async function exportarEntregas() {
   if (!Cache.entregas) Cache.entregas = await Entregas.getAll();
   const data = Cache.entregas;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Fecha', 'Trabajador', 'Art�culo', 'Cantidad', 'Talla/Ref', 'Entregado por', 'Observaciones'];
+  const headers = ['Fecha', 'Trabajador', 'Artículo', 'Cantidad', 'Talla/Ref', 'Entregado por', 'Observaciones'];
   const rows = data.map(e => [e.fecha, e.trabajador_nombre, e.articulo_nombre, e.cantidad, e.talla, e.entregado_por, e.obs]);
   downloadCSV('entregas_dotacion', headers, rows);
 }
 
-// -- Select helpers ---------------------------------------------
+// ── Select helpers ─────────────────────────────────────────────
 function poblarSelectTrabajadores(selId, keepFirst = false) {
   const sel = document.getElementById(selId);
   if (!sel) return;
@@ -1398,7 +1398,7 @@ function poblarSelectDotacion(selId) {
   const val = sel.value;
   const lista = Cache.prendas || [];
 
-  sel.innerHTML = '<option value="">Seleccionar art�culo...</option>';
+  sel.innerHTML = '<option value="">Seleccionar artículo...</option>';
 
   // Agrupar por tipo para mostrar optgroups
   const tipos = ['camisa', 'pantalon', 'chaqueta', 'calzado'];
@@ -1419,7 +1419,7 @@ function poblarSelectDotacion(selId) {
     });
 
     Object.values(refs).forEach(r => {
-      // Usamos "tipo|referencia" como valor para identificar el art�culo
+      // Usamos "tipo|referencia" como valor para identificar el artículo
       const opt = new Option(`${r.referencia} (stock: ${r.stock})`, `${r.tipo}|${r.referencia}`);
       grupo.appendChild(opt);
     });
@@ -1430,9 +1430,9 @@ function poblarSelectDotacion(selId) {
   sel.value = val;
 }
 
-// -------------------------------------------
-// BPM � CARNET
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// BPM — CARNET
+// ═══════════════════════════════════════════
 async function renderBPM() {
   showLoading(true);
   try {
@@ -1464,14 +1464,14 @@ async function renderBPM() {
             ${b.trabajador_nombre}
           </div>
         </td>
-        <td>${b.numero || '�'}</td>
+        <td>${b.numero || '—'}</td>
         <td>${fmtDate(b.emision)}</td>
         <td>${fmtDate(b.vencimiento)}</td>
         <td>${estadoBadge(days)}</td>
         <td>${diasBadge(days)}</td>
         <td><div class="td-actions">
-          <button class="btn btn-secondary btn-sm btn-icon" onclick="editarBPM('${b.id}')">??</button>
-          <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarBPM('${b.id}')">???</button>
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="editarBPM('${b.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarBPM('${b.id}')">🗑️</button>
         </div></td>
       </tr>`;
     }).join('');
@@ -1510,7 +1510,7 @@ async function guardarBPM() {
   closeModal('modalBPM');
   resetBPMForm();
   await renderBPM();
-  toast(id ? 'Carnet actualizado ?' : 'Carnet registrado ?');
+  toast(id ? 'Carnet actualizado ✅' : 'Carnet registrado ✅');
 }
 
 function editarBPM(id) {
@@ -1534,12 +1534,12 @@ function editarBPM(id) {
   }
   document.getElementById('bCapacitacion').value = b.capacitacion || 'Plan de Capacitacion Anual';
   document.getElementById('bObs').value = b.obs || '';
-  document.getElementById('modalBPMTitle').textContent = '?? Editar Carnet BPM';
+  document.getElementById('modalBPMTitle').textContent = '✏️ Editar Carnet BPM';
   openModal('modalBPM');
 }
 
 async function eliminarBPM(id) {
-  if (!confirm('�Eliminar este carnet?')) return;
+  if (!confirm('¿Eliminar este carnet?')) return;
   showLoading(true);
   const ok = await BPM.delete(id);
   showLoading(false);
@@ -1564,17 +1564,17 @@ async function exportarBPM() {
   if (!Cache.bpm) Cache.bpm = await BPM.getAll();
   const data = Cache.bpm;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Trabajador', 'N� Carnet', 'Vencimiento', 'Estado', 'D�as', 'Entidad', 'Capacitaci�n'];
+  const headers = ['Trabajador', 'N° Carnet', 'Vencimiento', 'Estado', 'Días', 'Entidad', 'Capacitación'];
   const rows = data.map(b => {
     const days = daysUntil(b.vencimiento);
-    return [b.trabajador_nombre, b.numero, b.vencimiento, getDocEstado(days), days ?? '', b.entidad, b.capacitacion];
+    return [b.trabajador_nombre, b.numero, b.vencimiento, getDocEstado(days), days || '', b.entidad, b.capacitacion];
   });
   downloadCSV('bpm_carnets', headers, rows);
 }
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // VEHICULOS
-// -------------------------------------------
+// ═══════════════════════════════════════════
 async function renderVehiculos() {
   showLoading(true);
   try {
@@ -1604,14 +1604,14 @@ function _renderVehTable(tbodyId, emptyId, data) {
   tbody.innerHTML = data.map(v => {
     const days = daysUntil(v.vencimiento);
     return `<tr>
-      <td><strong>${v.placa || '�'}</strong></td>
-      <td>${v.conductor_nombre || '�'}</td>
+      <td><strong>${v.placa || '—'}</strong></td>
+      <td>${v.conductor_nombre || '—'}</td>
       <td>${fmtDate(v.vencimiento)}</td>
       <td>${estadoBadge(days)}</td>
       <td>${diasBadge(days)}</td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="editarVehiculo('${v.id}')">??</button>
-        <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarVehiculo('${v.id}')">???</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="editarVehiculo('${v.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarVehiculo('${v.id}')">🗑️</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -1624,14 +1624,14 @@ function _renderPropTable(tbodyId, emptyId, data) {
   empty.style.display = 'none';
   tbody.innerHTML = data.map(v => `
     <tr>
-      <td><strong>${v.placa || '�'}</strong></td>
-      <td>${v.conductor_nombre || '�'}</td>
-      <td>${[v.marca_carro, v.modelo].filter(Boolean).join(' ') || '�'}</td>
-      <td>${v.anio || '�'}</td>
+      <td><strong>${v.placa || '—'}</strong></td>
+      <td>${v.conductor_nombre || '—'}</td>
+      <td>${[v.marca_carro, v.modelo].filter(Boolean).join(' ') || '—'}</td>
+      <td>${v.anio || '—'}</td>
       <td><span class="badge badge-info">Vigente</span></td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="editarVehiculo('${v.id}')">??</button>
-        <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarVehiculo('${v.id}')">???</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="editarVehiculo('${v.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarVehiculo('${v.id}')">🗑️</button>
       </div></td>
     </tr>`).join('');
 }
@@ -1644,28 +1644,28 @@ function _renderLicTable(tbodyId, emptyId, data) {
   tbody.innerHTML = data.map(v => {
     const days = daysUntil(v.vencimiento);
     return `<tr>
-      <td>${v.conductor_nombre || '�'}</td>
-      <td>${v.num_licencia || '�'}</td>
-      <td><span class="badge badge-info">${v.categoria || '�'}</span></td>
+      <td>${v.conductor_nombre || '—'}</td>
+      <td>${v.num_licencia || '—'}</td>
+      <td><span class="badge badge-info">${v.categoria || '—'}</span></td>
       <td>${fmtDate(v.vencimiento)}</td>
       <td>${estadoBadge(days)}</td>
       <td>${diasBadge(days)}</td>
       <td><div class="td-actions">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="editarVehiculo('${v.id}')">??</button>
-        <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarVehiculo('${v.id}')">???</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="editarVehiculo('${v.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon"   onclick="eliminarVehiculo('${v.id}')">🗑️</button>
       </div></td>
     </tr>`;
   }).join('');
 }
 
 function _renderTodosTable(vehiculos) {
-  const tipoLabel = { soat: '??? SOAT', tecno: '?? TECNO', propiedad: '?? T.Propiedad', licencia: '?? Licencia' };
+  const tipoLabel = { soat: '🛡️ SOAT', tecno: '🔧 TECNO', propiedad: '📄 T.Propiedad', licencia: '🪪 Licencia' };
   document.getElementById('tablaTodos').innerHTML = vehiculos.map(v => {
     const days = daysUntil(v.vencimiento);
     const ident = v.tipo === 'licencia' ? v.conductor_nombre : (v.placa || v.conductor_nombre);
     return `<tr>
       <td>${tipoLabel[v.tipo] || v.tipo}</td>
-      <td>${ident || '�'}</td>
+      <td>${ident || '—'}</td>
       <td>${fmtDate(v.vencimiento)}</td>
       <td>${estadoBadge(days)}</td>
       <td>${diasBadge(days)}</td>
@@ -1703,7 +1703,7 @@ async function guardarVehiculo() {
   closeModal('modalVehiculo');
   resetVehiculoForm();
   await renderVehiculos();
-  toast(id ? 'Documento actualizado ?' : 'Documento registrado ?');
+  toast(id ? 'Documento actualizado ✅' : 'Documento registrado ✅');
 }
 
 function editarVehiculo(id) {
@@ -1723,12 +1723,12 @@ function editarVehiculo(id) {
   document.getElementById('vNumLicencia').value = v.num_licencia || '';
   document.getElementById('vCategoria').value = v.categoria || 'B1';
   document.getElementById('vObs').value = v.obs || '';
-  document.getElementById('modalVehiculoTitle').textContent = '?? Editar Documento';
+  document.getElementById('modalVehiculoTitle').textContent = '✏️ Editar Documento';
   openModal('modalVehiculo');
 }
 
 async function eliminarVehiculo(id) {
-  if (!confirm('�Eliminar este documento?')) return;
+  if (!confirm('¿Eliminar este documento?')) return;
   showLoading(true);
   const ok = await Vehiculos.delete(id);
   showLoading(false);
@@ -1743,7 +1743,7 @@ function resetVehiculoForm() {
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const tipo = document.getElementById('vTipo'); if (tipo) tipo.value = 'soat';
   const sel = document.getElementById('vConductor'); if (sel) sel.value = '';
-  document.getElementById('modalVehiculoTitle').textContent = '?? Veh�culo / Documento';
+  document.getElementById('modalVehiculoTitle').textContent = '🚗 Vehículo / Documento';
   toggleVehiculoFields();
 }
 
@@ -1758,27 +1758,27 @@ async function exportarVehiculos() {
   if (!Cache.vehiculos) Cache.vehiculos = await Vehiculos.getAll();
   const data = Cache.vehiculos;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Tipo', 'Placa', 'Conductor/Propietario', 'Vencimiento', 'Estado', 'D�as', 'N� P�liza/Licencia', 'Aseguradora/CDA'];
+  const headers = ['Tipo', 'Placa', 'Conductor/Propietario', 'Vencimiento', 'Estado', 'Días', 'N° Póliza/Licencia', 'Aseguradora/CDA'];
   const rows = data.map(v => {
     const days = daysUntil(v.vencimiento);
-    return [v.tipo, v.placa, v.conductor_nombre, v.vencimiento, getDocEstado(days), days ?? '', v.poliza || v.num_licencia, v.aseguradora];
+    return [v.tipo, v.placa, v.conductor_nombre, v.vencimiento, getDocEstado(days), days || '', v.poliza || v.num_licencia, v.aseguradora];
   });
   downloadCSV('vehiculos_documentos', headers, rows);
 }
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // ALERTAS
-// -------------------------------------------
+// ═══════════════════════════════════════════
 function alertCard(a) {
   const estado = getDocEstado(a.days);
   const classMap = { vencido: 'danger', critico: 'danger', proximo: 'warning', vigente: 'info', sin_fecha: 'info' };
-  const iconMap = { vencido: '??', critico: '??', proximo: '?', vigente: '??', sin_fecha: '??' };
+  const iconMap = { vencido: '🚨', critico: '⚠️', proximo: '⏰', vigente: 'ℹ️', sin_fecha: 'ℹ️' };
   return `<div class="alert-item ${classMap[estado] || 'info'}">
     <div class="alert-icon">${iconMap[estado]}</div>
     <div class="alert-content">
-      <div class="alert-title">${a.tipo} � ${a.persona || '�'}</div>
+      <div class="alert-title">${a.tipo} — ${a.persona || '—'}</div>
       <div class="alert-desc">${a.desc}</div>
-      <div class="alert-date">Vence: ${fmtDateLong(a.vencimiento)} � ${diasBadge(a.days)}</div>
+      <div class="alert-date">Vence: ${fmtDateLong(a.vencimiento)} · ${diasBadge(a.days)}</div>
     </div>
   </div>`;
 }
@@ -1804,10 +1804,10 @@ async function renderAlertas() {
     const statsEl = document.getElementById('alertStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '??', value: vencidos, label: 'Vencidos', color: 'var(--danger)' },
-        { icon: '??', value: criticos, label: 'Cr�ticos =7d', color: 'var(--warning)' },
-        { icon: '?', value: proximos, label: 'Pr�ximos =30d', color: 'var(--accent4)' },
-        { icon: '?', value: vigentes, label: 'Vigentes', color: 'var(--success)' },
+        { icon: '🚨', value: vencidos, label: 'Vencidos', color: 'var(--danger)' },
+        { icon: '⚠️', value: criticos, label: 'Críticos ≤7d', color: 'var(--warning)' },
+        { icon: '⏰', value: proximos, label: 'Próximos ≤30d', color: 'var(--accent4)' },
+        { icon: '✅', value: vigentes, label: 'Vigentes', color: 'var(--success)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -1819,7 +1819,7 @@ async function renderAlertas() {
     const lista = document.getElementById('listaAlertas');
     lista.innerHTML = filtered.length
       ? filtered.map(alertCard).join('')
-      : '<div class="empty-state"><div class="empty-state-icon">?</div><div class="empty-state-text">No hay alertas en esta categor�a</div></div>';
+      : '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No hay alertas en esta categoría</div></div>';
 
   } finally { showLoading(false); }
 }
@@ -1835,34 +1835,34 @@ async function solicitarNotificaciones() {
   if (!('Notification' in window)) return toast('Tu navegador no soporta notificaciones', 'warning');
   const perm = await Notification.requestPermission();
   if (perm === 'granted') {
-    toast('Notificaciones activadas ??', 'success');
+    toast('Notificaciones activadas 🔔', 'success');
     const alertas = await Alertas.getAll();
     const pendientes = alertas.filter(a => a.days !== null && a.days >= 0 && a.days <= 30);
     if (pendientes.length > 0) {
-      new Notification('GH Pro � Alertas pendientes', {
-        body: `Tienes ${pendientes.length} documento(s) pr�ximo(s) a vencer`,
+      new Notification('GH Pro — Alertas pendientes', {
+        body: `Tienes ${pendientes.length} documento(s) próximo(s) a vencer`,
         icon: 'icons/icon-192.png',
       });
     }
   } else {
-    toast('Permisos de notificaci�n denegados', 'warning');
+    toast('Permisos de notificación denegados', 'warning');
   }
 }
 
-// -------------------------------------------
-// EXPORTACI�N EXCEL (.XLSX) Y CSV
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// EXPORTACIÓN EXCEL (.XLSX) Y CSV
+// ═══════════════════════════════════════════
 function downloadExcel(name, headers, rows, sheetName = 'Datos') {
   if (typeof XLSX !== 'undefined') {
     const wb = XLSX.utils.book_new();
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // Ajustar autom�ticamente el ancho de cada columna seg�n el contenido
+    // Ajustar automáticamente el ancho de cada columna según el contenido
     const colWidths = headers.map((h, colIdx) => {
       const maxLen = Math.max(
         String(h).length,
-        ...rows.map(r => String(r[colIdx] ?? '').length)
+        ...rows.map(r => String((r[colIdx] != null ? r[colIdx] : '')).length)
       );
       return { wch: Math.min(50, Math.max(12, maxLen + 3)) };
     });
@@ -1875,7 +1875,7 @@ function downloadExcel(name, headers, rows, sheetName = 'Datos') {
     const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 
     // Usar File y application/octet-stream para evitar que Edge/Chrome intercepten
-    // el archivo con el visor de Office y le asignen un UUID sin extensi�n
+    // el archivo con el visor de Office y le asignen un UUID sin extensión
     const file = new File([wbOut], fileName, { type: 'application/octet-stream' });
     const url = URL.createObjectURL(file);
     const a = document.createElement('a');
@@ -1887,19 +1887,19 @@ function downloadExcel(name, headers, rows, sheetName = 'Datos') {
     document.body.removeChild(a);
     // Esperar 60 segundos antes de revocar para no interrumpir la descarga en segundo plano
     setTimeout(() => URL.revokeObjectURL(url), 60000);
-    toast(`Archivo Excel descargado: ${fileName} ??`);
+    toast(`Archivo Excel descargado: ${fileName} 📊`);
   } else {
-    // Fallback a CSV si la librer�a XLSX no est� cargada
+    // Fallback a CSV si la librería XLSX no está cargada
     downloadCSV(name, headers, rows);
   }
 }
 
 function downloadCSV(name, headers, rows) {
-  // Si SheetJS (XLSX) est� disponible, exportar autom�ticamente en formato .xlsx nativo
+  // Si SheetJS (XLSX) está disponible, exportar automáticamente en formato .xlsx nativo
   if (typeof XLSX !== 'undefined') {
     return downloadExcel(name, headers, rows, name);
   }
-  const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const escape = (v) => `"${String(v != null ? v : '').replace(/"/g, '""')}"`;
   const csv = [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -1907,12 +1907,12 @@ function downloadCSV(name, headers, rows) {
   a.href = url; a.download = `${name}_${today()}.csv`;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
-  toast('Archivo descargado ??');
+  toast('Archivo descargado 📥');
 }
 
-// -------------------------------------------
-// PWA � Service Worker & Install prompt
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// PWA — Service Worker & Install prompt
+// ═══════════════════════════════════════════
 let deferredPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -1928,11 +1928,11 @@ document.getElementById('installBtn')?.addEventListener('click', async () => {
   const { outcome } = await deferredPrompt.userChoice;
   deferredPrompt = null;
   document.getElementById('installBtn').classList.remove('show');
-  if (outcome === 'accepted') toast('�App instalada! ??', 'success');
+  if (outcome === 'accepted') toast('¡App instalada! 🎉', 'success');
 });
 
 window.addEventListener('appinstalled', () => {
-  toast('GH Pro instalada exitosamente ??', 'success');
+  toast('GH Pro instalada exitosamente 🚀', 'success');
   deferredPrompt = null;
 });
 
@@ -1954,14 +1954,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// -------------------------------------------
+// ═══════════════════════════════════════════
 // INIT
-// -------------------------------------------
+// ═══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
   // Inicializar sidebar mobile y nav items
   _initSidebarAndNav();
 
-  // Seed si las tablas est�n vac�as (primera vez)
+  // Seed si las tablas están vacías (primera vez)
   await checkAndSeed();
 
   // Cargar dashboard inicial
@@ -1996,7 +1996,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const alertas = await Alertas.getAll();
     const count = alertas.filter(a => a.days !== null && a.days <= 30).length;
     updateAlertBadge(count);
-    // Refrescar badge de incapacidades tambi�n
+    // Refrescar badge de incapacidades también
     const incap = Cache.incapacidades || await Incapacidades.getAll();
     Cache.incapacidades = incap;
     const pend = incap.filter(i => !i.tiene_fisico || !i.historia_clinica).length;
@@ -2025,20 +2025,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   })();
 });
 
-// -------------------------------------------
-// INCAPACIDADES � helpers de presentaci�n
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// INCAPACIDADES — helpers de presentación
+// ═══════════════════════════════════════════
 
 // Cache propio para incapacidades
 Cache.incapacidades = null;
 
 const INCAP_STATUS = {
-  ingresada: { label: 'Ingresada', cls: 'badge-neutral', icon: '??' },
-  cobrada: { label: 'Cobrada', cls: 'badge-info', icon: '??' },
-  transcrita: { label: 'Transcrita', cls: 'badge-warning', icon: '??' },
-  pagada: { label: 'Pagada', cls: 'badge-success', icon: '?' },
-  en_tramite: { label: 'En tr�mite', cls: 'badge-warning', icon: '?' },
-  radicada: { label: 'Radicada', cls: 'badge-info', icon: '??' },
+  ingresada: { label: 'Ingresada', cls: 'badge-neutral', icon: '📥' },
+  cobrada: { label: 'Cobrada', cls: 'badge-info', icon: '📤' },
+  transcrita: { label: 'Transcrita', cls: 'badge-warning', icon: '📝' },
+  pagada: { label: 'Pagada', cls: 'badge-success', icon: '✅' },
+  en_tramite: { label: 'En trámite', cls: 'badge-warning', icon: '⏳' },
+  radicada: { label: 'Radicada', cls: 'badge-info', icon: '📂' },
 };
 
 const INCAP_TIPO = {
@@ -2049,7 +2049,7 @@ const INCAP_TIPO = {
 };
 
 function statusBadgeIncap(status) {
-  const s = INCAP_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '�' };
+  const s = INCAP_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '•' };
   return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
 }
 
@@ -2059,19 +2059,19 @@ function tipoBadgeIncap(tipo) {
 }
 
 function fmtPeso(n) {
-  if (!n && n !== 0) return '�';
+  if (!n && n !== 0) return '—';
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 }
 
-function iconCheck(val, siText = 'S�', noText = 'No') {
+function iconCheck(val, siText = 'Sí', noText = 'No') {
   return val
-    ? `<span style="color:var(--success);font-weight:600">? ${siText}</span>`
-    : `<span style="color:var(--danger);font-weight:600">? ${noText}</span>`;
+    ? `<span style="color:var(--success);font-weight:600">✔ ${siText}</span>`
+    : `<span style="color:var(--danger);font-weight:600">✘ ${noText}</span>`;
 }
 
-// -------------------------------------------
-// INCAPACIDADES � render principal
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// INCAPACIDADES — render principal
+// ═══════════════════════════════════════════
 async function renderIncapacidades() {
   showLoading(true);
   try {
@@ -2081,7 +2081,7 @@ async function renderIncapacidades() {
 
     const lista = Cache.incapacidades;
 
-    // -- Stats -------------------------------
+    // ── Stats ───────────────────────────────
     const totalDias = lista.reduce((s, i) => s + (i.dias || 0), 0);
     const sinFisico = lista.filter(i => !i.tiene_fisico).length;
     const sinHC = lista.filter(i => !i.historia_clinica).length;
@@ -2090,11 +2090,11 @@ async function renderIncapacidades() {
     const statsEl = document.getElementById('incapStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '??', value: lista.length, label: 'Total', color: 'var(--accent)' },
-        { icon: '??', value: totalDias, label: 'D�as acum.', color: 'var(--info)' },
-        { icon: '?', value: enTramite, label: 'En gesti�n', color: 'var(--warning)' },
-        { icon: '??', value: sinFisico, label: 'Sin f�sico', color: sinFisico > 0 ? 'var(--danger)' : 'var(--success)' },
-        { icon: '???', value: sinHC, label: 'Sin HC', color: sinHC > 0 ? 'var(--danger)' : 'var(--success)' },
+        { icon: '🏥', value: lista.length, label: 'Total', color: 'var(--accent)' },
+        { icon: '📅', value: totalDias, label: 'Días acum.', color: 'var(--info)' },
+        { icon: '⏳', value: enTramite, label: 'En gestión', color: 'var(--warning)' },
+        { icon: '📂', value: sinFisico, label: 'Sin físico', color: sinFisico > 0 ? 'var(--danger)' : 'var(--success)' },
+        { icon: '🗂️', value: sinHC, label: 'Sin HC', color: sinHC > 0 ? 'var(--danger)' : 'var(--success)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -2108,7 +2108,7 @@ async function renderIncapacidades() {
     const incapBadge = document.getElementById('incapBadge');
     if (incapBadge) { incapBadge.textContent = pendientes; incapBadge.style.display = pendientes > 0 ? '' : 'none'; }
 
-    // -- Aplicar filtros ---------------------
+    // ── Aplicar filtros ─────────────────────
     const q = (document.getElementById('searchIncap')?.value || '').toLowerCase();
     const fStatus = document.getElementById('filterIncapStatus')?.value || '';
     const fTipo = document.getElementById('filterIncapTipo')?.value || '';
@@ -2124,13 +2124,13 @@ async function renderIncapacidades() {
         && (!fHC || (fHC === 'si' ? i.historia_clinica : !i.historia_clinica));
     });
 
-    // -- Tab listado -------------------------
+    // ── Tab listado ─────────────────────────
     _renderTablaIncap(filtered);
 
-    // -- Tab pendientes ----------------------
+    // ── Tab pendientes ──────────────────────
     _renderPendientes(lista);
 
-    // -- Tab por trabajador ------------------
+    // ── Tab por trabajador ──────────────────
     _renderResumenTrabajador(lista);
 
   } finally { showLoading(false); }
@@ -2157,13 +2157,13 @@ function _renderTablaIncap(filtered) {
       <td>
         ${i.dias != null
       ? `<span style="font-weight:700;color:var(--accent)">${i.dias}d</span>`
-      : '<span style="color:var(--text-muted)">�</span>'}
+      : '<span style="color:var(--text-muted)">—</span>'}
       </td>
       <td>${tipoBadgeIncap(i.tipo)}</td>
       <td>
         <div style="max-width:160px">
           ${i.codigo_dx ? `<span style="font-size:11px;color:var(--accent);font-weight:600">${i.codigo_dx}</span> ` : ''}
-          <span style="font-size:12px;color:var(--text-secondary)">${i.diagnostico || '�'}</span>
+          <span style="font-size:12px;color:var(--text-secondary)">${i.diagnostico || '—'}</span>
         </div>
       </td>
       <td>
@@ -2177,13 +2177,13 @@ function _renderTablaIncap(filtered) {
           </select>
         </div>
       </td>
-      <td style="text-align:center">${iconCheck(i.tiene_fisico, 'S�', 'No')}</td>
-      <td style="text-align:center">${iconCheck(i.historia_clinica, 'S�', 'No')}</td>
-      <td style="font-size:12px;color:var(--text-muted)">${i.radicado || '�'}</td>
+      <td style="text-align:center">${iconCheck(i.tiene_fisico, 'Sí', 'No')}</td>
+      <td style="text-align:center">${iconCheck(i.historia_clinica, 'Sí', 'No')}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${i.radicado || '—'}</td>
       <td>
         <div class="td-actions">
-          <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarIncapacidad('${i.id}')">??</button>
-          <button class="btn btn-danger btn-sm btn-icon"   title="Eliminar" onclick="eliminarIncapacidad('${i.id}')">???</button>
+          <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarIncapacidad('${i.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon"   title="Eliminar" onclick="eliminarIncapacidad('${i.id}')">🗑️</button>
         </div>
       </td>
     </tr>`).join('');
@@ -2194,15 +2194,15 @@ function _renderPendientes(lista) {
   const sinHC = lista.filter(i => !i.historia_clinica);
 
   const renderMini = (arr) => arr.length === 0
-    ? '<div class="empty-state" style="padding:30px"><div class="empty-state-icon">?</div><div class="empty-state-text">Todo en orden</div></div>'
+    ? '<div class="empty-state" style="padding:30px"><div class="empty-state-icon">✅</div><div class="empty-state-text">Todo en orden</div></div>'
     : arr.map(i => `
         <div class="alert-item info" style="margin-bottom:8px">
-          <div class="alert-icon">??</div>
+          <div class="alert-icon">🏥</div>
           <div class="alert-content" style="flex:1">
             <div class="alert-title" style="font-size:13px">${i.trabajador_nombre}</div>
-            <div class="alert-desc">${fmtDate(i.fecha_inicio)}${i.fecha_fin ? ' ? ' + fmtDate(i.fecha_fin) : ''} � ${tipoBadgeIncap(i.tipo)}</div>
+            <div class="alert-desc">${fmtDate(i.fecha_inicio)}${i.fecha_fin ? ' → ' + fmtDate(i.fecha_fin) : ''} · ${tipoBadgeIncap(i.tipo)}</div>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="editarIncapacidad('${i.id}')">??</button>
+          <button class="btn btn-secondary btn-sm" onclick="editarIncapacidad('${i.id}')">✏️</button>
         </div>`).join('');
 
   const sf = document.getElementById('listaSinFisico');
@@ -2235,15 +2235,15 @@ function _renderResumenTrabajador(lista) {
       <td><span style="color:var(--accent);font-weight:700">${r.total_dias}d</span></td>
       <td>${r.pagadas > 0 ? `<span class="badge badge-success">${r.pagadas}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
       <td>${r.en_tramite > 0 ? `<span class="badge badge-warning">${r.en_tramite}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
-      <td>${r.sin_fisico > 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">?</span>'}</td>
-      <td>${r.sin_historia > 0 ? `<span class="badge badge-danger">${r.sin_historia}</span>` : '<span style="color:var(--success)">?</span>'}</td>
+      <td>${r.sin_fisico > 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
+      <td>${r.sin_historia > 0 ? `<span class="badge badge-danger">${r.sin_historia}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
       <td style="font-size:12px;color:var(--text-muted)">${fmtDate(r.ultima_fecha)}</td>
     </tr>`).join('');
 }
 
-// -------------------------------------------
-// INCAPACIDADES � CRUD
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// INCAPACIDADES — CRUD
+// ═══════════════════════════════════════════
 async function guardarIncapacidad() {
   const id = document.getElementById('iId').value;
   const trabajadorId = document.getElementById('iTrabajador').value;
@@ -2281,7 +2281,7 @@ async function guardarIncapacidad() {
   closeModal('modalIncapacidad');
   resetIncapacidadForm();
   await renderIncapacidades();
-  toast(id ? 'Incapacidad actualizada ?' : 'Incapacidad registrada ?');
+  toast(id ? 'Incapacidad actualizada ✅' : 'Incapacidad registrada ✅');
 }
 
 function editarIncapacidad(id) {
@@ -2302,12 +2302,12 @@ function editarIncapacidad(id) {
   document.getElementById('iHistoria').checked = !!i.historia_clinica;
   document.getElementById('iObs').value = i.observaciones || '';
   _updateFisicoLabel(); _updateHistoriaLabel();
-  document.getElementById('modalIncapTitle').textContent = '?? Editar Incapacidad';
+  document.getElementById('modalIncapTitle').textContent = '✏️ Editar Incapacidad';
   openModal('modalIncapacidad');
 }
 
 async function eliminarIncapacidad(id) {
-  if (!confirm('�Eliminar esta incapacidad? La acci�n no se puede deshacer.')) return;
+  if (!confirm('¿Eliminar esta incapacidad? La acción no se puede deshacer.')) return;
   showLoading(true);
   const ok = await Incapacidades.delete(id);
   showLoading(false);
@@ -2327,7 +2327,7 @@ async function cambiarStatusIncap(id, status) {
     const idx = Cache.incapacidades.findIndex(x => x.id === id);
     if (idx > -1) Cache.incapacidades[idx].status = status;
   }
-  toast(`Estado ? ${INCAP_STATUS[status]?.label || status} ?`);
+  toast(`Estado → ${INCAP_STATUS[status]?.label || status} ✅`);
   // Re-render solo los stats y tabla sin refetch
   _renderTablaIncap(Cache.incapacidades || []);
   _renderPendientes(Cache.incapacidades || []);
@@ -2343,25 +2343,25 @@ function resetIncapacidadForm() {
   const fis = document.getElementById('iFisico'); if (fis) fis.checked = false;
   const hc = document.getElementById('iHistoria'); if (hc) hc.checked = false;
   _updateFisicoLabel(); _updateHistoriaLabel();
-  document.getElementById('modalIncapTitle').textContent = '?? Nueva Incapacidad';
+  document.getElementById('modalIncapTitle').textContent = '🏥 Nueva Incapacidad';
 }
 
-// Labels din�micos para checkboxes
+// Labels dinámicos para checkboxes
 function _updateFisicoLabel() {
   const el = document.getElementById('iFisicoLabel');
-  if (el) el.textContent = document.getElementById('iFisico')?.checked ? 'Recibido ?' : 'No recibido';
+  if (el) el.textContent = document.getElementById('iFisico')?.checked ? 'Recibido ✔' : 'No recibido';
 }
 function _updateHistoriaLabel() {
   const el = document.getElementById('iHistoriaLabel');
-  if (el) el.textContent = document.getElementById('iHistoria')?.checked ? 'Recibida ?' : 'No recibida';
+  if (el) el.textContent = document.getElementById('iHistoria')?.checked ? 'Recibida ✔' : 'No recibida';
 }
 
 // Listeners checkboxes del modal
 document.getElementById('iFisico')?.addEventListener('change', _updateFisicoLabel);
 document.getElementById('iHistoria')?.addEventListener('change', _updateHistoriaLabel);
 
-// Registrar incapacidades en el mapa de navegaci�n
-// (sobreescribe el navigate existente para incluir el nuevo m�dulo)
+// Registrar incapacidades en el mapa de navegación
+// (sobreescribe el navigate existente para incluir el nuevo módulo)
 const _navigateOrig = navigate;
 window.navigate = function (pageId) {
   if (pageId === 'incapacidades') {
@@ -2397,35 +2397,35 @@ window.navigate = function (pageId) {
   _navigateOrig(pageId);
 };
 
-// -------------------------------------------
-// INCAPACIDADES � exportar CSV
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// INCAPACIDADES — exportar CSV
+// ═══════════════════════════════════════════
 async function exportarIncapacidades() {
   if (!Cache.incapacidades) Cache.incapacidades = await Incapacidades.getAll();
   const data = Cache.incapacidades;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
   const headers = [
-    'Trabajador', 'Fecha Inicio', 'Fecha Fin', 'D�as', 'Tipo', 'Diagn�stico',
-    'C�digo CIE-10', 'Entidad', 'Estado', 'Radicado', 'Valor', 'F�sico', 'Historia Cl�nica', 'Observaciones'
+    'Trabajador', 'Fecha Inicio', 'Fecha Fin', 'Días', 'Tipo', 'Diagnóstico',
+    'Código CIE-10', 'Entidad', 'Estado', 'Radicado', 'Valor', 'Físico', 'Historia Clínica', 'Observaciones'
   ];
   const rows = data.map(i => [
-    i.trabajador_nombre, i.fecha_inicio, i.fecha_fin, i.dias ?? '',
+    i.trabajador_nombre, i.fecha_inicio, i.fecha_fin, (i.dias != null ? i.dias : ''),
     INCAP_TIPO[i.tipo]?.label || i.tipo, i.diagnostico, i.codigo_dx,
     i.entidad, INCAP_STATUS[i.status]?.label || i.status, i.radicado,
-    i.valor ?? '', i.tiene_fisico ? 'S�' : 'No', i.historia_clinica ? 'S�' : 'No', i.observaciones
+    (i.valor != null ? i.valor : ''), i.tiene_fisico ? 'Sí' : 'No', i.historia_clinica ? 'Sí' : 'No', i.observaciones
   ]);
   downloadCSV('incapacidades', headers, rows);
 }
 
-// -------------------------------------------
-// VACACIONES � constantes de presentaci�n
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// VACACIONES — constantes de presentación
+// ═══════════════════════════════════════════
 Cache.vacaciones = null;
 
 const VAC_STATUS = {
-  en_proceso: { label: 'En proceso', cls: 'badge-neutral', icon: '?' },
-  aprobada: { label: 'Aprobada', cls: 'badge-success', icon: '?' },
-  no_aprobada: { label: 'No aprobada', cls: 'badge-danger', icon: '?' },
+  en_proceso: { label: 'En proceso', cls: 'badge-neutral', icon: '⏳' },
+  aprobada: { label: 'Aprobada', cls: 'badge-success', icon: '✅' },
+  no_aprobada: { label: 'No aprobada', cls: 'badge-danger', icon: '❌' },
 };
 
 const VAC_TIPO = {
@@ -2438,7 +2438,7 @@ const VAC_TIPO = {
 };
 
 function statusBadgeVac(status) {
-  const s = VAC_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '�' };
+  const s = VAC_STATUS[status] || { label: status, cls: 'badge-neutral', icon: '•' };
   return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
 }
 
@@ -2452,9 +2452,9 @@ function updateVacBadge(count) {
   if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
 }
 
-// -------------------------------------------
-// VACACIONES � render principal
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// VACACIONES — render principal
+// ═══════════════════════════════════════════
 async function renderVacaciones() {
   showLoading(true);
   try {
@@ -2464,7 +2464,7 @@ async function renderVacaciones() {
 
     const lista = Cache.vacaciones;
 
-    // -- Stats -------------------------------
+    // ── Stats ───────────────────────────────
     const totalDias = lista.reduce((s, v) => s + (v.dias || 0), 0);
     const pendientes = lista.filter(v => v.status === 'en_proceso').length;
     const aprobadas = lista.filter(v => v.status === 'aprobada').length;
@@ -2475,11 +2475,11 @@ async function renderVacaciones() {
     const statsEl = document.getElementById('vacStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '???', value: lista.length, label: 'Total solicitudes', color: 'var(--accent)' },
-        { icon: '??', value: totalDias, label: 'D�as acumulados', color: 'var(--info)' },
-        { icon: '?', value: pendientes, label: 'En proceso', color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
-        { icon: '?', value: aprobadas, label: 'Aprobadas', color: 'var(--success)' },
-        { icon: '?', value: noAprobadas, label: 'No aprobadas', color: 'var(--danger)' },
+        { icon: '🏖️', value: lista.length, label: 'Total solicitudes', color: 'var(--accent)' },
+        { icon: '📅', value: totalDias, label: 'Días acumulados', color: 'var(--info)' },
+        { icon: '⏳', value: pendientes, label: 'En proceso', color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '✅', value: aprobadas, label: 'Aprobadas', color: 'var(--success)' },
+        { icon: '❌', value: noAprobadas, label: 'No aprobadas', color: 'var(--danger)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -2488,7 +2488,7 @@ async function renderVacaciones() {
         </div>`).join('');
     }
 
-    // -- Tab: Listado con filtros ------------
+    // ── Tab: Listado con filtros ────────────
     const q = (document.getElementById('searchVac')?.value || '').toLowerCase();
     const fStatus = document.getElementById('filterVacStatus')?.value || '';
     const fTipo = document.getElementById('filterVacTipo')?.value || '';
@@ -2502,11 +2502,11 @@ async function renderVacaciones() {
 
     _renderTablaVac('tablaVacaciones', 'emptyVacaciones', filtered, true);
 
-    // -- Tab: Pendientes ---------------------
+    // ── Tab: Pendientes ─────────────────────
     const pend = lista.filter(v => v.status === 'en_proceso');
     _renderTablaVac('tablaVacPendientes', 'emptyVacPendientes', pend, false);
 
-    // -- Tab: Resumen por trabajador ---------
+    // ── Tab: Resumen por trabajador ─────────
     const resumen = Vacaciones.resumenPorTrabajador(lista, Cache.trabajadores);
     _renderResumenVac(resumen);
 
@@ -2526,21 +2526,21 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
     let detalleExtra = '';
     if (esPermiso) {
       const horas = (v.hora_inicio && v.hora_fin)
-        ? `<br><span style="font-size:11px;color:var(--text-muted)">?? ${v.hora_inicio.slice(0, 5)}�${v.hora_fin.slice(0, 5)}</span>`
+        ? `<br><span style="font-size:11px;color:var(--text-muted)">🕐 ${v.hora_inicio.slice(0, 5)}–${v.hora_fin.slice(0, 5)}</span>`
         : '';
       const rem = v.es_remunerado === true
-        ? `<span style="font-size:10px;color:var(--success);margin-left:4px">? Rem.</span>`
+        ? `<span style="font-size:10px;color:var(--success);margin-left:4px">✅ Rem.</span>`
         : v.es_remunerado === false
-          ? `<span style="font-size:10px;color:var(--warning);margin-left:4px">? No rem.</span>`
+          ? `<span style="font-size:10px;color:var(--warning);margin-left:4px">❌ No rem.</span>`
           : '';
       detalleExtra = horas + rem;
     }
     const motivoHtml = v.motivo
-      ? `<br><span style="font-size:11px;color:var(--text-muted);font-style:italic" title="${v.motivo}">?? ${v.motivo.length > 40 ? v.motivo.slice(0, 40) + '�' : v.motivo}</span>`
+      ? `<br><span style="font-size:11px;color:var(--text-muted);font-style:italic" title="${v.motivo}">💬 ${v.motivo.length > 40 ? v.motivo.slice(0, 40) + '…' : v.motivo}</span>`
       : '';
-    // �cono si viene del portal
+    // Ícono si viene del portal
     const portalIcon = v.solicitado_en
-      ? `<span title="Enviado desde el portal del trabajador" style="font-size:12px;margin-left:4px">??</span>`
+      ? `<span title="Enviado desde el portal del trabajador" style="font-size:12px;margin-left:4px">📲</span>`
       : '';
 
     return `
@@ -2556,7 +2556,7 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
       <td>${tipoBadgeVac(v.tipo)}${detalleExtra}</td>
       <td>${fmtDate(v.fecha_inicio)}</td>
       <td>${fmtDate(v.fecha_fin)}</td>
-      <td><strong>${v.dias ?? '�'}</strong>${motivoHtml}</td>
+      <td><strong>${(v.dias != null ? v.dias : '—')}</strong>${motivoHtml}</td>
       <td>
         <select class="form-control" style="padding:4px 8px;font-size:12px;width:auto"
           onchange="cambiarStatusVac('${v.id}', this.value)">
@@ -2565,11 +2565,11 @@ function _renderTablaVac(tbodyId, emptyId, data, showAprobador) {
     ).join('')}
         </select>
       </td>
-      ${showAprobador ? `<td style="font-size:12px;color:var(--text-secondary)">${v.aprobado_por || '�'}</td>` : ''}
+      ${showAprobador ? `<td style="font-size:12px;color:var(--text-secondary)">${v.aprobado_por || '—'}</td>` : ''}
       <td>
         <div class="td-actions">
-          <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarVacacion('${v.id}')">??</button>
-          <button class="btn btn-danger   btn-sm btn-icon" title="Eliminar" onclick="eliminarVacacion('${v.id}')">???</button>
+          <button class="btn btn-secondary btn-sm btn-icon" title="Editar"   onclick="editarVacacion('${v.id}')">✏️</button>
+          <button class="btn btn-danger   btn-sm btn-icon" title="Eliminar" onclick="eliminarVacacion('${v.id}')">🗑️</button>
         </div>
       </td>
     </tr>`;
@@ -2584,7 +2584,7 @@ function _renderResumenVac(resumen) {
   if (empty) empty.style.display = 'none';
 
   tbody.innerHTML = resumen.map(r => {
-    const disponibles = r.dias_disponibles !== null ? r.dias_disponibles : '�';
+    const disponibles = r.dias_disponibles !== null ? r.dias_disponibles : '—';
     const saldo = r.dias_disponibles !== null ? r.dias_disponibles - r.dias_aprobados : null;
     const saldoColor = saldo !== null ? (saldo < 0 ? 'var(--danger)' : saldo <= 5 ? 'var(--warning)' : 'var(--success)') : '';
     return `
@@ -2600,15 +2600,15 @@ function _renderResumenVac(resumen) {
       <td><strong>${r.dias_tomados}</strong></td>
       <td>${r.dias_aprobados}</td>
       <td>${disponibles}${saldo !== null ? ` <span style="font-size:11px;color:${saldoColor}">(saldo: ${saldo})</span>` : ''}</td>
-      <td>${r.pendientes > 0 ? `<span class="badge badge-warning">? ${r.pendientes}</span>` : '<span style="color:var(--text-muted)">�</span>'}</td>
+      <td>${r.pendientes > 0 ? `<span class="badge badge-warning">⏳ ${r.pendientes}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td style="font-size:12px;color:var(--text-secondary)">${fmtDate(r.ultima_fecha)}</td>
     </tr>`;
   }).join('');
 }
 
-// -------------------------------------------
-// VACACIONES � CRUD
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// VACACIONES — CRUD
+// ═══════════════════════════════════════════
 async function guardarVacacion() {
   const id = document.getElementById('vacId').value;
   const trabajadorId = document.getElementById('vacTrabajador').value;
@@ -2661,7 +2661,7 @@ async function guardarVacacion() {
   _resetVacForm();
   await renderVacaciones();
   if (typeof renderSolicitudes === 'function') await renderSolicitudes();
-  toast(id ? 'Solicitud actualizada ?' : 'Solicitud registrada ?');
+  toast(id ? 'Solicitud actualizada ✅' : 'Solicitud registrada ✅');
 }
 
 async function cambiarStatusVac(id, status) {
@@ -2708,14 +2708,14 @@ function editarVacacion(id) {
     }
   }
 
-  document.getElementById('modalVacTitle').textContent = '?? Editar Solicitud';
-  // Activar toggle de campos extra seg�n tipo
+  document.getElementById('modalVacTitle').textContent = '✏️ Editar Solicitud';
+  // Activar toggle de campos extra según tipo
   if (typeof onVacTipoChange === 'function') onVacTipoChange();
   openModal('modalVacacion');
 }
 
 async function eliminarVacacion(id) {
-  if (!confirm('�Eliminar esta solicitud de vacaciones?')) return;
+  if (!confirm('¿Eliminar esta solicitud de vacaciones?')) return;
   showLoading(true);
   const ok = await Vacaciones.delete(id);
   showLoading(false);
@@ -2742,7 +2742,7 @@ function _resetVacForm() {
   const extra = document.getElementById('vacPermisoExtra'); if (extra) extra.style.display = 'none';
   const mg = document.getElementById('vacMotivoGroup'); if (mg) mg.style.display = 'none';
   const badge = document.getElementById('vacPortalBadge'); if (badge) badge.style.display = 'none';
-  document.getElementById('modalVacTitle').textContent = '??? Nueva Solicitud';
+  document.getElementById('modalVacTitle').textContent = '🏖️ Nueva Solicitud';
 }
 
 // Abrir modal pre-cargado
@@ -2755,19 +2755,19 @@ window.openModal = function (id) {
   _openModalOrig(id);
 };
 
-// -------------------------------------------
-// VACACIONES � exportar CSV
-// -------------------------------------------
+// ═══════════════════════════════════════════
+// VACACIONES — exportar CSV
+// ═══════════════════════════════════════════
 async function exportarVacaciones() {
   if (!Cache.vacaciones) Cache.vacaciones = await Vacaciones.getAll();
   const data = Cache.vacaciones;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
-  const headers = ['Trabajador', 'Tipo', 'Fecha Inicio', 'Fecha Fin', 'D�as', 'Estado', 'Aprobado por', 'Observaciones'];
+  const headers = ['Trabajador', 'Tipo', 'Fecha Inicio', 'Fecha Fin', 'Días', 'Estado', 'Aprobado por', 'Observaciones'];
   const rows = data.map(v => [
     v.trabajador_nombre,
     VAC_TIPO[v.tipo]?.label || v.tipo,
     v.fecha_inicio, v.fecha_fin,
-    v.dias ?? '',
+    (v.dias != null ? v.dias : ''),
     VAC_STATUS[v.status]?.label || v.status,
     v.aprobado_por || '',
     v.observaciones || '',
@@ -2776,21 +2776,21 @@ async function exportarVacaciones() {
 }
 
 
-// ---------------------------------------------------------------
-// ASISTENCIA � historial (app principal)
+// ═══════════════════════════════════════════════════════════════
+// ASISTENCIA — historial (app principal)
 // El QR rotativo vive en asistencia-qr.html
 // El login de trabajador vive en asistencia-login.html
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
 
 Cache.asistencia = null;
 
-// -- Helpers ----------------------------------------------------
+// ── Helpers ────────────────────────────────────────────────────
 function fmtHora(h) {
-  if (!h) return '�';
+  if (!h) return '—';
   return h.slice(0, 5); // HH:MM
 }
 
-// -- Helpers de Fechas y Rangos ---------------------------------
+// ── Helpers de Fechas y Rangos ─────────────────────────────────
 function _calcularFechasRango(preset) {
   const hoyStr = today();
   const d = new Date();
@@ -2856,7 +2856,7 @@ function setRangoExportAsist(preset) {
   if (elH) elH.value = hasta;
 }
 
-// -- Stats del d�a / rango --------------------------------------
+// ── Stats del día / rango ──────────────────────────────────────
 async function _actualizarStatsHoy() {
   const desde = document.getElementById('asistFiltroDesde')?.value || document.getElementById('asistFiltroFecha')?.value || '';
   const hasta = document.getElementById('asistFiltroHasta')?.value || desde || today();
@@ -2898,12 +2898,12 @@ async function _actualizarStatsHoy() {
   const statsEl = document.getElementById('asistStats');
   if (!statsEl) return;
   statsEl.innerHTML = [
-    { icon: '??', value: entradas, label: 'Entradas', color: 'var(--accent3)' },
-    { icon: '??', value: salidasAlmuerzo, label: 'Sal. Almuerzo', color: '#f7971e' },
-    { icon: '??', value: regresosAlm, label: 'Reg. Almuerzo', color: '#1e90ff' },
-    { icon: '??', value: salidas, label: 'Salidas', color: 'var(--danger)' },
-    { icon: '??', value: unicos, label: 'Trabajadores', color: 'var(--accent)' },
-    { icon: '??', value: porQR, label: 'V�a QR', color: 'var(--accent4)' },
+    { icon: '🟢', value: entradas, label: 'Entradas', color: 'var(--accent3)' },
+    { icon: '🟠', value: salidasAlmuerzo, label: 'Sal. Almuerzo', color: '#f7971e' },
+    { icon: '🔵', value: regresosAlm, label: 'Reg. Almuerzo', color: '#1e90ff' },
+    { icon: '🔴', value: salidas, label: 'Salidas', color: 'var(--danger)' },
+    { icon: '👤', value: unicos, label: 'Trabajadores', color: 'var(--accent)' },
+    { icon: '📲', value: porQR, label: 'Vía QR', color: 'var(--accent4)' },
   ].map(s => `
     <div class="stat-card" style="--card-color:${s.color}">
       <div class="stat-icon">${s.icon}</div>
@@ -2912,7 +2912,7 @@ async function _actualizarStatsHoy() {
     </div>`).join('');
 }
 
-// -- Render tabla -----------------------------------------------
+// ── Render tabla ───────────────────────────────────────────────
 const _TIPO_LABEL_ASIST = {
   entrada: 'Entrada',
   salida_almuerzo: 'Sal. Almuerzo',
@@ -2921,22 +2921,22 @@ const _TIPO_LABEL_ASIST = {
 };
 
 function _rowAsistHTML(r, mostrarFecha = false) {
-  const metodoIcon = r.metodo === 'qr' ? '??' : '??';
+  const metodoIcon = r.metodo === 'qr' ? '📲' : '🪪';
   const tipoLabel = _TIPO_LABEL_ASIST[r.tipo] || r.tipo;
   const fechaCol = mostrarFecha
-    ? `<td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${r.fecha || '�'}</td>`
+    ? `<td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${r.fecha || '—'}</td>`
     : '';
   return `<tr>
     ${fechaCol}
     <td><strong>${fmtHora(r.hora)}</strong></td>
     <td><span class="asist-log-tipo ${r.tipo}">${tipoLabel}</span></td>
-    <td>${r.trabajador_nombre || '�'}</td>
-    <td class="hide-mobile" style="font-variant-numeric:tabular-nums">${r.cedula || '�'}</td>
-    <td class="hide-mobile">${r.cargo || '�'}</td>
-    <td class="hide-mobile">${r.ciudad || '�'}</td>
+    <td>${r.trabajador_nombre || '—'}</td>
+    <td class="hide-mobile" style="font-variant-numeric:tabular-nums">${r.cedula || '—'}</td>
+    <td class="hide-mobile">${r.cargo || '—'}</td>
+    <td class="hide-mobile">${r.ciudad || '—'}</td>
     <td class="hide-mobile">${metodoIcon} ${r.metodo}</td>
     <td><button class="btn btn-danger btn-sm btn-icon"
-      onclick="eliminarRegistroAsist('${r.id}')">???</button></td>
+      onclick="eliminarRegistroAsist('${r.id}')">🗑️</button></td>
   </tr>`;
 }
 
@@ -2988,9 +2988,9 @@ async function renderTablaAsistencia() {
   tbody.innerHTML = filtrados.map(r => _rowAsistHTML(r, mostrarFecha)).join('');
 }
 
-// -- Eliminar registro ------------------------------------------
+// ── Eliminar registro ──────────────────────────────────────────
 async function eliminarRegistroAsist(id) {
-  if (!confirm('�Eliminar este registro de asistencia?')) return;
+  if (!confirm('¿Eliminar este registro de asistencia?')) return;
   showLoading(true);
   const ok = await Asistencia.delete(id);
   showLoading(false);
@@ -3001,7 +3001,7 @@ async function eliminarRegistroAsist(id) {
   toast('Registro eliminado', 'warning');
 }
 
-// -- Render principal -------------------------------------------
+// ── Render principal ───────────────────────────────────────────
 async function renderAsistencia() {
   showLoading(true);
   try {
@@ -3019,7 +3019,7 @@ async function renderAsistencia() {
   } finally { showLoading(false); }
 }
 
-// -- Modal y Descarga de Informe de Asistencia (Excel .xlsx) ----
+// ── Modal y Descarga de Informe de Asistencia (Excel .xlsx) ────
 function abrirModalExportarAsistencia() {
   const elD = document.getElementById('exportAsistDesde');
   const elH = document.getElementById('exportAsistHasta');
@@ -3069,7 +3069,7 @@ async function ejecutarExportarAsistencia() {
   const originalText = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '? Generando reporte...';
+    btn.innerHTML = '⏳ Generando reporte...';
   }
   showLoading(true);
 
@@ -3098,12 +3098,12 @@ async function ejecutarExportarAsistencia() {
     const headers = [
       'Fecha',
       'Hora',
-      'Tipo Marcaci�n',
+      'Tipo Marcación',
       'Colaborador',
-      'C�dula',
+      'Cédula',
       'Cargo',
       'Ciudad / Sede',
-      'M�todo de Registro',
+      'Método de Registro',
       'Dispositivo / Observaciones',
     ];
 
@@ -3115,7 +3115,7 @@ async function ejecutarExportarAsistencia() {
       r.cedula || '',
       r.cargo || '',
       r.ciudad || '',
-      r.metodo === 'qr' ? '?? C�digo QR' : '?? Manual / C�dula',
+      r.metodo === 'qr' ? '📲 Código QR' : '🪪 Manual / Cédula',
       r.obs || r.device_id || '',
     ]);
 
@@ -3125,7 +3125,7 @@ async function ejecutarExportarAsistencia() {
 
     downloadExcel(nombreArchivo, headers, rows, 'Asistencia');
     closeModal('modalExportarAsistencia');
-    toast(`Reporte descargado: ${filtrados.length} registros ??`, 'success');
+    toast(`Reporte descargado: ${filtrados.length} registros 📊`, 'success');
   } catch (err) {
     console.error('Error al exportar asistencia:', err);
     toast('Error al generar el informe de asistencia', 'error');
@@ -3138,33 +3138,33 @@ async function ejecutarExportarAsistencia() {
   }
 }
 
-// ---------------------------------------------------------------
-// EXAMENES MEDICOS OCUPACIONALES � L�GICA Y RENDER
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
+// EXAMENES MEDICOS OCUPACIONALES — LÓGICA Y RENDER
+// ═══════════════════════════════════════════════════════════════
 
 const EXAM_TIPOS = {
-  ingreso: { label: 'Ingreso', badge: 'badge-info', icon: '??' },
-  periodico: { label: 'Peri�dico', badge: 'badge-primary', icon: '??' },
-  egreso: { label: 'Egreso', badge: 'badge-neutral', icon: '??' },
-  post_incapacidad: { label: 'Reintegro / Post', badge: 'badge-warning', icon: '??' },
-  reubicacion: { label: 'Reubicaci�n', badge: 'badge-warning', icon: '??' },
-  otro: { label: 'Otro', badge: 'badge-neutral', icon: '??' },
+  ingreso: { label: 'Ingreso', badge: 'badge-info', icon: '📥' },
+  periodico: { label: 'Periódico', badge: 'badge-primary', icon: '🔄' },
+  egreso: { label: 'Egreso', badge: 'badge-neutral', icon: '📤' },
+  post_incapacidad: { label: 'Reintegro / Post', badge: 'badge-warning', icon: '🏥' },
+  reubicacion: { label: 'Reubicación', badge: 'badge-warning', icon: '🔀' },
+  otro: { label: 'Otro', badge: 'badge-neutral', icon: '📄' },
 };
 
 const EXAM_CONCEPTOS = {
-  apto: { label: 'Apto', badge: 'badge-success', icon: '??' },
-  apto_con_restricciones: { label: 'Apto con restricciones', badge: 'badge-warning', icon: '??' },
-  no_apto: { label: 'No apto', badge: 'badge-danger', icon: '??' },
-  aplazado: { label: 'Aplazado', badge: 'badge-neutral', icon: '?' },
+  apto: { label: 'Apto', badge: 'badge-success', icon: '🟢' },
+  apto_con_restricciones: { label: 'Apto con restricciones', badge: 'badge-warning', icon: '🟡' },
+  no_apto: { label: 'No apto', badge: 'badge-danger', icon: '🔴' },
+  aplazado: { label: 'Aplazado', badge: 'badge-neutral', icon: '⚪' },
 };
 
 function tipoBadgeExamen(tipo) {
-  const t = EXAM_TIPOS[tipo] || { label: tipo, badge: 'badge-neutral', icon: '??' };
+  const t = EXAM_TIPOS[tipo] || { label: tipo, badge: 'badge-neutral', icon: '📄' };
   return `<span class="badge ${t.badge}">${t.icon} ${t.label}</span>`;
 }
 
 function conceptoBadgeExamen(concepto) {
-  const c = EXAM_CONCEPTOS[concepto] || { label: concepto, badge: 'badge-neutral', icon: '?' };
+  const c = EXAM_CONCEPTOS[concepto] || { label: concepto, badge: 'badge-neutral', icon: '⚪' };
   return `<span class="badge ${c.badge}">${c.icon} ${c.label}</span>`;
 }
 
@@ -3181,7 +3181,7 @@ function autoCalcularVencimientoExamen() {
   }
 }
 
-// -- Render Principal de Ex�menes ---------------------------------
+// ── Render Principal de Exámenes ─────────────────────────────────
 async function renderExamenes() {
   showLoading(true);
   try {
@@ -3219,7 +3219,7 @@ async function renderExamenes() {
   }
 }
 
-// -- Badge de alerta en sidebar ----------------------------------
+// ── Badge de alerta en sidebar ──────────────────────────────────
 function _actualizarBadgeExamenes(lista) {
   const badge = document.getElementById('examBadge');
   if (!badge) return;
@@ -3237,7 +3237,7 @@ function _actualizarBadgeExamenes(lista) {
   }
 }
 
-// -- Stats Cards --------------------------------------------------
+// ── Stats Cards ──────────────────────────────────────────────────
 function _actualizarStatsExamenes(lista) {
   const total = lista.length;
   const aptos = lista.filter(e => e.concepto === 'apto').length;
@@ -3252,10 +3252,10 @@ function _actualizarStatsExamenes(lista) {
   if (!el) return;
 
   el.innerHTML = [
-    { icon: '??', value: total, label: 'Total Ex�menes', color: 'var(--accent)' },
-    { icon: '??', value: aptos, label: 'Aptos', color: 'var(--success)' },
-    { icon: '??', value: restricciones, label: 'Con Restricciones / No', color: 'var(--warning)' },
-    { icon: '?', value: vencidosOVencer, label: 'Por Vencer / Vencidos', color: vencidosOVencer > 0 ? 'var(--danger)' : 'var(--success)' },
+    { icon: '🩺', value: total, label: 'Total Exámenes', color: 'var(--accent)' },
+    { icon: '🟢', value: aptos, label: 'Aptos', color: 'var(--success)' },
+    { icon: '⚠️', value: restricciones, label: 'Con Restricciones / No', color: 'var(--warning)' },
+    { icon: '⏳', value: vencidosOVencer, label: 'Por Vencer / Vencidos', color: vencidosOVencer > 0 ? 'var(--danger)' : 'var(--success)' },
   ].map(s => `
     <div class="stat-card" style="--card-color:${s.color}">
       <div class="stat-icon">${s.icon}</div>
@@ -3264,7 +3264,7 @@ function _actualizarStatsExamenes(lista) {
     </div>`).join('');
 }
 
-// -- Tab 1: Tabla de Listado --------------------------------------
+// ── Tab 1: Tabla de Listado ──────────────────────────────────────
 function _renderTablaExamenes(filtered) {
   const tbody = document.getElementById('tablaExamenes');
   const empty = document.getElementById('emptyExamenes');
@@ -3296,9 +3296,9 @@ function _renderTablaExamenes(filtered) {
             <div style="display:flex;flex-direction:column;gap:2px">
               <span style="font-size:12px;font-weight:600">${fmtDate(e.fecha_vencimiento)}</span>
               <span>${diasBadge(days)}</span>
-            </div>` : '<span style="color:var(--text-muted)">�</span>'}
+            </div>` : '<span style="color:var(--text-muted)">—</span>'}
         </td>
-        <td><span style="font-size:12px">${e.entidad || '�'}</span></td>
+        <td><span style="font-size:12px">${e.entidad || '—'}</span></td>
         <td><span style="font-size:12px;color:var(--text-secondary)">${e.enfasis || 'General'}</span></td>
         <td>${conceptoBadgeExamen(e.concepto)}</td>
         <td>
@@ -3306,18 +3306,18 @@ function _renderTablaExamenes(filtered) {
             ${e.restricciones || '<span style="color:var(--text-muted)">Ninguna</span>'}
           </div>
         </td>
-        <td style="text-align:center">${iconCheck(e.tiene_concepto_fisico, 'S�', 'No')}</td>
+        <td style="text-align:center">${iconCheck(e.tiene_concepto_fisico, 'Sí', 'No')}</td>
         <td>
           <div class="td-actions">
-            <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">??</button>
-            <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="eliminarExamenMedico('${e.id}')">???</button>
+            <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="eliminarExamenMedico('${e.id}')">🗑️</button>
           </div>
         </td>
       </tr>`;
   }).join('');
 }
 
-// -- Tab 2: Vencimientos y Peri�dicos -----------------------------
+// ── Tab 2: Vencimientos y Periódicos ─────────────────────────────
 function _renderVencimientosExamenes(lista) {
   const tbody = document.getElementById('tablaExamVencimientos');
   const empty = document.getElementById('emptyExamVencimientos');
@@ -3350,17 +3350,17 @@ function _renderVencimientosExamenes(lista) {
         <td>${fmtDate(e.fecha_examen)}</td>
         <td><strong>${fmtDate(e.fecha_vencimiento)}</strong></td>
         <td>${estadoBadge(days)} ${diasBadge(days)}</td>
-        <td>${e.entidad || '�'}</td>
+        <td>${e.entidad || '—'}</td>
         <td>
           <div class="td-actions">
-            <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">??</button>
+            <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">✏️</button>
           </div>
         </td>
       </tr>`;
   }).join('');
 }
 
-// -- Tab 3: Con Restricciones -------------------------------------
+// ── Tab 3: Con Restricciones ─────────────────────────────────────
 function _renderRestriccionesExamenes(lista) {
   const tbody = document.getElementById('tablaExamRestricciones');
   const empty = document.getElementById('emptyExamRestricciones');
@@ -3397,13 +3397,13 @@ function _renderRestriccionesExamenes(lista) {
       </td>
       <td>
         <div class="td-actions">
-          <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">??</button>
+          <button class="btn btn-secondary btn-sm btn-icon" title="Editar" onclick="editarExamenMedico('${e.id}')">✏️</button>
         </div>
       </td>
     </tr>`).join('');
 }
 
-// -- Tab 4: Resumen por Trabajador --------------------------------
+// ── Tab 4: Resumen por Trabajador ────────────────────────────────
 function _renderResumenTrabajadoresExamenes(lista) {
   const tbody = document.getElementById('tablaExamPorTrabajador');
   const empty = document.getElementById('emptyExamTrabajador');
@@ -3431,13 +3431,13 @@ function _renderResumenTrabajadoresExamenes(lista) {
       <td><span class="badge badge-success">${r.aptos}</span></td>
       <td>${r.con_restricciones > 0 ? `<span class="badge badge-warning">${r.con_restricciones}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
       <td>${r.no_aptos > 0 ? `<span class="badge badge-danger">${r.no_aptos}</span>` : '<span style="color:var(--text-muted)">0</span>'}</td>
-      <td>${r.sin_fisico > 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">?</span>'}</td>
+      <td>${r.sin_fisico > 0 ? `<span class="badge badge-danger">${r.sin_fisico}</span>` : '<span style="color:var(--success)">✔</span>'}</td>
       <td>${fmtDate(r.ultimo_examen)} ${r.ultimo_concepto ? conceptoBadgeExamen(r.ultimo_concepto) : ''}</td>
-      <td>${r.proximo_venc ? `<strong>${fmtDate(r.proximo_venc)}</strong> ${diasBadge(daysUntil(r.proximo_venc))}` : '<span style="color:var(--text-muted)">�</span>'}</td>
+      <td>${r.proximo_venc ? `<strong>${fmtDate(r.proximo_venc)}</strong> ${diasBadge(daysUntil(r.proximo_venc))}` : '<span style="color:var(--text-muted)">—</span>'}</td>
     </tr>`).join('');
 }
 
-// -- Guardar / Editar Examen --------------------------------------
+// ── Guardar / Editar Examen ──────────────────────────────────────
 async function guardarExamenMedico() {
   const id = document.getElementById('exId').value;
   const trabajadorId = document.getElementById('exTrabajador').value;
@@ -3474,7 +3474,7 @@ async function guardarExamenMedico() {
 
   Cache.examenes = null;
   closeModal('modalExamenMedico');
-  toast(id ? 'Examen m�dico actualizado' : 'Examen m�dico registrado con �xito');
+  toast(id ? 'Examen médico actualizado' : 'Examen médico registrado con éxito');
   await renderExamenes();
 }
 
@@ -3484,7 +3484,7 @@ function editarExamenMedico(id) {
 
   poblarSelectTrabajadores('exTrabajador');
 
-  document.getElementById('modalExamTitle').textContent = '?? Editar Examen M�dico';
+  document.getElementById('modalExamTitle').textContent = '✏️ Editar Examen Médico';
   document.getElementById('exId').value = exam.id;
   document.getElementById('exTrabajador').value = exam.trabajador_id || '';
   document.getElementById('exTipo').value = exam.tipo_examen || 'periodico';
@@ -3502,19 +3502,19 @@ function editarExamenMedico(id) {
 }
 
 async function eliminarExamenMedico(id) {
-  if (!confirm('�Eliminar este examen m�dico? Esta acci�n no se puede deshacer.')) return;
+  if (!confirm('¿Eliminar este examen médico? Esta acción no se puede deshacer.')) return;
   showLoading(true);
   const ok = await ExamenesMedicos.delete(id);
   showLoading(false);
   if (!ok) return;
 
   Cache.examenes = null;
-  toast('Examen m�dico eliminado', 'warning');
+  toast('Examen médico eliminado', 'warning');
   await renderExamenes();
 }
 
 function resetExamenForm() {
-  document.getElementById('modalExamTitle').textContent = '?? Nuevo Examen M�dico';
+  document.getElementById('modalExamTitle').textContent = '🩺 Nuevo Examen Médico';
   document.getElementById('exId').value = '';
   const selT = document.getElementById('exTrabajador'); if (selT) selT.value = '';
   document.getElementById('exTipo').value = 'periodico';
@@ -3530,17 +3530,17 @@ function resetExamenForm() {
   autoCalcularVencimientoExamen();
 }
 
-// -- Exportar CSV de Ex�menes -------------------------------------
+// ── Exportar CSV de Exámenes ─────────────────────────────────────
 async function exportarExamenes() {
   showLoading(true);
   const lista = await ExamenesMedicos.getAll();
   showLoading(false);
-  if (!lista.length) return toast('No hay ex�menes m�dicos para exportar', 'warning');
+  if (!lista.length) return toast('No hay exámenes médicos para exportar', 'warning');
 
   const headers = [
     'Trabajador', 'Tipo de Examen', 'Fecha Examen', 'Vencimiento',
-    'IPS / Entidad', '�nfasis', 'Concepto', 'Restricciones',
-    'Concepto F�sico', 'Costo', 'Observaciones'
+    'IPS / Entidad', 'Énfasis', 'Concepto', 'Restricciones',
+    'Concepto Físico', 'Costo', 'Observaciones'
   ];
 
   const rows = lista.map(e => [
@@ -3552,7 +3552,7 @@ async function exportarExamenes() {
     e.enfasis || '',
     EXAM_CONCEPTOS[e.concepto]?.label || e.concepto,
     e.restricciones || '',
-    e.tiene_concepto_fisico ? 'S�' : 'No',
+    e.tiene_concepto_fisico ? 'Sí' : 'No',
     e.costo != null ? e.costo : '',
     e.observaciones || '',
   ]);
@@ -3562,13 +3562,13 @@ async function exportarExamenes() {
 
 
 
-// ---------------------------------------------------------------
-// DOTACI�N DE PRENDAS � Camisas � Pantalones � Chaquetas � Calzado
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
+// DOTACIÓN DE PRENDAS — Camisas · Pantalones · Chaquetas · Calzado
+// ═══════════════════════════════════════════════════════════════
 
 Cache.prendas = null;
 
-// -- Render principal -------------------------------------------
+// ── Render principal ───────────────────────────────────────────
 async function renderDotacionPrendas() {
   showLoading(true);
   try {
@@ -3586,7 +3586,7 @@ async function renderDotacionPrendas() {
   } finally { showLoading(false); }
 }
 
-// -- Stats cards ------------------------------------------------
+// ── Stats cards ────────────────────────────────────────────────
 function _renderPrendasStats(lista) {
   const el = document.getElementById('prendasStats');
   if (!el) return;
@@ -3606,13 +3606,13 @@ function _renderPrendasStats(lista) {
       </div>`;
   }).join('') + `
     <div class="stat-card" style="--card-color:${stockBajo > 0 ? 'var(--warning)' : 'var(--success)'}">
-      <div class="stat-icon">??</div>
+      <div class="stat-icon">⚠️</div>
       <div class="stat-value">${stockBajo}</div>
       <div class="stat-label">Stock Bajo</div>
     </div>`;
 }
 
-// -- Tabla tipo matriz: refs � tallas, separada por g�nero ------
+// ── Tabla tipo matriz: refs × tallas, separada por género ──────
 function _renderPrendasTabla(tipo, lista) {
   const contenedor = document.getElementById(`prendas-grid-${tipo}`);
   const empty = document.getElementById(`prendas-empty-${tipo}`);
@@ -3629,7 +3629,7 @@ function _renderPrendasTabla(tipo, lista) {
   const agrupado = DotacionPrendas.agrupar(lista);
   const referencias = [...new Set(lista.map(r => r.referencia))];
 
-  // Para pantalones los g�neros tienen tallas distintas ? tabla separada por g�nero
+  // Para pantalones los géneros tienen tallas distintas → tabla separada por género
   const generarTablaGenero = (genero, tallas, refs) => {
     // Filtrar referencias que no tienen datos para este genero (fix: CROCS y Conjunto Antifluido)
     refs = refs.filter(ref => agrupado[ref]?.[genero] !== undefined);
@@ -3637,7 +3637,7 @@ function _renderPrendasTabla(tipo, lista) {
     const colorHeader = genero === 'hombre'
       ? 'background:linear-gradient(135deg,rgba(58,130,200,0.25),rgba(58,130,200,0.1))'
       : 'background:linear-gradient(135deg,rgba(200,58,150,0.25),rgba(200,58,150,0.1))';
-    const iconoGenero = genero === 'hombre' ? '??' : '??';
+    const iconoGenero = genero === 'hombre' ? '👨' : '👩';
 
     return `
       <div class="prenda-tabla-wrap">
@@ -3657,7 +3657,7 @@ function _renderPrendasTabla(tipo, lista) {
               ${refs.map(ref => {
       const celdas = tallas.map(talla => {
         const row = agrupado[ref]?.[genero]?.[talla];
-        if (!row) return `<td class="prenda-cell">�</td>`;
+        if (!row) return `<td class="prenda-cell">—</td>`;
         const bajo = row.stock <= row.stock_min;
         const cls = bajo ? 'prenda-cell bajo' : 'prenda-cell';
         return `<td class="${cls}" id="ptd-${row.id}">
@@ -3670,8 +3670,8 @@ function _renderPrendasTabla(tipo, lista) {
                       onkeydown="if(event.key==='Enter'){this.blur()}"
                     >
                     <div class="prenda-btns">
-                      <button onclick="prendasAjustar('${row.id}',1)"  title="+ stock">+</button>
-                      <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">-</button>
+                      <button onclick="prendasAjustar('${row.id}',1)"  title="+ stock">＋</button>
+                      <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">－</button>
                     </div>
                   </td>`;
       }).join('');
@@ -3703,17 +3703,17 @@ function _renderPrendasTabla(tipo, lista) {
 
   let html = '';
   if (tipo === 'pantalon') {
-    // Pantalones: g�neros con tallas distintas ? dos tablas separadas
+    // Pantalones: géneros con tallas distintas → dos tablas separadas
     html = generarTablaGenero('hombre', tallasDef.hombre, referencias);
     html += generarTablaGenero('mujer', tallasDef.mujer, referencias);
   } else if (tipo === 'epp') {
-    // EPP: �reas (bodega / cuarto_frio) en lugar de g�neros
+    // EPP: áreas (bodega / cuarto_frio) en lugar de géneros
     const generarTablaArea = (area, tallas, refs) => {
-      const areaLabel = area === 'bodega' ? '?? BODEGA' : '?? CUARTO FR�O';
+      const areaLabel = area === 'bodega' ? '🏭 BODEGA' : '❄️ CUARTO FRÍO';
       const colorHeader = area === 'bodega'
         ? 'background:linear-gradient(135deg,rgba(58,200,130,0.25),rgba(58,200,130,0.1))'
         : 'background:linear-gradient(135deg,rgba(58,180,220,0.25),rgba(58,180,220,0.1))';
-      // Re-usar agrupado pero con el campo genero mapeado a �rea
+      // Re-usar agrupado pero con el campo genero mapeado a área
       const agrupadoArea = {};
       lista.forEach(row => {
         if (row.genero !== area) return;
@@ -3727,7 +3727,7 @@ function _renderPrendasTabla(tipo, lista) {
             <table class="prenda-tabla">
               <thead>
                 <tr>
-                  <th style="text-align:left;min-width:180px">Art�culo</th>
+                  <th style="text-align:left;min-width:180px">Artículo</th>
                   ${tallas.map(t => `<th>${t}</th>`).join('')}
                   <th>Total</th>
                 </tr>
@@ -3736,7 +3736,7 @@ function _renderPrendasTabla(tipo, lista) {
                 ${refs.map(ref => {
         const celdas = tallas.map(talla => {
           const row = agrupadoArea[ref]?.[talla];
-          if (!row) return `<td class="prenda-cell">�</td>`;
+          if (!row) return `<td class="prenda-cell">—</td>`;
           const bajo = row.stock <= row.stock_min;
           const cls = bajo ? 'prenda-cell bajo' : 'prenda-cell';
           return `<td class="${cls}" id="ptd-${row.id}">
@@ -3748,8 +3748,8 @@ function _renderPrendasTabla(tipo, lista) {
                         onkeydown="if(event.key==='Enter'){this.blur()}"
                       >
                       <div class="prenda-btns">
-                        <button onclick="prendasAjustar('${row.id}',1)"  title="+ stock">+</button>
-                        <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">-</button>
+                        <button onclick="prendasAjustar('${row.id}',1)"  title="+ stock">＋</button>
+                        <button onclick="prendasAjustar('${row.id}',-1)" title="- stock">－</button>
                       </div>
                     </td>`;
         }).join('');
@@ -3779,7 +3779,7 @@ function _renderPrendasTabla(tipo, lista) {
     html = generarTablaArea('bodega', tallasDef.bodega, referencias);
     html += generarTablaArea('cuarto_frio', tallasDef.cuarto_frio, referencias);
   } else {
-    // Camisas, chaquetas, calzado: mismas tallas ? una tabla con secci�n por g�nero
+    // Camisas, chaquetas, calzado: mismas tallas → una tabla con sección por género
     html = generarTablaGenero('hombre', tallasDef.hombre, referencias);
     html += generarTablaGenero('mujer', tallasDef.mujer, referencias);
   }
@@ -3787,7 +3787,7 @@ function _renderPrendasTabla(tipo, lista) {
   contenedor.innerHTML = html;
 }
 
-// -- Guardar stock escrito directamente en el input ------------
+// ── Guardar stock escrito directamente en el input ────────────
 async function prendasSetStock(id, valor, inputEl) {
   const nuevo = Math.max(0, parseInt(valor) || 0);
   inputEl.value = nuevo; // corregir si pusieron negativo o letras
@@ -3809,7 +3809,7 @@ async function prendasSetStock(id, valor, inputEl) {
   _renderPrendasStats(Cache.prendas || []);
 }
 
-// -- Ajuste r�pido de stock (+ / -) ----------------------------
+// ── Ajuste rápido de stock (+ / −) ────────────────────────────
 async function prendasAjustar(id, delta) {
   showLoading(true);
   const result = await DotacionPrendas.ajustarStock(id, delta);
@@ -3836,14 +3836,14 @@ async function prendasAjustar(id, delta) {
   _renderPrendasStats(Cache.prendas || []);
 }
 
-// -- Modal de edici�n de observaciones / stock_min --------------
+// ── Modal de edición de observaciones / stock_min ──────────────
 function prendasEditar(id) {
   const row = (Cache.prendas || []).find(r => r.id === id);
   if (!row) return;
 
   document.getElementById('peId').value = row.id;
   document.getElementById('peInfo').textContent =
-    `${DotacionPrendas.TIPO_LABEL[row.tipo]?.icon || ''} ${row.referencia} � ${row.genero === 'hombre' ? '?? Hombre' : '?? Mujer'} � Talla ${row.talla}`;
+    `${DotacionPrendas.TIPO_LABEL[row.tipo]?.icon || ''} ${row.referencia} · ${row.genero === 'hombre' ? '👨 Hombre' : '👩 Mujer'} · Talla ${row.talla}`;
   document.getElementById('peStock').value = row.stock;
   document.getElementById('peStockMin').value = row.stock_min;
   document.getElementById('peObs').value = row.obs || '';
@@ -3860,7 +3860,7 @@ async function prendasGuardarEdicion() {
 
   showLoading(true);
   const result = await DotacionPrendas.updateStock(id, stock);
-  // Tambi�n actualizar stock_min y obs
+  // También actualizar stock_min y obs
   if (result) {
     await sb.from('dotacion_prendas').update({ stock_min: stockMin, obs }).eq('id', id);
   }
@@ -3871,16 +3871,16 @@ async function prendasGuardarEdicion() {
   document.getElementById('modalPrendaEdit').classList.remove('open');
   document.body.style.overflow = '';
   await renderDotacionPrendas();
-  toast('Stock actualizado ?');
+  toast('Stock actualizado ✅');
 }
 
-// -- Exportar CSV -----------------------------------------------
+// ── Exportar CSV ───────────────────────────────────────────────
 async function exportarPrendas() {
   if (!Cache.prendas) Cache.prendas = await DotacionPrendas.getAll();
   const data = Cache.prendas;
   if (!data.length) return toast('No hay datos para exportar', 'warning');
 
-  const headers = ['Tipo', 'Referencia', 'G�nero', 'Talla', 'Stock', 'Stock M�nimo', 'Observaciones'];
+  const headers = ['Tipo', 'Referencia', 'Género', 'Talla', 'Stock', 'Stock Mínimo', 'Observaciones'];
   const rows = data.map(r => [
     DotacionPrendas.TIPO_LABEL[r.tipo]?.label || r.tipo,
     r.referencia, r.genero, r.talla,
@@ -3890,26 +3890,26 @@ async function exportarPrendas() {
 }
 
 
-// ---------------------------------------------------------------
-// SOLICITUDES � Bandeja admin (vacaciones + permisos + licencias)
+// ═══════════════════════════════════════════════════════════════
+// SOLICITUDES — Bandeja admin (vacaciones + permisos + licencias)
 // Los datos viven en la tabla 'vacaciones' (mismo modelo)
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
 
 Cache.solicitudes = null;
 
 const SOLIC_TIPO_LABEL = {
-  vacaciones: { icon: '???', label: 'Vacaciones' },
-  permiso: { icon: '??', label: 'Permiso' },
-  licencia_remunerada: { icon: '?', label: 'Lic. Remunerada' },
-  licencia_no_remunerada: { icon: '??', label: 'Lic. No Remunerada' },
-  calamidad: { icon: '??', label: 'Calamidad' },
-  otro: { icon: '??', label: 'Otro' },
+  vacaciones: { icon: '🏖️', label: 'Vacaciones' },
+  permiso: { icon: '🕐', label: 'Permiso' },
+  licencia_remunerada: { icon: '✅', label: 'Lic. Remunerada' },
+  licencia_no_remunerada: { icon: '📋', label: 'Lic. No Remunerada' },
+  calamidad: { icon: '🚨', label: 'Calamidad' },
+  otro: { icon: '📄', label: 'Otro' },
 };
 
 const SOLIC_STATUS = {
-  en_proceso: { label: 'En proceso', cls: 'badge-warning', icon: '?' },
-  aprobada: { label: 'Aprobada', cls: 'badge-success', icon: '?' },
-  rechazada: { label: 'Rechazada', cls: 'badge-danger', icon: '?' },
+  en_proceso: { label: 'En proceso', cls: 'badge-warning', icon: '⏳' },
+  aprobada: { label: 'Aprobada', cls: 'badge-success', icon: '✅' },
+  rechazada: { label: 'Rechazada', cls: 'badge-danger', icon: '❌' },
 };
 
 function _solicStatusBadge(status) {
@@ -3917,12 +3917,12 @@ function _solicStatusBadge(status) {
     : (status === 'no_aprobada') ? 'rechazada'
       : (status === 'finalizada') ? 'aprobada'
         : status;
-  const s = SOLIC_STATUS[norm] || { label: status, cls: 'badge-neutral', icon: '�' };
+  const s = SOLIC_STATUS[norm] || { label: status, cls: 'badge-neutral', icon: '•' };
   return `<span class="badge ${s.cls}">${s.icon} ${s.label}</span>`;
 }
 
 function _solicTipoBadge(tipo) {
-  const t = SOLIC_TIPO_LABEL[tipo] || { icon: '??', label: tipo };
+  const t = SOLIC_TIPO_LABEL[tipo] || { icon: '📄', label: tipo };
   return `<span class="chip">${t.icon} ${t.label}</span>`;
 }
 
@@ -3931,20 +3931,20 @@ function _solicFmtFechas(v) {
   const fin = fmtDate(v.fecha_fin);
   if (v.tipo === 'permiso') {
     const horas = (v.hora_inicio && v.hora_fin)
-      ? ` � ${v.hora_inicio.slice(0, 5)}�${v.hora_fin.slice(0, 5)}`
+      ? ` · ${v.hora_inicio.slice(0, 5)}–${v.hora_fin.slice(0, 5)}`
       : '';
     return `${ini}${horas}`;
   }
-  return ini === fin ? ini : `${ini} ? ${fin}`;
+  return ini === fin ? ini : `${ini} → ${fin}`;
 }
 
-// -- Badge sidebar ----------------------------------------------
+// ── Badge sidebar ──────────────────────────────────────────────
 function updateSolicBadge(count) {
   const b = document.getElementById('solicBadge');
   if (b) { b.textContent = count; b.style.display = count > 0 ? '' : 'none'; }
 }
 
-// -- Render principal -------------------------------------------
+// ── Render principal ───────────────────────────────────────────
 async function renderSolicitudes() {
   showLoading(true);
   try {
@@ -3958,7 +3958,7 @@ async function renderSolicitudes() {
 
     const lista = Cache.solicitudes;
 
-    // Aplicar filtros de b�squeda / tipo / estado
+    // Aplicar filtros de búsqueda / tipo / estado
     const q = (document.getElementById('searchSolic')?.value || '').toLowerCase();
     const fStatus = document.getElementById('filterSolicStatus')?.value || '';
     const fTipo = document.getElementById('filterSolicTipo')?.value || '';
@@ -3974,7 +3974,7 @@ async function renderSolicitudes() {
         && (!fTipo || v.tipo === fTipo);
     });
 
-    // -- Stats ------------------------------------------------
+    // ── Stats ────────────────────────────────────────────────
     const pendientes = lista.filter(v => ['en_proceso', 'solicitada', 'en_curso'].includes(v.status)).length;
     const aprobadas = lista.filter(v => ['aprobada', 'finalizada'].includes(v.status)).length;
     const rechazadas = lista.filter(v => ['rechazada', 'no_aprobada'].includes(v.status)).length;
@@ -3984,10 +3984,10 @@ async function renderSolicitudes() {
     const statsEl = document.getElementById('solicStats');
     if (statsEl) {
       statsEl.innerHTML = [
-        { icon: '?', value: pendientes, label: 'En proceso', color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
-        { icon: '?', value: aprobadas, label: 'Aprobadas', color: 'var(--success)' },
-        { icon: '?', value: rechazadas, label: 'Rechazadas', color: 'var(--danger)' },
-        { icon: '??', value: lista.length, label: 'Total', color: 'var(--text-muted)' },
+        { icon: '⏳', value: pendientes, label: 'En proceso', color: pendientes > 0 ? 'var(--warning)' : 'var(--success)' },
+        { icon: '✅', value: aprobadas, label: 'Aprobadas', color: 'var(--success)' },
+        { icon: '❌', value: rechazadas, label: 'Rechazadas', color: 'var(--danger)' },
+        { icon: '📋', value: lista.length, label: 'Total', color: 'var(--text-muted)' },
       ].map(s => `
         <div class="stat-card" style="--card-color:${s.color}">
           <div class="stat-icon">${s.icon}</div>
@@ -4000,7 +4000,7 @@ async function renderSolicitudes() {
     const countEl = document.getElementById('solicPendCount');
     if (countEl) countEl.textContent = pendientes > 0 ? `(${pendientes})` : '';
 
-    // -- Tab pendientes ----------------------------------------
+    // ── Tab pendientes ────────────────────────────────────────
     const pendList = lista.filter(v => ['solicitada', 'en_proceso', 'en_curso'].includes(v.status));
     const listaPend = document.getElementById('listaSolicPendientes');
     const emptyPend = document.getElementById('emptySolicPendientes');
@@ -4013,17 +4013,17 @@ async function renderSolicitudes() {
       if (listaPend) listaPend.innerHTML = pendList.map(_solicCardHTML).join('');
     }
 
-    // -- Tab todas ---------------------------------------------
+    // ── Tab todas ─────────────────────────────────────────────
     _renderTablaSolicTodas(filtered);
 
   } finally { showLoading(false); }
 }
 
-// -- Tarjeta de solicitud pendiente -----------------------------
+// ── Tarjeta de solicitud pendiente ─────────────────────────────
 function _solicCardHTML(v) {
-  const tipo = SOLIC_TIPO_LABEL[v.tipo] || { icon: '??', label: v.tipo };
+  const tipo = SOLIC_TIPO_LABEL[v.tipo] || { icon: '📄', label: v.tipo };
   const fechas = _solicFmtFechas(v);
-  const dias = v.dias != null ? `${v.dias} d�a${v.dias !== 1 ? 's' : ''}` : '';
+  const dias = v.dias != null ? `${v.dias} día${v.dias !== 1 ? 's' : ''}` : '';
   const solEn = v.solicitado_en || v.created_at
     ? new Date(v.solicitado_en || v.created_at).toLocaleDateString('es-CO', {
       day: '2-digit', month: 'short', year: 'numeric',
@@ -4032,15 +4032,15 @@ function _solicCardHTML(v) {
     : '';
 
   const rem = v.tipo === 'permiso' && v.es_remunerado != null
-    ? `<span class="chip" style="font-size:11px">${v.es_remunerado ? '? Remunerado' : '? No remunerado'}</span>`
+    ? `<span class="chip" style="font-size:11px">${v.es_remunerado ? '✅ Remunerado' : '❌ No remunerado'}</span>`
     : '';
 
   const motivoHtml = v.motivo
-    ? `<div class="solic-motivo">?? ${v.motivo}</div>`
+    ? `<div class="solic-motivo">💬 ${v.motivo}</div>`
     : '';
 
   const obsHtml = v.observaciones
-    ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">?? ${v.observaciones}</div>`
+    ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">📎 ${v.observaciones}</div>`
     : '';
 
   return `
@@ -4056,9 +4056,9 @@ function _solicCardHTML(v) {
           ${rem}
         </div>
         <div class="solic-meta">
-          <span>?? ${fechas}</span>
-          ${dias ? `<span>? ${dias}</span>` : ''}
-          ${solEn ? `<span>?? Solicitado: ${solEn}</span>` : ''}
+          <span>📅 ${fechas}</span>
+          ${dias ? `<span>⏱ ${dias}</span>` : ''}
+          ${solEn ? `<span>🕐 Solicitado: ${solEn}</span>` : ''}
         </div>
         ${motivoHtml}
         ${obsHtml}
@@ -4066,26 +4066,26 @@ function _solicCardHTML(v) {
           class="solic-nota-input"
           id="nota-${v.id}"
           rows="2"
-          placeholder="Nota interna (opcional � ser� visible para el trabajador)..."
+          placeholder="Nota interna (opcional — será visible para el trabajador)..."
         ></textarea>
         <div class="solic-actions">
           <button class="btn btn-success btn-sm"
             onclick="abrirAprobacion('${v.id}')">
-            ? Aprobar
+            ✅ Aprobar
           </button>
           <button class="btn btn-danger btn-sm"
             onclick="gestionarSolicitud('${v.id}','rechazada')">
-            ? Rechazar
+            ❌ Rechazar
           </button>
           <button class="btn btn-secondary btn-sm" onclick="abrirAprobacion('${v.id}')">
-            ?? Formulario
+            📋 Formulario
           </button>
         </div>
       </div>
     </div>`;
 }
 
-// -- Tabla "Todas" ----------------------------------------------
+// ── Tabla "Todas" ──────────────────────────────────────────────
 function _renderTablaSolicTodas(lista) {
   const tbody = document.getElementById('tablaSolicTodas');
   const empty = document.getElementById('emptySolicTodas');
@@ -4100,12 +4100,12 @@ function _renderTablaSolicTodas(lista) {
 
   tbody.innerHTML = lista.map(v => {
     const fechas = _solicFmtFechas(v);
-    const dias = v.dias != null ? `<strong>${v.dias}d</strong>` : '�';
+    const dias = v.dias != null ? `<strong>${v.dias}d</strong>` : '—';
     const solEn = v.solicitado_en || v.created_at
       ? new Date(v.solicitado_en || v.created_at).toLocaleDateString('es-CO', {
         day: '2-digit', month: 'short', year: 'numeric',
       })
-      : '�';
+      : '—';
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
@@ -4117,25 +4117,25 @@ function _renderTablaSolicTodas(lista) {
       <td style="font-size:12px">${fechas}</td>
       <td>${dias}</td>
       <td style="max-width:160px;font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${v.motivo || ''}">
-        ${v.motivo || '�'}
+        ${v.motivo || '—'}
       </td>
       <td>${_solicStatusBadge(v.status)}</td>
       <td style="font-size:12px;color:var(--text-muted)">${solEn}</td>
       <td>
         <div class="td-actions">
           ${['solicitada', 'en_proceso', 'en_curso'].includes(v.status) ? `
-            <button class="btn btn-success btn-sm btn-icon" title="Aprobar"    onclick="abrirAprobacion('${v.id}')">?</button>
-            <button class="btn btn-danger  btn-sm btn-icon" title="Rechazar"   onclick="gestionarSolicitud('${v.id}','rechazada')">?</button>
+            <button class="btn btn-success btn-sm btn-icon" title="Aprobar"    onclick="abrirAprobacion('${v.id}')">✅</button>
+            <button class="btn btn-danger  btn-sm btn-icon" title="Rechazar"   onclick="gestionarSolicitud('${v.id}','rechazada')">❌</button>
           ` : ''}
-          <button class="btn btn-secondary btn-sm btn-icon" title="Ver / Generar PDF" onclick="abrirAprobacion('${v.id}')">??</button>
-          <button class="btn btn-secondary btn-sm btn-icon" title="Cambiar estado" onclick="abrirCambioEstadoSolic('${v.id}')">??</button>
+          <button class="btn btn-secondary btn-sm btn-icon" title="Ver / Generar PDF" onclick="abrirAprobacion('${v.id}')">📋</button>
+          <button class="btn btn-secondary btn-sm btn-icon" title="Cambiar estado" onclick="abrirCambioEstadoSolic('${v.id}')">✏️</button>
         </div>
       </td>
     </tr>`;
   }).join('');
 }
 
-// -- Gestionar: aprobar / rechazar / en_curso -------------------
+// ── Gestionar: aprobar / rechazar / en_curso ───────────────────
 async function gestionarSolicitud(id, nuevoStatus) {
   const nota = document.getElementById(`nota-${id}`)?.value.trim() || '';
 
@@ -4151,17 +4151,17 @@ async function gestionarSolicitud(id, nuevoStatus) {
 
   if (error) { toast('Error al actualizar: ' + error.message, 'error'); return; }
 
-  const labels = { aprobada: 'Aprobada ?', rechazada: 'Rechazada ?', no_aprobada: 'No aprobada ?', en_proceso: 'En proceso ?', en_curso: 'En curso ??' };
+  const labels = { aprobada: 'Aprobada ✅', rechazada: 'Rechazada ❌', no_aprobada: 'No aprobada ❌', en_proceso: 'En proceso ⏳', en_curso: 'En curso 🔄' };
   toast(`Solicitud ${labels[nuevoStatus] || nuevoStatus}`, 'success');
 
-  // Invalidar cache de vacaciones tambi�n (comparten tabla)
+  // Invalidar cache de vacaciones también (comparten tabla)
   Cache.invalidate('vacaciones');
   Cache.solicitudes = null;
 
   await renderSolicitudes();
 }
 
-// -- Cambio de estado r�pido desde tabla "Todas" ----------------
+// ── Cambio de estado rápido desde tabla "Todas" ────────────────
 function abrirCambioEstadoSolic(id) {
   const v = (Cache.solicitudes || []).find(x => x.id === id);
   if (!v) return;
@@ -4175,8 +4175,8 @@ function abrirCambioEstadoSolic(id) {
     overlay.innerHTML = `
       <div class="modal" style="max-width:360px">
         <div class="modal-header">
-          <span class="modal-title">?? Cambiar estado</span>
-          <button class="modal-close" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open'); document.body.style.overflow = '';">?</button>
+          <span class="modal-title">✏️ Cambiar estado</span>
+          <button class="modal-close" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open'); document.body.style.overflow = '';">✕</button>
         </div>
         <div class="modal-body">
           <div style="font-weight:600;margin-bottom:12px" id="csNombre"></div>
@@ -4191,13 +4191,13 @@ function abrirCambioEstadoSolic(id) {
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('modalCambioEstadoSolic').classList.remove('open'); document.body.style.overflow = '';">Cancelar</button>
-          <button class="btn btn-primary" onclick="_confirmarCambioEstado()">?? Guardar</button>
+          <button class="btn btn-primary" onclick="_confirmarCambioEstado()">💾 Guardar</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
   }
 
-  // Siempre reconstruir las opciones con �nicamente los 3 estados permitidos
+  // Siempre reconstruir las opciones con únicamente los 3 estados permitidos
   const sel = document.getElementById('csStatus');
   if (sel) {
     sel.innerHTML = Object.entries(SOLIC_STATUS).map(([k, s]) => `<option value="${k}">${s.icon} ${s.label}</option>`).join('');
@@ -4208,7 +4208,7 @@ function abrirCambioEstadoSolic(id) {
       : (v.status === 'finalizada') ? 'aprobada'
         : (v.status || 'en_proceso');
 
-  document.getElementById('csNombre').textContent = `${v.trabajador_nombre} � ${SOLIC_TIPO_LABEL[v.tipo]?.label || v.tipo}`;
+  document.getElementById('csNombre').textContent = `${v.trabajador_nombre} — ${SOLIC_TIPO_LABEL[v.tipo]?.label || v.tipo}`;
   document.getElementById('csStatus').value = currentStatus;
   document.getElementById('csNota').value = v.aprobado_por || '';
   overlay.dataset.solicId = id;
@@ -4240,11 +4240,11 @@ async function _confirmarCambioEstado() {
   document.body.style.overflow = '';
   Cache.invalidate('vacaciones');
   Cache.solicitudes = null;
-  toast('Estado actualizado ?', 'success');
+  toast('Estado actualizado ✅', 'success');
   await renderSolicitudes();
 }
 
-// -- Inicializaci�n: badge al arrancar, realtime y auto-refresco ------
+// ── Inicialización: badge al arrancar, realtime y auto-refresco ──────
 (function _initSolicitudes() {
   async function _refrescarBadgeYVista() {
     try {
@@ -4265,13 +4265,13 @@ async function _confirmarCambioEstado() {
   // Cargar badge al arrancar
   document.addEventListener('DOMContentLoaded', _refrescarBadgeYVista);
 
-  // Auto-refrescar cuando el usuario vuelve a la pesta�a
+  // Auto-refrescar cuando el usuario vuelve a la pestaña
   window.addEventListener('focus', _refrescarBadgeYVista);
 
-  // Polling cada 20 segundos por si Realtime no est� activo en Postgres
+  // Polling cada 20 segundos por si Realtime no está activo en Postgres
   setInterval(_refrescarBadgeYVista, 20000);
 
-  // Suscripci�n Realtime: actualizar en vivo cuando llegan nuevas solicitudes
+  // Suscripción Realtime: actualizar en vivo cuando llegan nuevas solicitudes
   sb.channel('solicitudes-realtime')
     .on('postgres_changes', {
       event: '*',
@@ -4284,11 +4284,11 @@ async function _confirmarCambioEstado() {
 })();
 
 
-// ---------------------------------------------------------------
-// APROBACI�N DE VACACIONES � Formulario oficial
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
+// APROBACIÓN DE VACACIONES — Formulario oficial
+// ═══════════════════════════════════════════════════════════════
 
-// -- Helpers de formato de fecha --------------------------------
+// ── Helpers de formato de fecha ────────────────────────────────
 function _fmtDateInput(d) {
   // Convierte 'YYYY-MM-DD' o Date a 'YYYY-MM-DD' para input[type=date]
   if (!d) return '';
@@ -4299,18 +4299,18 @@ function _fmtDateInput(d) {
 }
 
 function _splitNombre(nombreCompleto) {
-  // Intenta separar nombre(s) y apellido(s) heur�sticamente
-  // Asume que los 2 �ltimos tokens son apellidos
+  // Intenta separar nombre(s) y apellido(s) heurísticamente
+  // Asume que los 2 últimos tokens son apellidos
   const parts = (nombreCompleto || '').trim().split(/\s+/);
   if (parts.length <= 1) return { nombres: nombreCompleto || '', apellidos: '' };
   if (parts.length === 2) return { nombres: parts[0], apellidos: parts[1] };
-  // 3+ palabras: �ltimas 2 como apellidos
+  // 3+ palabras: últimas 2 como apellidos
   const apellidos = parts.slice(-2).join(' ');
   const nombres = parts.slice(0, -2).join(' ');
   return { nombres, apellidos };
 }
 
-// -- Abrir modal de aprobaci�n ----------------------------------
+// ── Abrir modal de aprobación ──────────────────────────────────
 async function abrirAprobacion(id) {
   // Buscar en cache o cargar
   let v = (Cache.vacaciones || []).find(x => x.id === id)
@@ -4320,11 +4320,11 @@ async function abrirAprobacion(id) {
     showLoading(true);
     const { data } = await sb.from('vacaciones').select('*').eq('id', id).single();
     showLoading(false);
-    if (!data) return toast('No se encontr� la solicitud', 'error');
+    if (!data) return toast('No se encontró la solicitud', 'error');
     v = data;
   }
 
-  // Buscar datos del trabajador para ciudad y c�dula
+  // Buscar datos del trabajador para ciudad y cédula
   const trabajador = (Cache.trabajadores || []).find(t => t.id === v.trabajador_id) || {};
 
   // Separar nombre en nombres y apellidos
@@ -4332,11 +4332,11 @@ async function abrirAprobacion(id) {
 
   // Poblar campos de solo lectura
   document.getElementById('aprobVacId').value = v.id;
-  document.getElementById('aprobVacCiudad').textContent = trabajador.ciudad || '�';
-  document.getElementById('aprobVacNombres').textContent = nombres || '�';
-  document.getElementById('aprobVacApellidos').textContent = apellidos || '�';
-  document.getElementById('aprobVacCedula').textContent = trabajador.cedula || v.cedula || '�';
-  document.getElementById('aprobVacCargo').textContent = trabajador.cargo || v.cargo || '�';
+  document.getElementById('aprobVacCiudad').textContent = trabajador.ciudad || '—';
+  document.getElementById('aprobVacNombres').textContent = nombres || '—';
+  document.getElementById('aprobVacApellidos').textContent = apellidos || '—';
+  document.getElementById('aprobVacCedula').textContent = trabajador.cedula || v.cedula || '—';
+  document.getElementById('aprobVacCargo').textContent = trabajador.cargo || v.cargo || '—';
 
   // Subtitle
   const VAC_TIPO_MAP = {
@@ -4355,19 +4355,19 @@ async function abrirAprobacion(id) {
 
   document.getElementById('aprobFechaSolicitud').value = _fmtDateInput(v.fecha_solicitud) || _fmtDateInput(v.created_at) || hoy;
   document.getElementById('aprobFechaAprobacion').value = _fmtDateInput(v.fecha_aprobacion) || hoy;
-  document.getElementById('aprobDiasSolicitados').value = v.dias_solicitados ?? v.dias ?? '';
-  document.getElementById('aprobDiasCalendario').value = v.dias_calendario ?? '';
+  document.getElementById('aprobDiasSolicitados').value = (v.dias_solicitados != null ? v.dias_solicitados : (v.dias != null ? v.dias : ''));
+  document.getElementById('aprobDiasCalendario').value = (v.dias_calendario != null ? v.dias_calendario : '');
   document.getElementById('aprobFechaInicio').value = _fmtDateInput(v.fecha_inicio);
   document.getElementById('aprobPeriodoInicio').value = _fmtDateInput(v.periodo_inicio) || '';
   document.getElementById('aprobPeriodoFin').value = _fmtDateInput(v.periodo_fin) || '';
   document.getElementById('aprobFirmaColab').value = v.firma_colaborador || v.trabajador_nombre || '';
-  document.getElementById('aprobDiasDinero').value = v.dias_dinero ?? 0;
-  document.getElementById('aprobDiasHabAprobados').value = v.dias_habiles_aprobados ?? v.dias ?? '';
+  document.getElementById('aprobDiasDinero').value = (v.dias_dinero != null ? v.dias_dinero : 0);
+  document.getElementById('aprobDiasHabAprobados').value = (v.dias_habiles_aprobados != null ? v.dias_habiles_aprobados : (v.dias != null ? v.dias : ''));
   document.getElementById('aprobFirmaJefe').value = v.firma_jefe || v.aprobado_por || '';
   document.getElementById('aprobFechaReintegro').value = _fmtDateInput(v.fecha_reintegro) || '';
   document.getElementById('aprobFechaInicioDefinitiva').value = _fmtDateInput(v.fecha_inicio_definitiva) || _fmtDateInput(v.fecha_inicio) || '';
 
-  // Espejo de d�as h�biles aprobados y fecha reintegro (fila 5)
+  // Espejo de días hábiles aprobados y fecha reintegro (fila 5)
   _actualizarEspejos();
 
   document.getElementById('aprobVacStatus').value = v.status === 'aprobada' ? 'aprobada' : 'aprobada';
@@ -4387,21 +4387,21 @@ async function abrirAprobacion(id) {
   openModal('modalAprobarVac');
 }
 
-// -- Actualizar los campos espejo de la fila 5 -----------------
+// ── Actualizar los campos espejo de la fila 5 ─────────────────
 function _actualizarEspejos() {
-  const dias = document.getElementById('aprobDiasHabAprobados')?.value || '�';
+  const dias = document.getElementById('aprobDiasHabAprobados')?.value || '—';
   const reintegro = document.getElementById('aprobFechaReintegro')?.value;
 
   const elDias = document.getElementById('aprobDiasHabAprobadosRepeat');
   const elRei = document.getElementById('aprobFechaReintegroRepeat');
 
-  if (elDias) elDias.textContent = dias || '�';
+  if (elDias) elDias.textContent = dias || '—';
   if (elRei) elRei.textContent = reintegro
     ? new Date(reintegro + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : '�';
+    : '—';
 }
 
-// -- Guardar aprobaci�n -----------------------------------------
+// ── Guardar aprobación ─────────────────────────────────────────
 async function guardarAprobacion() {
   const id = document.getElementById('aprobVacId').value;
   if (!id) return toast('Error: sin ID de solicitud', 'error');
@@ -4427,14 +4427,14 @@ async function guardarAprobacion() {
     aprobado_por: n('aprobFirmaJefe') || null,
   };
 
-  // Eliminar nulls, strings vac�os y undefined para no tocar columnas que no cambian
+  // Eliminar nulls, strings vacíos y undefined para no tocar columnas que no cambian
   // NUNCA enviar 'dias' porque es columna generada (GENERATED ALWAYS AS)
   Object.keys(row).forEach(k => {
     if (row[k] === null || row[k] === undefined || row[k] === '') delete row[k];
   });
 
   showLoading(true);
-  console.log('guardarAprobacion ? row:', JSON.stringify(row, null, 2));
+  console.log('guardarAprobacion → row:', JSON.stringify(row, null, 2));
   const { data: result, error: updateError } = await sb
     .from('vacaciones')
     .update(row)
@@ -4448,28 +4448,28 @@ async function guardarAprobacion() {
 
     // Si el error es por columna inexistente, intentar con solo los campos base
     if (updateError.message && updateError.message.includes('column')) {
-      toast(`?? Faltan columnas en la BD. Ejecuta migration_aprobacion_vac.sql en Supabase primero.\n\nError: ${updateError.message}`, 'warning', 10000);
+      toast(`⚠️ Faltan columnas en la BD. Ejecuta migration_aprobacion_vac.sql en Supabase primero.\n\nError: ${updateError.message}`, 'warning', 10000);
     } else {
-      toast(`? Error al guardar: ${updateError.message}`, 'error', 8000);
+      toast(`❌ Error al guardar: ${updateError.message}`, 'error', 8000);
     }
     return;
   }
 
-  toast('? Aprobaci�n guardada correctamente', 'success', 4000);
+  toast('✅ Aprobación guardada correctamente', 'success', 4000);
   closeModal('modalAprobarVac');
   Cache.invalidate('vacaciones');
   Cache.solicitudes = null;
   await renderSolicitudes();
-  // Si el m�dulo de vacaciones est� abierto, refrescar tambi�n
+  // Si el módulo de vacaciones está abierto, refrescar también
   const pageVac = document.getElementById('page-vacaciones');
   if (pageVac && pageVac.classList.contains('active')) await renderVacaciones();
 }
 
-// ---------------------------------------------------------------
-// GENERADOR DE PDF � Solicitud de Vacaciones
+// ═══════════════════════════════════════════════════════════════
+// GENERADOR DE PDF — Solicitud de Vacaciones
 // Abre una ventana con HTML/CSS puro y lanza window.print()
-// El usuario elige "Guardar como PDF" en el di�logo del navegador.
-// ---------------------------------------------------------------
+// El usuario elige "Guardar como PDF" en el diálogo del navegador.
+// ═══════════════════════════════════════════════════════════════
 function generarPDFVacaciones() {
 
   const v = (id) => document.getElementById(id)?.value?.trim() || '';
@@ -4509,7 +4509,7 @@ function generarPDFVacaciones() {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Solicitud de ${tipoDoc} � ${nombres} ${apellidos}</title>
+<title>Solicitud de ${tipoDoc} — ${nombres} ${apellidos}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -4521,7 +4521,7 @@ function generarPDFVacaciones() {
     line-height:1.4;
   }
 
-  /* -- Encabezado -- */
+  /* ── Encabezado ── */
   .hdr{
     display:flex;align-items:center;
     background:linear-gradient(135deg,#1a3a5c 0%,#1a5c99 60%,#2a8a6e 100%);
@@ -4553,7 +4553,7 @@ function generarPDFVacaciones() {
   }
   .hdr-fecha{font-size:10px;opacity:.75;margin-top:4px}
 
-  /* -- Secciones -- */
+  /* ── Secciones ── */
   .seccion{margin-bottom:14px}
   .sec-titulo{
     font-size:9px;font-weight:800;text-transform:uppercase;
@@ -4562,7 +4562,7 @@ function generarPDFVacaciones() {
     padding-bottom:4px;margin-bottom:10px;
   }
 
-  /* -- Grid de campos -- */
+  /* ── Grid de campos ── */
   .campos{display:grid;gap:8px}
   .campos-4{grid-template-columns:repeat(4,1fr)}
   .campos-3{grid-template-columns:2fr 1fr 1fr}
@@ -4599,7 +4599,7 @@ function generarPDFVacaciones() {
     border-color:#2a7a5c;
   }
 
-  /* -- Separador de secci�n aprobaci�n -- */
+  /* ── Separador de sección aprobación ── */
   .sep-aprob{
     background:linear-gradient(90deg,#1a5c99,#2a7a5c);
     color:#fff;font-size:9px;font-weight:800;
@@ -4609,7 +4609,7 @@ function generarPDFVacaciones() {
     display:flex;align-items:center;gap:8px;
   }
 
-  /* -- Firmas -- */
+  /* ── Firmas ── */
   .firmas{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
   .firma-card{
     border:1px solid #d0e4f4;
@@ -4639,7 +4639,7 @@ function generarPDFVacaciones() {
     font-size:8.5px;color:#8aa0bc;text-align:center;
   }
 
-  /* -- Pie de p�gina -- */
+  /* ── Pie de página ── */
   .doc-pie{
     margin-top:20px;
     display:flex;align-items:center;justify-content:space-between;
@@ -4660,7 +4660,7 @@ function generarPDFVacaciones() {
 </head>
 <body>
 
-<!-- -- Encabezado empresa -- -->
+<!-- ── Encabezado empresa ── -->
 <div class="hdr">
   <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
   <div class="hdr-centro">
@@ -4670,9 +4670,9 @@ function generarPDFVacaciones() {
   </div>
 </div>
 
-<!-- -- Datos del colaborador -- -->
+<!-- ── Datos del colaborador ── -->
 <div class="seccion">
-  <div class="sec-titulo">?? Datos del colaborador</div>
+  <div class="sec-titulo">👤 Datos del colaborador</div>
   <div class="campos campos-4">
     <div class="campo">
       <div class="campo-lbl">Ciudad</div>
@@ -4687,7 +4687,7 @@ function generarPDFVacaciones() {
       <div class="campo-val">${apellidos}</div>
     </div>
     <div class="campo">
-      <div class="campo-lbl">Identificaci�n</div>
+      <div class="campo-lbl">Identificación</div>
       <div class="campo-val">${cedula}</div>
     </div>
   </div>
@@ -4701,22 +4701,22 @@ function generarPDFVacaciones() {
       <div class="campo-val">${fechaSolic}</div>
     </div>
     <div class="campo">
-      <div class="campo-lbl">Fecha de aprobaci�n</div>
+      <div class="campo-lbl">Fecha de aprobación</div>
       <div class="campo-val">${fechaAprob}</div>
     </div>
   </div>
 </div>
 
-<!-- -- Solicitud -- -->
+<!-- ── Solicitud ── -->
 <div class="seccion">
-  <div class="sec-titulo">?? Solicitud de vacaciones</div>
+  <div class="sec-titulo">📅 Solicitud de vacaciones</div>
   <div class="campos" style="grid-template-columns:90px 90px 1fr 1fr">
     <div class="campo accent">
-      <div class="campo-lbl">D�as h�biles solicitados</div>
+      <div class="campo-lbl">Días hábiles solicitados</div>
       <div class="campo-val big">${diasHabSol}</div>
     </div>
     <div class="campo accent">
-      <div class="campo-lbl">D�as calendario</div>
+      <div class="campo-lbl">Días calendario</div>
       <div class="campo-val big">${diasCal}</div>
     </div>
     <div class="campo">
@@ -4724,25 +4724,25 @@ function generarPDFVacaciones() {
       <div class="campo-val">${fechaInicio}</div>
     </div>
     <div class="campo">
-      <div class="campo-lbl">Per�odo</div>
+      <div class="campo-lbl">Período</div>
       <div class="campo-val">${periodoIni} &ndash; ${periodoFin}</div>
     </div>
   </div>
 </div>
 
-<!-- -- Aprobaci�n -- -->
+<!-- ── Aprobación ── -->
 <div class="sep-aprob">
-  <span>?</span> Secci�n de aprobaci�n
+  <span>✅</span> Sección de aprobación
 </div>
 
 <div class="seccion">
   <div class="campos" style="grid-template-columns:100px 110px 1fr 140px">
     <div class="campo">
-      <div class="campo-lbl">Solicitud d�as en dinero</div>
+      <div class="campo-lbl">Solicitud días en dinero</div>
       <div class="campo-val big" style="font-size:22px">${diasDinero}</div>
     </div>
     <div class="campo accent-green">
-      <div class="campo-lbl">D�as h�biles aprobados</div>
+      <div class="campo-lbl">Días hábiles aprobados</div>
       <div class="campo-val big-green">${diasHabAprob}</div>
     </div>
     <div class="campo">
@@ -4756,18 +4756,18 @@ function generarPDFVacaciones() {
   </div>
 </div>
 
-<!-- -- Observaciones -- -->
+<!-- ── Observaciones ── -->
 <div class="seccion" style="margin-top:10px">
-  <div class="sec-titulo">?? Observaciones</div>
+  <div class="sec-titulo">📝 Observaciones</div>
   <div class="campo" style="background:#fafcff;border:1px solid #d0e4f4;padding:8px 12px;border-radius:8px">
     <div style="font-size:10.5px;font-weight:500;color:#1a1a2e;line-height:1.45;min-height:18px;white-space:pre-wrap">${obs || 'Sin observaciones adicionales.'}</div>
   </div>
 </div>
 
-<!-- -- Firmas -- -->
+<!-- ── Firmas ── -->
 <div class="firmas">
   <div class="firma-card">
-    <div class="firma-header">?? Firma del colaborador</div>
+    <div class="firma-header">✍️ Firma del colaborador</div>
     <div class="firma-body">
       <div class="firma-nombre">${firmaColab}</div>
       <div>
@@ -4777,7 +4777,7 @@ function generarPDFVacaciones() {
     </div>
   </div>
   <div class="firma-card">
-    <div class="firma-header">?? Firma del jefe inmediato</div>
+    <div class="firma-header">✍️ Firma del jefe inmediato</div>
     <div class="firma-body">
       <div class="firma-nombre">${firmaJefe}</div>
       <div>
@@ -4787,7 +4787,7 @@ function generarPDFVacaciones() {
     </div>
   </div>
   <div class="firma-card">
-    <div class="firma-header">?? Gesti�n Humana</div>
+    <div class="firma-header">🏢 Gestión Humana</div>
     <div class="firma-body">
       <div class="firma-nombre">&nbsp;</div>
       <div>
@@ -4798,11 +4798,11 @@ function generarPDFVacaciones() {
   </div>
 </div>
 
-<!-- -- Pie -- -->
+<!-- ── Pie ── -->
 <div class="doc-pie">
   <img class="doc-pie-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
-  <span>Tiendas y Marcas Eje Cafetero &nbsp;�&nbsp; NIT 900.973.932-9 &nbsp;�&nbsp; Documento generado por GH Pro</span>
-  <span class="doc-numero">Fecha impresi�n: ${new Date().toLocaleDateString('es-CO')}</span>
+  <span>Tiendas y Marcas Eje Cafetero &nbsp;·&nbsp; NIT 900.973.932-9 &nbsp;·&nbsp; Documento generado por GH Pro</span>
+  <span class="doc-numero">Fecha impresión: ${new Date().toLocaleDateString('es-CO')}</span>
 </div>
 
 <script>window.onload=function(){window.print()};<\/script>
@@ -4817,26 +4817,26 @@ function generarPDFVacaciones() {
   win.document.close();
 }
 
-// ---------------------------------------------------------------
-// GENERADOR DE PDF � ACTA DE ENTREGA DE DOTACI�N Y EPP
+// ═══════════════════════════════════════════════════════════════
+// GENERADOR DE PDF — ACTA DE ENTREGA DE DOTACIÓN Y EPP
 // Genera e imprime un acta corporativa formal con logo, datos del
 // trabajador, responsable, tabla de prendas, compromiso y firmas con huella.
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
 
 function _iconoPrendaEntrega(nombre) {
   const n = (nombre || '').toLowerCase();
-  if (n.includes('camisa') || n.includes('polo') || n.includes('oxford') || n.includes('camiseta')) return '??';
-  if (n.includes('pantalon') || n.includes('jean') || n.includes('drill')) return '??';
-  if (n.includes('chaqueta') || n.includes('chaleco') || n.includes('buzo') || n.includes('impermeable')) return '??';
-  if (n.includes('bota') || n.includes('calzado') || n.includes('zapato')) return '??';
-  if (n.includes('casco') || n.includes('guante') || n.includes('gorra') || n.includes('monogafa') || n.includes('tapao�do') || n.includes('epp')) return '??';
-  return '??';
+  if (n.includes('camisa') || n.includes('polo') || n.includes('oxford') || n.includes('camiseta')) return '👕';
+  if (n.includes('pantalon') || n.includes('jean') || n.includes('drill')) return '👖';
+  if (n.includes('chaqueta') || n.includes('chaleco') || n.includes('buzo') || n.includes('impermeable')) return '🧥';
+  if (n.includes('bota') || n.includes('calzado') || n.includes('zapato')) return '🥾';
+  if (n.includes('casco') || n.includes('guante') || n.includes('gorra') || n.includes('monogafa') || n.includes('tapaoído') || n.includes('epp')) return '⛑️';
+  return '📦';
 }
 
 async function generarActaEntregaPDF(datos) {
   if (!datos) return;
 
-  // Asegurar cach� de trabajadores para datos completos (c�dula, cargo, ciudad, etc.)
+  // Asegurar caché de trabajadores para datos completos (cédula, cargo, ciudad, etc.)
   if (!Cache.trabajadores || !Cache.trabajadores.length) {
     try {
       Cache.trabajadores = await Trabajadores.getAll();
@@ -4855,15 +4855,15 @@ async function generarActaEntregaPDF(datos) {
   ) || {};
 
   const nombreTrabajador = trabajador.nombre || datos.trabajadorNombre || 'Colaborador';
-  const cedulaTrabajador = trabajador.cedula || '�';
-  const cargoTrabajador = trabajador.cargo || '�';
-  const ciudadTrabajador = trabajador.ciudad || '�';
-  const marcaTrabajador = trabajador.marca || trabajador.unidad_organizacional || '�';
-  const ingresoTrabajador = trabajador.fecha_ingreso ? fmtDate(trabajador.fecha_ingreso) : '�';
-  const telefonoTrabajador = trabajador.telefono || '�';
+  const cedulaTrabajador = trabajador.cedula || '—';
+  const cargoTrabajador = trabajador.cargo || '—';
+  const ciudadTrabajador = trabajador.ciudad || '—';
+  const marcaTrabajador = trabajador.marca || trabajador.unidad_organizacional || '—';
+  const ingresoTrabajador = trabajador.fecha_ingreso ? fmtDate(trabajador.fecha_ingreso) : '—';
+  const telefonoTrabajador = trabajador.telefono || '—';
 
-  const entregadoPor = (datos.entregadoPor && datos.entregadoPor !== '�') ? datos.entregadoPor : 'Gesti�n Humana';
-  const obsEntrega = datos.obs || 'Entrega regular de dotaci�n de trabajo en �ptimas condiciones.';
+  const entregadoPor = (datos.entregadoPor && datos.entregadoPor !== '—') ? datos.entregadoPor : 'Gestión Humana';
+  const obsEntrega = datos.obs || 'Entrega regular de dotación de trabajo en óptimas condiciones.';
   const fechaRaw = datos.fecha || today();
 
   let fechaFormateada = fechaRaw;
@@ -4875,7 +4875,7 @@ async function generarActaEntregaPDF(datos) {
     fechaFormateada = fechaRaw;
   }
 
-  // Consecutivo �nico institucional
+  // Consecutivo único institucional
   const numCed = (cedulaTrabajador || '0000').replace(/[^0-9]/g, '').slice(-4) || '0001';
   const numFmt = fechaRaw.replace(/[^0-9]/g, '') || '2026';
   const consecutivo = `ACT-DOT-${numFmt}-${numCed}`;
@@ -4887,9 +4887,9 @@ async function generarActaEntregaPDF(datos) {
   const itemsProcesados = rawItems.map((it, idx) => {
     const cant = parseInt(it.cantidad) || 1;
     totalUnidades += cant;
-    const desc = it.articulo_nombre || it.referencia || 'Prenda de Dotaci�n';
+    const desc = it.articulo_nombre || it.referencia || 'Prenda de Dotación';
     const icono = it.icono || _iconoPrendaEntrega(desc);
-    const talla = it.talla || '�';
+    const talla = it.talla || '—';
     return {
       index: idx + 1,
       icono,
@@ -4900,7 +4900,7 @@ async function generarActaEntregaPDF(datos) {
     };
   });
 
-  // -- Branding condicional por marca --------------------------
+  // ── Branding condicional por marca ──────────────────────────
   const esFamilia = (marcaTrabajador || '').toUpperCase().includes('FAMILIA');
   const _baseUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/'));
 
@@ -4915,7 +4915,7 @@ async function generarActaEntregaPDF(datos) {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Acta de Entrega de Dotaci�n � ${nombreTrabajador}</title>
+<title>Acta de Entrega de Dotación — ${nombreTrabajador}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -4931,7 +4931,7 @@ async function generarActaEntregaPDF(datos) {
     print-color-adjust:exact;
   }
 
-  /* -- Barra de acciones en pantalla -- */
+  /* ── Barra de acciones en pantalla ── */
   .preview-bar{
     position:sticky;
     top:0;
@@ -5005,7 +5005,7 @@ async function generarActaEntregaPDF(datos) {
     color:#fff;
   }
 
-  /* -- Contenedor de la hoja -- */
+  /* ── Contenedor de la hoja ── */
   .hoja{
     width:215.9mm;
     min-height:279.4mm;
@@ -5017,7 +5017,7 @@ async function generarActaEntregaPDF(datos) {
     position:relative;
   }
 
-  /* -- Encabezado Corporativo -- */
+  /* ── Encabezado Corporativo ── */
   .hdr{
     display:flex;
     align-items:center;
@@ -5115,7 +5115,7 @@ async function generarActaEntregaPDF(datos) {
     font-size:9.5px;
   }
 
-  /* -- Secciones -- */
+  /* ── Secciones ── */
   .seccion{
     margin-bottom:8px;
   }
@@ -5146,7 +5146,7 @@ async function generarActaEntregaPDF(datos) {
     border-radius:12px;
   }
 
-  /* -- Grids de Datos -- */
+  /* ── Grids de Datos ── */
   .campos-grid{
     display:grid;
     gap:6px;
@@ -5180,7 +5180,7 @@ async function generarActaEntregaPDF(datos) {
     color:#1a5c99;
   }
 
-  /* -- Tabla de Prendas -- */
+  /* ── Tabla de Prendas ── */
   .tabla-prendas{
     width:100%;
     border-collapse:collapse;
@@ -5254,7 +5254,7 @@ async function generarActaEntregaPDF(datos) {
     border-top:2px solid #cbd5e1;
   }
 
-  /* -- Cl�usula Legal CST -- */
+  /* ── Cláusula Legal CST ── */
   .clausula-box{
     background:#f8fafc;
     border:1px solid #cbd5e1;
@@ -5276,7 +5276,7 @@ async function generarActaEntregaPDF(datos) {
     color:#0f172a;
   }
 
-  /* -- Secci�n de Firma del Trabajador -- */
+  /* ── Sección de Firma del Trabajador ── */
   .firmas-container{
     margin-top:8px;
     display:flex;
@@ -5325,7 +5325,7 @@ async function generarActaEntregaPDF(datos) {
     line-height:1.3;
   }
 
-  /* -- Pie de documento -- */
+  /* ── Pie de documento ── */
   .doc-pie{
     margin-top:8px;
     display:flex;
@@ -5343,7 +5343,7 @@ async function generarActaEntregaPDF(datos) {
     opacity:.5;
   }
 
-  /* -- Reglas de Impresi�n -- */
+  /* ── Reglas de Impresión ── */
   @media print{
     body{
       background:#fff;
@@ -5372,23 +5372,23 @@ async function generarActaEntregaPDF(datos) {
 </head>
 <body>
 
-<!-- -- Barra flotante de acciones para pantalla -- -->
+<!-- ── Barra flotante de acciones para pantalla ── -->
 <div class="preview-bar">
   <div class="preview-bar-left">
     <span class="preview-bar-badge">Oficial</span>
-    <span class="preview-bar-title">Acta de Entrega de Dotaci�n � ${nombreTrabajador}</span>
+    <span class="preview-bar-title">Acta de Entrega de Dotación — ${nombreTrabajador}</span>
   </div>
   <div class="preview-bar-actions">
     <button class="btn-print" onclick="window.print()">
-      <span>???</span> Imprimir / Guardar como PDF
+      <span>🖨️</span> Imprimir / Guardar como PDF
     </button>
-    <button class="btn-close" onclick="window.close()">? Cerrar</button>
+    <button class="btn-close" onclick="window.close()">✕ Cerrar</button>
   </div>
 </div>
 
 <div class="hoja">
 
-  <!-- -- Encabezado Corporativo -- -->
+  <!-- ── Encabezado Corporativo ── -->
   <div class="hdr">
     <div class="hdr-logo-box">
       <img src="${logoUrl}" alt="${logoAlt}" onerror="this.style.display='none'">
@@ -5396,29 +5396,29 @@ async function generarActaEntregaPDF(datos) {
     <div class="hdr-centro">
       <div class="hdr-empresa">${empresaNombre}</div>
       <div class="hdr-nit">${empresaNit}</div>
-      <div class="hdr-doc">Acta de Entrega de Dotaci�n y EPP</div>
+      <div class="hdr-doc">Acta de Entrega de Dotación y EPP</div>
       <div class="hdr-subdoc">Conforme a los Arts. 58 (num. 3 y 7), 230, 232 y 233 del CST & Sistema SG-SST</div>
     </div>
     <div class="hdr-doc-tag">
       <div class="tag-row">
-        <span class="tag-lbl">C�digo:</span>
+        <span class="tag-lbl">Código:</span>
         <span class="tag-val">${docCodigo}</span>
       </div>
       <div class="tag-row shaded">
-        <span class="tag-lbl">Versi�n:</span>
+        <span class="tag-lbl">Versión:</span>
         <span class="tag-val">${docVersion}</span>
       </div>
       <div class="tag-row">
-        <span class="tag-lbl">Fecha Versi�n:</span>
+        <span class="tag-lbl">Fecha Versión:</span>
         <span class="tag-val">${docFechaVer}</span>
       </div>
     </div>
   </div>
 
-  <!-- -- 1. Datos del Colaborador -- -->
+  <!-- ── 1. Datos del Colaborador ── -->
   <div class="seccion">
     <div class="sec-header">
-      <div class="sec-titulo">?? 1. Informaci�n del Colaborador Beneficiario</div>
+      <div class="sec-titulo">👤 1. Información del Colaborador Beneficiario</div>
       <span class="sec-badge">Personal Activo</span>
     </div>
     <div class="campos-grid grid-4">
@@ -5427,7 +5427,7 @@ async function generarActaEntregaPDF(datos) {
         <div class="campo-val accent">${nombreTrabajador}</div>
       </div>
       <div class="campo">
-        <div class="campo-lbl">Identificaci�n (C.C.)</div>
+        <div class="campo-lbl">Identificación (C.C.)</div>
         <div class="campo-val">${cedulaTrabajador}</div>
       </div>
       <div class="campo">
@@ -5439,7 +5439,7 @@ async function generarActaEntregaPDF(datos) {
         <div class="campo-val">${ciudadTrabajador}</div>
       </div>
       <div class="campo">
-        <div class="campo-lbl">Marca / �rea</div>
+        <div class="campo-lbl">Marca / Área</div>
         <div class="campo-val">${marcaTrabajador}</div>
       </div>
       <div class="campo">
@@ -5447,17 +5447,17 @@ async function generarActaEntregaPDF(datos) {
         <div class="campo-val">${ingresoTrabajador}</div>
       </div>
       <div class="campo">
-        <div class="campo-lbl">Tel�fono</div>
+        <div class="campo-lbl">Teléfono</div>
         <div class="campo-val">${telefonoTrabajador}</div>
       </div>
     </div>
   </div>
 
-  <!-- -- 2. Datos de la Entrega -- -->
+  <!-- ── 2. Datos de la Entrega ── -->
   <div class="seccion">
     <div class="sec-header">
-      <div class="sec-titulo">?? 2. Datos de la Entrega y Asignaci�n</div>
-      <span class="sec-badge">Dotaci�n Legal</span>
+      <div class="sec-titulo">📦 2. Datos de la Entrega y Asignación</div>
+      <span class="sec-badge">Dotación Legal</span>
     </div>
     <div class="campos-grid grid-3">
       <div class="campo">
@@ -5466,23 +5466,23 @@ async function generarActaEntregaPDF(datos) {
       </div>
       <div class="campo" style="background:#eff6ff;border-color:#bfdbfe;">
         <div class="campo-lbl" style="color:#1d4ed8;font-weight:800;">Entregado Por (Responsable)</div>
-        <div class="campo-val" style="color:#1e40af;font-size:12px;">?? ${entregadoPor}</div>
+        <div class="campo-val" style="color:#1e40af;font-size:12px;">👤 ${entregadoPor}</div>
       </div>
       <div class="campo">
-        <div class="campo-lbl">Motivo de Asignaci�n</div>
-        <div class="campo-val">Dotaci�n Peri�dica Legal (CST Art. 230)</div>
+        <div class="campo-lbl">Motivo de Asignación</div>
+        <div class="campo-val">Dotación Periódica Legal (CST Art. 230)</div>
       </div>
       <div class="campo" style="grid-column:span 3">
-        <div class="campo-lbl">Observaciones / Justificaci�n</div>
+        <div class="campo-lbl">Observaciones / Justificación</div>
         <div class="campo-val" style="font-weight:500;">${obsEntrega}</div>
       </div>
     </div>
   </div>
 
-  <!-- -- 3. Detalle de Prendas Entregadas -- -->
+  <!-- ── 3. Detalle de Prendas Entregadas ── -->
   <div class="seccion">
     <div class="sec-header">
-      <div class="sec-titulo">?? 3. Relaci�n de Prendas y Elementos Entregados</div>
+      <div class="sec-titulo">👔 3. Relación de Prendas y Elementos Entregados</div>
       <span class="sec-badge">${totalUnidades} Unidad(es) en Total</span>
     </div>
 
@@ -5491,7 +5491,7 @@ async function generarActaEntregaPDF(datos) {
         <tr>
           <th style="width:30px;text-align:center;">#</th>
           <th style="width:130px;">Elemento</th>
-          <th>Descripci�n / Referencia</th>
+          <th>Descripción / Referencia</th>
           <th style="width:75px;text-align:center;">Talla</th>
           <th style="width:80px;text-align:center;">Cantidad</th>
           <th style="width:110px;text-align:center;">Estado</th>
@@ -5508,7 +5508,7 @@ async function generarActaEntregaPDF(datos) {
             <td style="color:#334155;">${it.descripcion}</td>
             <td style="text-align:center;"><span class="badge-talla">${it.talla}</span></td>
             <td style="text-align:center;"><span class="badge-cant">${it.cantidad} und</span></td>
-            <td style="text-align:center;"><span class="badge-estado">? ${it.estado}</span></td>
+            <td style="text-align:center;"><span class="badge-estado">✅ ${it.estado}</span></td>
           </tr>
         `).join('') : `
           <tr>
@@ -5519,7 +5519,7 @@ async function generarActaEntregaPDF(datos) {
       <tfoot>
         <tr>
           <td colspan="4" style="text-align:right;text-transform:uppercase;letter-spacing:.6px;font-size:9px;">
-            Total de Elementos de Dotaci�n Entregados:
+            Total de Elementos de Dotación Entregados:
           </td>
           <td style="text-align:center;">
             <span class="badge-cant" style="font-size:12px;background:#22c55e;color:#fff;border-color:#16a34a;">
@@ -5534,44 +5534,44 @@ async function generarActaEntregaPDF(datos) {
     </table>
   </div>
 
-  <!-- -- 4. Compromiso Legal CST y SG-SST -- -->
+  <!-- ── 4. Compromiso Legal CST y SG-SST ── -->
   <div class="seccion">
     <div class="clausula-box">
       <p>
-        <strong>DECLARACI�N DE RECIBIDO E INSTRUCCIONES:</strong> Expresamente declaro que he recibido a mi entera satisfacci�n, en perfecto estado de conservaci�n, higiene y confecci�n, y en mi talla adecuada, los elementos de calzado, vestido de labor y/o elementos de protecci�n personal (EPP) asignados al cargo que desempe�o, descritos en la presente acta. As� mismo, <strong>declaro haber recibido las instrucciones necesarias y acordes al uso, cuidado y mantenimiento, as� como las caracter�sticas de prevenci�n</strong> de los elementos entregados.
+        <strong>DECLARACIÓN DE RECIBIDO E INSTRUCCIONES:</strong> Expresamente declaro que he recibido a mi entera satisfacción, en perfecto estado de conservación, higiene y confección, y en mi talla adecuada, los elementos de calzado, vestido de labor y/o elementos de protección personal (EPP) asignados al cargo que desempeño, descritos en la presente acta. Así mismo, <strong>declaro haber recibido las instrucciones necesarias y acordes al uso, cuidado y mantenimiento, así como las características de prevención</strong> de los elementos entregados.
       </p>
       <p>
-        <strong>OBLIGACIONES LEGALES Y SG-SST (ART. 58 CST NUM. 3 Y 7 / ARTS. 230, 232 Y 233):</strong> De conformidad con el <strong>Art. 58 del C�digo Sustantivo del Trabajo (numerales 3� y 7�)</strong> �obligaci�n especial del trabajador de observar con suma diligencia las instrucciones y �rdenes preventivas de accidentes o enfermedades laborales y acatar las medidas preventivas higi�nicas�, los <strong>Art�culos 230, 232 y 233 del CST</strong> y las normas del <strong>SG-SST (Decreto 1072 de 2015)</strong>, el trabajador se compromete formalmente a: <strong>1)</strong> Destinar la dotaci�n y EPP de manera <em>exclusiva y obligatoria</em> al desempe�o de sus funciones durante la jornada de trabajo; <strong>2)</strong> Velar por su adecuado uso, cuidado, limpieza y mantenimiento; <strong>3)</strong> Abstenerse de ceder, transferir o comercializar estos elementos. El no uso de la dotaci�n suministrada exime al empleador de las sanciones de ley y constituye falta a sus obligaciones laborales.
+        <strong>OBLIGACIONES LEGALES Y SG-SST (ART. 58 CST NUM. 3 Y 7 / ARTS. 230, 232 Y 233):</strong> De conformidad con el <strong>Art. 58 del Código Sustantivo del Trabajo (numerales 3° y 7°)</strong> —obligación especial del trabajador de observar con suma diligencia las instrucciones y órdenes preventivas de accidentes o enfermedades laborales y acatar las medidas preventivas higiénicas—, los <strong>Artículos 230, 232 y 233 del CST</strong> y las normas del <strong>SG-SST (Decreto 1072 de 2015)</strong>, el trabajador se compromete formalmente a: <strong>1)</strong> Destinar la dotación y EPP de manera <em>exclusiva y obligatoria</em> al desempeño de sus funciones durante la jornada de trabajo; <strong>2)</strong> Velar por su adecuado uso, cuidado, limpieza y mantenimiento; <strong>3)</strong> Abstenerse de ceder, transferir o comercializar estos elementos. El no uso de la dotación suministrada exime al empleador de las sanciones de ley y constituye falta a sus obligaciones laborales.
       </p>
     </div>
   </div>
 
-  <!-- -- 5. Firma de Recibido del Trabajador -- -->
+  <!-- ── 5. Firma de Recibido del Trabajador ── -->
   <div class="seccion">
     <div class="firmas-container">
       <div class="firma-card">
-        <div class="firma-card-header">?? Firma del Trabajador / Colaborador (Recib� Conforme)</div>
+        <div class="firma-card-header">✍️ Firma del Trabajador / Colaborador (Recibí Conforme)</div>
         <div class="firma-card-body">
           <div class="firma-espacio"></div>
           <div>
             <div class="firma-linea"></div>
             <div class="firma-nombre-tit">${nombreTrabajador}</div>
-            <div class="firma-subtit">C.C. ${cedulaTrabajador} &nbsp;�&nbsp; ${cargoTrabajador}</div>
-            <div class="firma-subtit" style="margin-top:4px;color:#64748b;font-size:8.5px;">Fecha de recibido: ${fechaRaw} &nbsp;�&nbsp; Dotaci�n entregada por: <strong>${entregadoPor}</strong></div>
+            <div class="firma-subtit">C.C. ${cedulaTrabajador} &nbsp;·&nbsp; ${cargoTrabajador}</div>
+            <div class="firma-subtit" style="margin-top:4px;color:#64748b;font-size:8.5px;">Fecha de recibido: ${fechaRaw} &nbsp;·&nbsp; Dotación entregada por: <strong>${entregadoPor}</strong></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- -- Pie de Documento -- -->
+  <!-- ── Pie de Documento ── -->
   <div class="doc-pie">
     <div style="display:flex;align-items:center;gap:8px;">
       <img class="doc-pie-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
-      <span>${empresaNombre} &nbsp;�&nbsp; ${empresaNit} &nbsp;�&nbsp; GH Pro</span>
+      <span>${empresaNombre} &nbsp;·&nbsp; ${empresaNit} &nbsp;·&nbsp; GH Pro</span>
     </div>
     <div style="text-align:right;">
-      <span>C�digo: ${docCodigo} (v.${docVersion}) &nbsp;�&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
+      <span>Código: ${docCodigo} (v.${docVersion}) &nbsp;·&nbsp; Impreso: ${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span>
     </div>
   </div>
 
@@ -5594,17 +5594,17 @@ async function generarActaEntregaPDF(datos) {
   win.document.close();
 }
 
-// -- Funciones auxiliares para reimpresi�n de actas -------------
+// ── Funciones auxiliares para reimpresión de actas ─────────────
 async function imprimirActaEntregaGrupo(grupoId) {
   const grupos = window._gruposEntregasCache || agruparEntregas(Cache.entregas || []);
   const grupo = grupos.find(g => g.grupoId === grupoId);
-  if (!grupo) return toast('No se encontr� la informaci�n de la entrega', 'error');
+  if (!grupo) return toast('No se encontró la información de la entrega', 'error');
 
   await generarActaEntregaPDF({
     trabajadorId: grupo.trabajador_id,
     trabajadorNombre: grupo.trabajador_nombre,
     fecha: grupo.fecha,
-    entregadoPor: grupo.entregado_por === '�' ? '' : grupo.entregado_por,
+    entregadoPor: grupo.entregado_por === '—' ? '' : grupo.entregado_por,
     obs: grupo.obs || '',
     items: grupo.items.map(it => ({
       referencia: it.nombreCorto || it.articulo_nombre,
@@ -5624,7 +5624,7 @@ async function imprimirActaEntregaIndividual(entregaId) {
   }
 
   const entrega = (Cache.entregas || []).find(e => e.id === entregaId);
-  if (!entrega) return toast('No se encontr� el registro de la entrega', 'error');
+  if (!entrega) return toast('No se encontró el registro de la entrega', 'error');
 
   await generarActaEntregaPDF({
     trabajadorId: entrega.trabajador_id,
@@ -5635,21 +5635,22 @@ async function imprimirActaEntregaIndividual(entregaId) {
     items: [{
       referencia: entrega.articulo_nombre,
       articulo_nombre: entrega.articulo_nombre,
-      talla: entrega.talla || '�',
+      talla: entrega.talla || '—',
       cantidad: entrega.cantidad || 1
     }]
   });
 }
 
 function imprimirActaDesdeEdicion() {
-  if (!window._grupoEnEdicion) return toast('No hay entrega seleccionada en edici�n', 'warning');
+  if (!window._grupoEnEdicion) return toast('No hay entrega seleccionada en edición', 'warning');
   imprimirActaEntregaGrupo(window._grupoEnEdicion.grupoId);
 }
 
 
-// -------------------------------------------
-// VISITAS � Registro y control de visitantes
-// -------------------------------------------
+
+// ═══════════════════════════════════════════
+// VISITAS — Registro y control de visitantes
+// ═══════════════════════════════════════════
 async function renderVisitas() {
   showLoading(true);
   try {
@@ -5658,7 +5659,7 @@ async function renderVisitas() {
     if (elD && !elD.value) {
       const fHoy = today();
       elD.value = fHoy;
-      elH.value = fHoy;
+      if (elH) elH.value = fHoy;
     }
     await renderTablaVisitas();
     await _actualizarStatsVisitas();
@@ -5670,21 +5671,16 @@ async function renderVisitas() {
 async function _actualizarStatsVisitas() {
   const cont = document.getElementById('visitasStats');
   if (!cont) return;
-  const fecha = document.getElementById('visitasFiltroDesde')?.value || today();
+  const fecha = document.getElementById('visitasFiltroDesde') ? document.getElementById('visitasFiltroDesde').value || today() : today();
   const todas = await Visitas.getByFecha(fecha);
-  const activas = todas.filter(v => v.estado === 'activo');
-  const salidas = todas.filter(v => v.estado === 'salido');
+  const activas = todas.filter(function(v) { return v.estado === 'activo'; });
+  const salidas = todas.filter(function(v) { return v.estado === 'salido'; });
   const stats = [
-    { icon: '?????', label: 'Total Hoy', value: todas.length, color: 'var(--accent)' },
-    { icon: '??', label: 'Dentro', value: activas.length, color: 'var(--success)' },
-    { icon: '??', label: 'Salidos', value: salidas.length, color: 'var(--danger)' },
+    { icon: '&#x1F9D1;&#x200D;&#x1F4BC;', label: 'Total Hoy', value: todas.length, color: 'var(--accent)' },
+    { icon: '&#x1F7E2;', label: 'Dentro', value: activas.length, color: 'var(--success)' },
+    { icon: '&#x1F534;', label: 'Salidos', value: salidas.length, color: 'var(--danger)' },
   ];
-  cont.innerHTML = stats.map(s => `
-    <div class="stat-card" style="--card-color:${s.color}">
-      <div class="stat-icon">${s.icon}</div>
-      <div class="stat-value">${s.value}</div>
-      <div class="stat-label">${s.label}</div>
-    </div>`).join('');
+  cont.innerHTML = stats.map(function(s) { return '<div class="stat-card" style="--card-color:' + s.color + '"><div class="stat-icon">' + s.icon + '</div><div class="stat-value">' + s.value + '</div><div class="stat-label">' + s.label + '</div></div>'; }).join('');
   const badge = document.getElementById('visitasBadge');
   if (badge) {
     if (activas.length > 0) {
@@ -5697,10 +5693,14 @@ async function _actualizarStatsVisitas() {
 }
 
 async function renderTablaVisitas() {
-  const desde = document.getElementById('visitasFiltroDesde')?.value || '';
-  const hasta = document.getElementById('visitasFiltroHasta')?.value || '';
-  const q = (document.getElementById('visitasSearch')?.value || '').trim();
-  const fEstado = document.getElementById('visitasFiltroEstado')?.value || '';
+  const elDesde  = document.getElementById('visitasFiltroDesde');
+  const elHasta  = document.getElementById('visitasFiltroHasta');
+  const elSearch = document.getElementById('visitasSearch');
+  const elEstado = document.getElementById('visitasFiltroEstado');
+  const desde  = elDesde  ? elDesde.value  : '';
+  const hasta  = elHasta  ? elHasta.value  : '';
+  const q      = elSearch ? elSearch.value.trim() : '';
+  const fEstado = elEstado ? elEstado.value : '';
   const tbody = document.getElementById('visitasTbody');
   const empty = document.getElementById('visitasEmpty');
   if (!tbody) return;
@@ -5714,12 +5714,12 @@ async function renderTablaVisitas() {
     todas = await Visitas.getAll();
   }
 
-  const filtrados = todas.filter(v => {
+  const filtrados = todas.filter(function(v) {
     const txt = [
       v.nombre_completo || '', v.cedula || '', v.empresa || '',
       v.visita_a_nombre || '', v.telefono || ''
     ].join(' ').toLowerCase();
-    const coincideTexto = !q || txt.includes(q.toLowerCase());
+    const coincideTexto = !q || txt.indexOf(q.toLowerCase()) >= 0;
     const coincideEstado = !fEstado || v.estado === fEstado;
     return coincideTexto && coincideEstado;
   });
@@ -5727,34 +5727,36 @@ async function renderTablaVisitas() {
   if (!filtrados.length) {
     tbody.innerHTML = '';
     if (empty) {
-      empty.querySelector('.empty-state-text').textContent =
-        q ? `Sin resultados para "${q}"` : 'Sin visitas registradas para este rango';
+      const txt = empty.querySelector('.empty-state-text');
+      if (txt) txt.textContent = q ? 'Sin resultados para "' + q + '"' : 'Sin visitas registradas para este rango';
       empty.style.display = '';
     }
     return;
   }
   if (empty) empty.style.display = 'none';
-  tbody.innerHTML = filtrados.map(v => {
-    const estadoLabel = v.estado === 'activo' ? '?? Dentro' : '?? Salido';
+  tbody.innerHTML = filtrados.map(function(v) {
+    const estadoLabel = v.estado === 'activo' ? 'Dentro' : 'Salido';
     const estadoClass = v.estado === 'activo' ? 'rec-tipo entrada' : 'rec-tipo salida';
     const btnAccion = v.estado === 'activo'
-      ? `<button class="btn btn-secondary btn-sm" onclick="registrarSalidaVisitaApp('${v.id}')" title="Registrar salida">?? Salida</button>`
-      : '<span style="color:var(--text-muted);font-size:12px">�</span>';
-    return `<tr>
-      <td style="font-size:12px">${v.fecha || '�'}</td>
-      <td><strong>${(v.hora || '�').slice(0,5)}</strong></td>
-      <td>${v.nombre_completo || '�'}</td>
-      <td class="hide-mobile" style="font-variant-numeric:tabular-nums">${v.cedula || '�'}</td>
-      <td class="hide-mobile">${v.empresa || '�'}</td>
-      <td>${v.visita_a_nombre || '�'}</td>
-      <td class="hide-mobile">${v.telefono || '�'}</td>
-      <td><span class="${estadoClass}" style="font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700">${estadoLabel}</span></td>
-      <td class="hide-mobile">${(v.hora_salida || '�').slice(0,5)}</td>
-      <td style="display:flex;gap:4px;align-items:center">
-        ${btnAccion}
-        <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarVisitaApp('${v.id}')" title="Eliminar">???</button>
-      </td>
-    </tr>`;
+      ? '<button class="btn btn-secondary btn-sm" onclick="registrarSalidaVisitaApp(\'' + v.id + '\')" title="Registrar salida">Salida</button>'
+      : '<span style="color:var(--text-muted);font-size:12px">&#8212;</span>';
+    const hora = (v.hora || '').slice(0, 5) || '&#8212;';
+    const horaSalida = (v.hora_salida || '').slice(0, 5) || '&#8212;';
+    return '<tr>'
+      + '<td style="font-size:12px">' + (v.fecha || '&#8212;') + '</td>'
+      + '<td><strong>' + hora + '</strong></td>'
+      + '<td>' + (v.nombre_completo || '&#8212;') + '</td>'
+      + '<td class="hide-mobile" style="font-variant-numeric:tabular-nums">' + (v.cedula || '&#8212;') + '</td>'
+      + '<td class="hide-mobile">' + (v.empresa || '&#8212;') + '</td>'
+      + '<td>' + (v.visita_a_nombre || '&#8212;') + '</td>'
+      + '<td class="hide-mobile">' + (v.telefono || '&#8212;') + '</td>'
+      + '<td><span class="' + estadoClass + '" style="font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700">' + estadoLabel + '</span></td>'
+      + '<td class="hide-mobile">' + horaSalida + '</td>'
+      + '<td style="display:flex;gap:4px;align-items:center">'
+        + btnAccion
+        + ' <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarVisitaApp(\'' + v.id + '\')" title="Eliminar">&#x1F5D1;</button>'
+      + '</td>'
+      + '</tr>';
   }).join('');
 }
 
@@ -5784,7 +5786,7 @@ function setRangoVisitasRapido(rango) {
 }
 
 async function registrarSalidaVisitaApp(id) {
-  if (!confirm('�Registrar la salida de este visitante?')) return;
+  if (!confirm('Registrar la salida de este visitante?')) return;
   showLoading(true);
   const ok = await Visitas.registrarSalida(id);
   showLoading(false);
@@ -5795,7 +5797,7 @@ async function registrarSalidaVisitaApp(id) {
 }
 
 async function eliminarVisitaApp(id) {
-  if (!confirm('�Eliminar este registro de visita?')) return;
+  if (!confirm('Eliminar este registro de visita?')) return;
   showLoading(true);
   const ok = await Visitas.delete(id);
   showLoading(false);
@@ -5810,8 +5812,8 @@ async function abrirModalVisitaApp() {
   if (sel && sel.options.length <= 1) {
     const trabajadores = await Trabajadores.getAll();
     sel.innerHTML = '<option value="">Seleccione un trabajador...</option>';
-    trabajadores.filter(t => t.estado === 'activo').forEach(t => {
-      const txt = t.nombre + ' � ' + (t.cedula || '');
+    trabajadores.filter(function(t) { return t.estado === 'activo'; }).forEach(function(t) {
+      const txt = t.nombre + ' — ' + (t.cedula || '');
       const opt = document.createElement('option');
       opt.value = t.id + '|' + t.nombre;
       opt.textContent = txt + (t.cargo ? ' (' + t.cargo + ')' : '');
@@ -5825,7 +5827,8 @@ async function abrirModalVisitaApp() {
 function cerrarModalVisitaApp() {
   document.getElementById('modalVisitaApp').classList.remove('open');
   document.body.style.overflow = '';
-  ['visAppCedula','visAppNombre','visAppEmpresa','visAppEps','visAppArl','visAppTelefono','visAppContactoNombre','visAppContactoEmergencia'].forEach(id => {
+  ['visAppCedula','visAppNombre','visAppEmpresa','visAppEps','visAppArl',
+   'visAppTelefono','visAppContactoNombre','visAppContactoEmergencia'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -5834,19 +5837,19 @@ function cerrarModalVisitaApp() {
 }
 
 async function registrarVisitaApp() {
-  const cedula   = document.getElementById('visAppCedula').value.trim();
-  const nombre   = document.getElementById('visAppNombre').value.trim();
-  const empresa  = document.getElementById('visAppEmpresa').value.trim();
-  const aQuien   = document.getElementById('visAppAQuien').value;
-  const eps      = document.getElementById('visAppEps').value.trim();
-  const arl      = document.getElementById('visAppArl').value.trim();
-  const telefono = document.getElementById('visAppTelefono').value.trim();
+  const cedula    = document.getElementById('visAppCedula').value.trim();
+  const nombre    = document.getElementById('visAppNombre').value.trim();
+  const empresa   = document.getElementById('visAppEmpresa').value.trim();
+  const aQuien    = document.getElementById('visAppAQuien').value;
+  const eps       = document.getElementById('visAppEps').value.trim();
+  const arl       = document.getElementById('visAppArl').value.trim();
+  const telefono  = document.getElementById('visAppTelefono').value.trim();
   const contactoNombre     = document.getElementById('visAppContactoNombre').value.trim();
   const contactoEmergencia = document.getElementById('visAppContactoEmergencia').value.trim();
 
-  if (!cedula) return toast('Ingresa la c�dula', 'warning');
+  if (!cedula) return toast('Ingresa la cedula', 'warning');
   if (!nombre) return toast('Ingresa el nombre completo', 'warning');
-  if (!aQuien) return toast('Selecciona a qui�n visita', 'warning');
+  if (!aQuien) return toast('Selecciona a quien visita', 'warning');
 
   const partes = aQuien.split('|');
   const visitaAId = partes[0];
@@ -5854,15 +5857,18 @@ async function registrarVisitaApp() {
 
   showLoading(true);
   const row = {
-    cedula, nombre_completo: nombre,
+    cedula: cedula,
+    nombre_completo: nombre,
     empresa: empresa || null,
     visita_a_id: visitaAId,
     visita_a_nombre: visitaANombre,
-    eps: eps || null, arl: arl || null,
+    eps: eps || null,
+    arl: arl || null,
     telefono: telefono || null,
     contacto_nombre: contactoNombre || null,
     contacto_emergencia: contactoEmergencia || null,
-    fecha: today(), hora: horaActual(),
+    fecha: today(),
+    hora: horaActual(),
     estado: 'activo',
   };
   const result = await Visitas.insert(row);
@@ -5876,24 +5882,24 @@ async function registrarVisitaApp() {
 
 function exportarVisitas() {
   const rows = [];
-  document.querySelectorAll('#visitasTbody tr').forEach(tr => {
+  document.querySelectorAll('#visitasTbody tr').forEach(function(tr) {
     const tds = tr.querySelectorAll('td');
     rows.push({
-      Fecha: tds[0]?.textContent?.trim() || '',
-      Hora: tds[1]?.textContent?.trim() || '',
-      Visitante: tds[2]?.textContent?.trim() || '',
-      Cedula: tds[3]?.textContent?.trim() || '',
-      Empresa: tds[4]?.textContent?.trim() || '',
-      'Visita a': tds[5]?.textContent?.trim() || '',
-      Telefono: tds[6]?.textContent?.trim() || '',
-      Estado: tds[7]?.textContent?.trim() || '',
-      'Hora Salida': tds[8]?.textContent?.trim() || '',
+      Fecha:          tds[0] ? tds[0].textContent.trim() : '',
+      Hora:           tds[1] ? tds[1].textContent.trim() : '',
+      Visitante:      tds[2] ? tds[2].textContent.trim() : '',
+      Cedula:         tds[3] ? tds[3].textContent.trim() : '',
+      Empresa:        tds[4] ? tds[4].textContent.trim() : '',
+      'Visita a':     tds[5] ? tds[5].textContent.trim() : '',
+      Telefono:       tds[6] ? tds[6].textContent.trim() : '',
+      Estado:         tds[7] ? tds[7].textContent.trim() : '',
+      'Hora Salida':  tds[8] ? tds[8].textContent.trim() : '',
     });
   });
   if (!rows.length) return toast('No hay datos para exportar', 'warning');
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Visitas');
-  XLSX.writeFile(wb, `visitas_${today()}.xlsx`);
+  XLSX.writeFile(wb, 'visitas_' + today() + '.xlsx');
   toast('Exportado correctamente', 'success');
 }
