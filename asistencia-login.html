@@ -236,6 +236,39 @@
     }
     .vis-input::placeholder { color:var(--muted); }
     .vis-select option { background:#0d1520; }
+
+    /* Buscador de trabajador */
+    .vis-search-wrap { position:relative; }
+    .vis-search-wrap .vis-input { padding-right: 36px; }
+    .vis-search-wrap .vis-clear {
+      position:absolute; right:10px; top:50%; transform:translateY(-50%);
+      background:none; border:none; color:var(--muted); font-size:18px;
+      cursor:pointer; padding:4px; line-height:1; display:none;
+    }
+    .vis-search-wrap .vis-clear.show { display:block; }
+    .vis-dropdown {
+      position:absolute; left:0; right:0; top:calc(100% + 4px);
+      background:#0d1520; border:1px solid var(--border);
+      border-radius:var(--radius-sm); max-height:200px; overflow-y:auto;
+      z-index:600; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+      display:none;
+    }
+    .vis-dropdown.open { display:block; }
+    .vis-dropdown-item {
+      padding:11px 14px; cursor:pointer; font-size:14px; color:var(--text);
+      border-bottom:1px solid rgba(255,255,255,0.05);
+      transition:background 0.15s;
+    }
+    .vis-dropdown-item:last-child { border-bottom:none; }
+    .vis-dropdown-item:hover, .vis-dropdown-item.selected { background:rgba(58,130,200,0.18); color:#7ab4e8; }
+    .vis-dropdown-empty { padding:12px 14px; color:var(--muted); font-size:13px; text-align:center; }
+    .vis-selected-chip {
+      display:none; align-items:center; gap:8px; padding:9px 12px;
+      background:rgba(58,130,200,0.12); border:1px solid rgba(58,130,200,0.3);
+      border-radius:var(--radius-sm); font-size:13px; font-weight:600; color:#7ab4e8;
+    }
+    .vis-selected-chip.show { display:flex; }
+    .vis-chip-clear { background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; margin-left:auto; padding:0 2px; }
     .vis-row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     .vis-btn-submit {
       width:100%; padding:15px; border-radius:var(--radius-sm);
@@ -364,9 +397,23 @@
         </div>
         <div>
           <label class="vis-label">A quién visita *</label>
-          <select class="vis-select" id="visAQuien">
-            <option value="">Seleccione un trabajador...</option>
-          </select>
+          <!-- Chip de selección (visible cuando ya eligió) -->
+          <div class="vis-selected-chip" id="visChip">
+            <span id="visChipText"></span>
+            <button class="vis-chip-clear" onclick="limpiarSeleccionVis()" title="Cambiar">&#x2715;</button>
+          </div>
+          <!-- Buscador (visible cuando no ha elegido aún) -->
+          <div class="vis-search-wrap" id="visSearchWrap">
+            <input type="text" class="vis-input" id="visBuscador"
+              placeholder="Escribe nombre del trabajador..."
+              autocomplete="off"
+              oninput="filtrarVis(this.value)"
+              onfocus="mostrarDropdownVis()"
+            >
+            <button class="vis-clear" id="visClearBtn" onclick="limpiarBuscadorVis()">&#x2715;</button>
+            <div class="vis-dropdown" id="visDropdown"></div>
+          </div>
+          <input type="hidden" id="visAQuien">
         </div>
         <div class="vis-row2">
           <div>
@@ -1059,6 +1106,7 @@ function abrirVisModal() {
   document.getElementById('visSuccessWrap').style.display = 'none';
   var btn = document.getElementById('visBtnEnviar');
   if (btn) { btn.disabled = false; btn.textContent = '\u2705 Registrar Ingreso'; }
+  // Cargar trabajadores en background (solo nombre)
   cargarTrabajadoresVis();
 }
 
@@ -1067,41 +1115,88 @@ function cerrarVisModal() {
   setTimeout(function() {
     var ids = ['visCedula','visNombre','visEmpresa','visEps','visArl','visTelefono','visContactoNombre','visContactoEmergencia'];
     ids.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
-    var sel = document.getElementById('visAQuien');
-    if (sel) sel.value = '';
+    // Limpiar buscador de trabajador
+    document.getElementById('visAQuien').value = '';
+    document.getElementById('visChip').classList.remove('show');
+    document.getElementById('visSearchWrap').style.display = '';
+    document.getElementById('visBuscador').value = '';
+    var clearBtn = document.getElementById('visClearBtn');
+    if (clearBtn) clearBtn.classList.remove('show');
+    var dd = document.getElementById('visDropdown');
+    if (dd) dd.classList.remove('open');
   }, 300);
 }
 
 async function cargarTrabajadoresVis() {
-  var sel = document.getElementById('visAQuien');
-  if (!sel) return;
-  if (visTrabajadoresLoaded && visTrabajadores.length) {
-    poblarSelectVis();
-    return;
-  }
-  sel.innerHTML = '<option value="">Cargando trabajadores...</option>';
+  if (visTrabajadoresLoaded && visTrabajadores.length) return;
   try {
-    var res = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').eq('estado','activo').order('nombre');
+    var res = await sb.from('trabajadores').select('id,nombre').eq('estado','activo').order('nombre');
     if (res.error) throw res.error;
     visTrabajadores = res.data || [];
     visTrabajadoresLoaded = true;
-    poblarSelectVis();
   } catch(e) {
-    sel.innerHTML = '<option value="">Error al cargar — reintente</option>';
+    toast('Error al cargar trabajadores', 'error');
   }
 }
 
-function poblarSelectVis() {
-  var sel = document.getElementById('visAQuien');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Seleccione un trabajador...</option>';
-  visTrabajadores.forEach(function(t) {
-    var opt = document.createElement('option');
-    opt.value = t.id + '|' + t.nombre;
-    opt.textContent = t.nombre + (t.cedula ? ' — ' + t.cedula : '') + (t.cargo ? ' (' + t.cargo + ')' : '');
-    sel.appendChild(opt);
-  });
+function filtrarVis(q) {
+  var clearBtn = document.getElementById('visClearBtn');
+  if (clearBtn) clearBtn.classList.toggle('show', q.length > 0);
+  mostrarDropdownVis(q);
 }
+
+function mostrarDropdownVis(q) {
+  var dd = document.getElementById('visDropdown');
+  if (!dd) return;
+  q = (q !== undefined ? q : (document.getElementById('visBuscador') || {}).value || '').trim().toLowerCase();
+
+  var lista = visTrabajadores.filter(function(t) {
+    return !q || t.nombre.toLowerCase().indexOf(q) >= 0;
+  }).slice(0, 50); // máximo 50 resultados
+
+  if (!lista.length) {
+    dd.innerHTML = '<div class="vis-dropdown-empty">' + (q ? 'Sin resultados para "' + q + '"' : 'Escribe para buscar...') + '</div>';
+  } else {
+    dd.innerHTML = lista.map(function(t) {
+      return '<div class="vis-dropdown-item" onclick="seleccionarTrabajadorVis(\'' + t.id + '\',\'' + t.nombre.replace(/'/g, "\\'") + '\')">' + t.nombre + '</div>';
+    }).join('');
+  }
+  dd.classList.add('open');
+}
+
+function seleccionarTrabajadorVis(id, nombre) {
+  document.getElementById('visAQuien').value = id + '|' + nombre;
+  document.getElementById('visChipText').textContent = nombre;
+  document.getElementById('visChip').classList.add('show');
+  document.getElementById('visSearchWrap').style.display = 'none';
+  document.getElementById('visDropdown').classList.remove('open');
+}
+
+function limpiarSeleccionVis() {
+  document.getElementById('visAQuien').value = '';
+  document.getElementById('visChip').classList.remove('show');
+  document.getElementById('visSearchWrap').style.display = '';
+  document.getElementById('visBuscador').value = '';
+  var clearBtn = document.getElementById('visClearBtn');
+  if (clearBtn) clearBtn.classList.remove('show');
+  setTimeout(function() { document.getElementById('visBuscador').focus(); }, 50);
+}
+
+function limpiarBuscadorVis() {
+  document.getElementById('visBuscador').value = '';
+  document.getElementById('visClearBtn').classList.remove('show');
+  document.getElementById('visDropdown').classList.remove('open');
+  document.getElementById('visBuscador').focus();
+}
+
+// Cerrar dropdown al hacer clic fuera
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('visSearchWrap');
+  var dd = document.getElementById('visDropdown');
+  if (wrap && dd && !wrap.contains(e.target)) {
+    dd.classList.remove('open');
+  }
+});
 
 function horaBogotaVis() {
   return new Intl.DateTimeFormat('en-GB', {
