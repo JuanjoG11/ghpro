@@ -183,6 +183,73 @@
     .toast.info    { border-left: 3px solid var(--accent); }
     @keyframes toastIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
 
+    /* ── Botón Visitante ─────────────────── */
+    .btn-visitante {
+      width: 100%; max-width: 420px;
+      padding: 15px 20px; border-radius: var(--radius-sm);
+      border: 2px solid rgba(200,124,58,0.5);
+      background: rgba(200,124,58,0.10);
+      color: #e0a050; font-size: 15px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all var(--transition); margin-top: 12px;
+    }
+    .btn-visitante:hover { background: rgba(200,124,58,0.20); border-color: #c87c3a; color: #f0b060; }
+
+    /* ── Modal Visitante ─────────────────── */
+    .vis-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 20px 16px 40px; overflow-y: auto;
+    }
+    .vis-overlay.open { display: flex; }
+    .vis-modal {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); width: 100%; max-width: 440px;
+      padding: 24px 20px; margin-top: 20px;
+      animation: fadeSlide 0.25s ease;
+    }
+    .vis-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .vis-modal-title { font-size: 18px; font-weight: 800; }
+    .vis-modal-title span { color: #e0a050; }
+    .vis-close-btn {
+      background:none; border:none; color:var(--muted); font-size:22px;
+      cursor:pointer; padding:4px 8px; border-radius:8px; line-height:1;
+    }
+    .vis-close-btn:hover { background:rgba(255,255,255,0.08); color:var(--text); }
+    .vis-fields { display:flex; flex-direction:column; gap:12px; }
+    .vis-label { font-size:11px; font-weight:700; color:var(--secondary); text-transform:uppercase; letter-spacing:0.8px; display:block; margin-bottom:4px; }
+    .vis-input, .vis-select {
+      width:100%; padding:12px 14px; border-radius:var(--radius-sm);
+      background:rgba(255,255,255,0.06); border:2px solid var(--border);
+      color:var(--text); font-size:14px; transition:all var(--transition);
+      -webkit-appearance:none;
+    }
+    .vis-input:focus, .vis-select:focus {
+      outline:none; border-color:var(--accent);
+      background:rgba(255,255,255,0.09);
+      box-shadow:0 0 0 3px rgba(58,130,200,0.15);
+    }
+    .vis-input::placeholder { color:var(--muted); }
+    .vis-select option { background:#0d1520; }
+    .vis-row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .vis-btn-submit {
+      width:100%; padding:15px; border-radius:var(--radius-sm);
+      border:none; cursor:pointer; font-size:15px; font-weight:700;
+      background:linear-gradient(135deg,#c87c3a,#e0a050);
+      color:#fff; margin-top:4px;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:all var(--transition);
+    }
+    .vis-btn-submit:disabled { opacity:0.5; cursor:not-allowed; }
+    .vis-success {
+      text-align:center; padding:20px 0;
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+    }
+    .vis-success .icon { font-size:52px; }
+    .vis-success .title { font-size:18px; font-weight:800; color:var(--accent3); }
+    .vis-success .sub { font-size:13px; color:var(--muted); line-height:1.5; }
+
     /* Historial reciente */
     .recientes-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
     .reciente-item {
@@ -259,10 +326,87 @@
       <div id="recientesList"></div>
     </div>
 
+  </div><!-- /card -->
+
+  <!-- Botón Visitante -->
+  <button class="btn-visitante" onclick="abrirVisModal()">
+    &#x1F9D1;&#x200D;&#x1F4BC; ¿Eres visitante? Registra tu ingreso aquí
+  </button>
+
+</div><!-- /container -->
+
+<!-- ═══ MODAL VISITANTE ═══ -->
+<div class="vis-overlay" id="visOverlay">
+  <div class="vis-modal">
+
+    <div class="vis-modal-header">
+      <div class="vis-modal-title">&#x1F9D1;&#x200D;&#x1F4BC; Registro de <span>Visitante</span></div>
+      <button class="vis-close-btn" onclick="cerrarVisModal()">&#x2715;</button>
+    </div>
+
+    <div id="visFormWrap">
+      <div class="vis-fields">
+        <div>
+          <label class="vis-label">Cédula *</label>
+          <input type="tel" class="vis-input" id="visCedula" placeholder="Número de cédula" inputmode="numeric" maxlength="15">
+        </div>
+        <div>
+          <label class="vis-label">Nombre completo *</label>
+          <input type="text" class="vis-input" id="visNombre" placeholder="Nombres y apellidos completos">
+        </div>
+        <div>
+          <label class="vis-label">Empresa de donde viene</label>
+          <input type="text" class="vis-input" id="visEmpresa" placeholder="Empresa u organización">
+        </div>
+        <div>
+          <label class="vis-label">A quién visita *</label>
+          <select class="vis-select" id="visAQuien">
+            <option value="">Seleccione un trabajador...</option>
+          </select>
+        </div>
+        <div class="vis-row2">
+          <div>
+            <label class="vis-label">EPS</label>
+            <input type="text" class="vis-input" id="visEps" placeholder="Ej: Sura, Sanitas...">
+          </div>
+          <div>
+            <label class="vis-label">ARL</label>
+            <input type="text" class="vis-input" id="visArl" placeholder="Ej: Positiva, Sura...">
+          </div>
+        </div>
+        <div>
+          <label class="vis-label">Teléfono</label>
+          <input type="tel" class="vis-input" id="visTelefono" placeholder="Número de contacto" inputmode="tel">
+        </div>
+        <div class="vis-row2">
+          <div>
+            <label class="vis-label">Nombre de contacto</label>
+            <input type="text" class="vis-input" id="visContactoNombre" placeholder="Persona de referencia">
+          </div>
+          <div>
+            <label class="vis-label">Número de emergencia</label>
+            <input type="tel" class="vis-input" id="visContactoEmergencia" placeholder="Teléfono emergencia" inputmode="tel">
+          </div>
+        </div>
+        <button class="vis-btn-submit" id="visBtnEnviar" onclick="registrarVisitante()">
+          &#x2705; Registrar Ingreso
+        </button>
+      </div>
+    </div>
+
+    <div id="visSuccessWrap" style="display:none">
+      <div class="vis-success">
+        <div class="icon">&#x2705;</div>
+        <div class="title">¡Registro exitoso!</div>
+        <div class="sub" id="visSuccessMsg">Tu ingreso ha sido registrado correctamente.</div>
+      </div>
+      <button class="vis-btn-submit" onclick="cerrarVisModal()" style="margin-top:16px">
+        Cerrar
+      </button>
+    </div>
+
   </div>
 </div>
-
-<!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- Supabase SDK -->
@@ -897,6 +1041,132 @@ window.addEventListener('load', async () => {
 
   const input = document.getElementById('cedulaInput');
   if (input) input.focus();
+});
+
+// ═══════════════════════════════════════════════════
+// LÓGICA DE VISITANTES
+// ═══════════════════════════════════════════════════
+var visTrabajadores = [];
+var visTrabajadoresLoaded = false;
+
+function abrirVisModal() {
+  document.getElementById('visOverlay').classList.add('open');
+  document.getElementById('visFormWrap').style.display = '';
+  document.getElementById('visSuccessWrap').style.display = 'none';
+  var btn = document.getElementById('visBtnEnviar');
+  if (btn) { btn.disabled = false; btn.textContent = '\u2705 Registrar Ingreso'; }
+  cargarTrabajadoresVis();
+}
+
+function cerrarVisModal() {
+  document.getElementById('visOverlay').classList.remove('open');
+  setTimeout(function() {
+    var ids = ['visCedula','visNombre','visEmpresa','visEps','visArl','visTelefono','visContactoNombre','visContactoEmergencia'];
+    ids.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    var sel = document.getElementById('visAQuien');
+    if (sel) sel.value = '';
+  }, 300);
+}
+
+async function cargarTrabajadoresVis() {
+  var sel = document.getElementById('visAQuien');
+  if (!sel) return;
+  if (visTrabajadoresLoaded && visTrabajadores.length) {
+    poblarSelectVis();
+    return;
+  }
+  sel.innerHTML = '<option value="">Cargando trabajadores...</option>';
+  try {
+    var res = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').eq('estado','activo').order('nombre');
+    if (res.error) throw res.error;
+    visTrabajadores = res.data || [];
+    visTrabajadoresLoaded = true;
+    poblarSelectVis();
+  } catch(e) {
+    sel.innerHTML = '<option value="">Error al cargar — reintente</option>';
+  }
+}
+
+function poblarSelectVis() {
+  var sel = document.getElementById('visAQuien');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Seleccione un trabajador...</option>';
+  visTrabajadores.forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t.id + '|' + t.nombre;
+    opt.textContent = t.nombre + (t.cedula ? ' — ' + t.cedula : '') + (t.cargo ? ' (' + t.cargo + ')' : '');
+    sel.appendChild(opt);
+  });
+}
+
+function horaBogotaVis() {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Bogota',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).format(new Date());
+}
+
+function fechaBogotaVis() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+}
+
+async function registrarVisitante() {
+  var cedula    = document.getElementById('visCedula').value.trim();
+  var nombre    = document.getElementById('visNombre').value.trim();
+  var empresa   = document.getElementById('visEmpresa').value.trim();
+  var aQuien    = document.getElementById('visAQuien').value;
+  var eps       = document.getElementById('visEps').value.trim();
+  var arl       = document.getElementById('visArl').value.trim();
+  var telefono  = document.getElementById('visTelefono').value.trim();
+  var ctNombre  = document.getElementById('visContactoNombre').value.trim();
+  var ctEmerg   = document.getElementById('visContactoEmergencia').value.trim();
+
+  if (!cedula)  { toast('Ingresa tu cedula', 'warning'); return; }
+  if (!nombre)  { toast('Ingresa tu nombre completo', 'warning'); return; }
+  if (!aQuien)  { toast('Selecciona a quien visitas', 'warning'); return; }
+
+  var partes = aQuien.split('|');
+  var visitaAId = partes[0];
+  var visitaANombre = partes.slice(1).join('|');
+
+  var btn = document.getElementById('visBtnEnviar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  var row = {
+    cedula: cedula,
+    nombre_completo: nombre,
+    empresa: empresa || null,
+    visita_a_id: visitaAId,
+    visita_a_nombre: visitaANombre,
+    eps: eps || null,
+    arl: arl || null,
+    telefono: telefono || null,
+    contacto_nombre: ctNombre || null,
+    contacto_emergencia: ctEmerg || null,
+    fecha: fechaBogotaVis(),
+    hora: horaBogotaVis(),
+    estado: 'activo'
+  };
+
+  try {
+    var res = await sb.from('visitas').insert([row]).select().single();
+    if (res.error) throw res.error;
+    document.getElementById('visFormWrap').style.display = 'none';
+    document.getElementById('visSuccessWrap').style.display = '';
+    document.getElementById('visSuccessMsg').textContent =
+      'Bienvenido ' + nombre + '. Tu ingreso fue registrado a las ' + horaBogotaVis().slice(0,5) + '.';
+    toast('Visitante registrado correctamente', 'success');
+  } catch(e) {
+    toast('Error al registrar: ' + (e.message || 'Intente de nuevo'), 'error', 5000);
+    if (btn) { btn.disabled = false; btn.textContent = '\u2705 Registrar Ingreso'; }
+  }
+}
+
+// Cerrar modal al hacer clic en el fondo
+document.getElementById('visOverlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarVisModal();
 });
 </script>
 </body>
