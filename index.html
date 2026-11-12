@@ -530,7 +530,6 @@
       </div>
       <div class="nav-item" data-page="visitas">
         <span class="nav-icon">🧑‍💼</span> Visitas
-        <span class="nav-badge warning" id="visitasBadge" style="display:none">0</span>
       </div>
     </div>
 
@@ -1368,13 +1367,7 @@
                 placeholder="Buscar visitante, cédula, empresa..."
                 oninput="renderTablaVisitas()">
             </div>
-            <select id="visitasFiltroEstado" onchange="renderTablaVisitas()"
-              style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;
-                     color:var(--text-primary);padding:6px 10px;font-size:12px">
-              <option value="">Todos los estados</option>
-              <option value="activo">Dentro (activos)</option>
-              <option value="salido">Ya salieron</option>
-            </select>
+
           </div>
         </div>
         <div class="card-body" style="padding:0">
@@ -1389,8 +1382,6 @@
                   <th class="hide-mobile">Empresa</th>
                   <th>Visita a</th>
                   <th class="hide-mobile">Teléfono</th>
-                  <th>Estado</th>
-                  <th class="hide-mobile">Salida</th>
                   <th>Acciones</th>
                 </tr>
               </thead>

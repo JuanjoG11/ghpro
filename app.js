@@ -2015,14 +2015,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (_) { /* silencioso */ }
   })();
 
-  // Badge inicial de visitas activas
-  (async () => {
-    try {
-      const activas = await Visitas.getActivas();
-      const badge = document.getElementById('visitasBadge');
-      if (badge) { badge.textContent = activas.length; badge.style.display = activas.length > 0 ? '' : 'none'; }
-    } catch (_) { /* silencioso */ }
-  })();
 });
 
 // ═══════════════════════════════════════════
@@ -5673,34 +5665,19 @@ async function _actualizarStatsVisitas() {
   if (!cont) return;
   const fecha = document.getElementById('visitasFiltroDesde') ? document.getElementById('visitasFiltroDesde').value || today() : today();
   const todas = await Visitas.getByFecha(fecha);
-  const activas = todas.filter(function(v) { return v.estado === 'activo'; });
-  const salidas = todas.filter(function(v) { return v.estado === 'salido'; });
   const stats = [
     { icon: '&#x1F9D1;&#x200D;&#x1F4BC;', label: 'Total Hoy', value: todas.length, color: 'var(--accent)' },
-    { icon: '&#x1F7E2;', label: 'Dentro', value: activas.length, color: 'var(--success)' },
-    { icon: '&#x1F534;', label: 'Salidos', value: salidas.length, color: 'var(--danger)' },
   ];
   cont.innerHTML = stats.map(function(s) { return '<div class="stat-card" style="--card-color:' + s.color + '"><div class="stat-icon">' + s.icon + '</div><div class="stat-value">' + s.value + '</div><div class="stat-label">' + s.label + '</div></div>'; }).join('');
-  const badge = document.getElementById('visitasBadge');
-  if (badge) {
-    if (activas.length > 0) {
-      badge.textContent = activas.length;
-      badge.style.display = '';
-    } else {
-      badge.style.display = 'none';
-    }
-  }
 }
 
 async function renderTablaVisitas() {
   const elDesde  = document.getElementById('visitasFiltroDesde');
   const elHasta  = document.getElementById('visitasFiltroHasta');
   const elSearch = document.getElementById('visitasSearch');
-  const elEstado = document.getElementById('visitasFiltroEstado');
   const desde  = elDesde  ? elDesde.value  : '';
   const hasta  = elHasta  ? elHasta.value  : '';
   const q      = elSearch ? elSearch.value.trim() : '';
-  const fEstado = elEstado ? elEstado.value : '';
   const tbody = document.getElementById('visitasTbody');
   const empty = document.getElementById('visitasEmpty');
   if (!tbody) return;
@@ -5720,8 +5697,7 @@ async function renderTablaVisitas() {
       v.visita_a_nombre || '', v.telefono || ''
     ].join(' ').toLowerCase();
     const coincideTexto = !q || txt.indexOf(q.toLowerCase()) >= 0;
-    const coincideEstado = !fEstado || v.estado === fEstado;
-    return coincideTexto && coincideEstado;
+    return coincideTexto;
   });
 
   if (!filtrados.length) {
@@ -5735,13 +5711,7 @@ async function renderTablaVisitas() {
   }
   if (empty) empty.style.display = 'none';
   tbody.innerHTML = filtrados.map(function(v) {
-    const estadoLabel = v.estado === 'activo' ? 'Dentro' : 'Salido';
-    const estadoClass = v.estado === 'activo' ? 'rec-tipo entrada' : 'rec-tipo salida';
-    const btnAccion = v.estado === 'activo'
-      ? '<button class="btn btn-secondary btn-sm" onclick="registrarSalidaVisitaApp(\'' + v.id + '\')" title="Registrar salida">Salida</button>'
-      : '<span style="color:var(--text-muted);font-size:12px">&#8212;</span>';
     const hora = (v.hora || '').slice(0, 5) || '&#8212;';
-    const horaSalida = (v.hora_salida || '').slice(0, 5) || '&#8212;';
     return '<tr>'
       + '<td style="font-size:12px">' + (v.fecha || '&#8212;') + '</td>'
       + '<td><strong>' + hora + '</strong></td>'
@@ -5750,11 +5720,8 @@ async function renderTablaVisitas() {
       + '<td class="hide-mobile">' + (v.empresa || '&#8212;') + '</td>'
       + '<td>' + (v.visita_a_nombre || '&#8212;') + '</td>'
       + '<td class="hide-mobile">' + (v.telefono || '&#8212;') + '</td>'
-      + '<td><span class="' + estadoClass + '" style="font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700">' + estadoLabel + '</span></td>'
-      + '<td class="hide-mobile">' + horaSalida + '</td>'
       + '<td style="display:flex;gap:4px;align-items:center">'
-        + btnAccion
-        + ' <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarVisitaApp(\'' + v.id + '\')" title="Eliminar">&#x1F5D1;</button>'
+        + '<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarVisitaApp(\'' + v.id + '\')" title="Eliminar">&#x1F5D1;</button>'
       + '</td>'
       + '</tr>';
   }).join('');
@@ -5785,16 +5752,6 @@ function setRangoVisitasRapido(rango) {
   _actualizarStatsVisitas();
 }
 
-async function registrarSalidaVisitaApp(id) {
-  if (!confirm('Registrar la salida de este visitante?')) return;
-  showLoading(true);
-  const ok = await Visitas.registrarSalida(id);
-  showLoading(false);
-  if (!ok) { toast('Error al registrar salida', 'error'); return; }
-  await renderTablaVisitas();
-  await _actualizarStatsVisitas();
-  toast('Salida registrada', 'success');
-}
 
 async function eliminarVisitaApp(id) {
   if (!confirm('Eliminar este registro de visita?')) return;
@@ -5869,7 +5826,6 @@ async function registrarVisitaApp() {
     contacto_emergencia: contactoEmergencia || null,
     fecha: today(),
     hora: horaActual(),
-    estado: 'activo',
   };
   const result = await Visitas.insert(row);
   showLoading(false);

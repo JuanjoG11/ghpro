@@ -18,8 +18,6 @@ create table if not exists visitas (
   contacto_emergencia  text,
   fecha               date not null default current_date,
   hora                text not null,
-  estado              text default 'activo' check (estado in ('activo','salido')),
-  hora_salida         text,
   created_at          timestamptz default now()
 );
 
@@ -32,4 +30,8 @@ create policy "allow_all_visitas" on visitas for all using (true) with check (tr
 -- ── Índices para búsquedas frecuentes ─────────────────────────
 create index if not exists idx_visitas_fecha on visitas(fecha desc);
 create index if not exists idx_visitas_cedula on visitas(cedula);
-create index if not exists idx_visitas_estado on visitas(estado);
+
+-- ── Si ya tienes la tabla creada, ejecuta esto para limpiar columnas viejas ──
+-- alter table visitas drop column if exists estado;
+-- alter table visitas drop column if exists hora_salida;
+-- drop index if exists idx_visitas_estado;
