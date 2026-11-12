@@ -1076,13 +1076,36 @@ window.addEventListener('load', async () => {
   actualizarReloj();
   setInterval(actualizarReloj, 1000);
 
-  // 1. Validar QR antes de mostrar el formulario
+  // 1. Detectar modo=visita (QR exclusivo para visitantes)
+  const urlParams = new URLSearchParams(location.search);
+  const esVisita = urlParams.get('modo') === 'visita';
+
+  if (esVisita) {
+    // Ocultar toda la sección de asistencia de trabajadores
+    const card = document.querySelector('.card');
+    const hora  = document.getElementById('horaDisplay');
+    const fecha = document.getElementById('fechaDisplay');
+    const header = document.querySelector('.header');
+    if (card)   card.style.display   = 'none';
+    if (hora)   hora.style.display   = 'none';
+    if (fecha)  fecha.style.display  = 'none';
+    if (header) {
+      header.querySelector('.header-title').innerHTML = 'Registro de <span>Visitantes</span>';
+      header.querySelector('.header-logo').textContent = '🏢 GH Pro — Visitantes';
+    }
+    // Cargar trabajadores y abrir directo el modal de visitante
+    await cargarTrabajadoresVis();
+    abrirVisModal();
+    return;
+  }
+
+  // 2. Validar QR antes de mostrar el formulario
   revisarQRenURL();
 
-  // 2. No bloqueamos la pantalla al arrancar sin cédula.
+  // 3. No bloqueamos la pantalla al arrancar sin cédula.
   // El bloqueo por cédula se evalúa al momento de registrar.
 
-  // 3. Cargar trabajadores desde Supabase
+  // 4. Cargar trabajadores desde Supabase
   const { data, error: errTrab } = await sb.from('trabajadores').select('id,nombre,cedula,cargo,ciudad').order('nombre');
   if (errTrab || !data) {
     toast('❌ Error al cargar la lista de trabajadores. Verifica tu conexión y recarga la página.', 'error', 0);
@@ -1111,6 +1134,7 @@ function abrirVisModal() {
 }
 
 function cerrarVisModal() {
+  const esVisita = new URLSearchParams(location.search).get('modo') === 'visita';
   document.getElementById('visOverlay').classList.remove('open');
   setTimeout(function() {
     var ids = ['visCedula','visNombre','visEmpresa','visEps','visArl','visTelefono','visContactoNombre','visContactoEmergencia'];
@@ -1124,6 +1148,10 @@ function cerrarVisModal() {
     if (clearBtn) clearBtn.classList.remove('show');
     var dd = document.getElementById('visDropdown');
     if (dd) dd.classList.remove('open');
+    // Si es modo visita, reabrir el modal automáticamente
+    if (esVisita) {
+      setTimeout(function() { abrirVisModal(); }, 400);
+    }
   }, 300);
 }
 
