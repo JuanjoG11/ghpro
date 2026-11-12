@@ -5779,6 +5779,81 @@ async function abrirModalVisitaApp() {
   }
   document.getElementById('modalVisitaApp').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // Adjuntar listener de autocomplete por cédula (una sola vez)
+  const cedulaInput = document.getElementById('visAppCedula');
+  if (cedulaInput && !cedulaInput._autocompleteAttached) {
+    cedulaInput._autocompleteAttached = true;
+    let _acTimer = null;
+    cedulaInput.addEventListener('input', function() {
+      clearTimeout(_acTimer);
+      const val = this.value.trim();
+      if (val.length < 4) {
+        _ocultarSugerenciaVisita();
+        return;
+      }
+      _acTimer = setTimeout(function() { _autocompletarVisitante(val); }, 500);
+    });
+    cedulaInput.addEventListener('blur', function() {
+      // pequeño delay para que el click en la sugerencia pueda ejecutarse
+      setTimeout(_ocultarSugerenciaVisita, 200);
+    });
+  }
+}
+
+function _ocultarSugerenciaVisita() {
+  const hint = document.getElementById('visAppAutoHint');
+  if (hint) hint.style.display = 'none';
+}
+
+async function _autocompletarVisitante(cedula) {
+  const prev = await Visitas.getByCedula(cedula);
+  const hint = document.getElementById('visAppAutoHint');
+  if (!prev || !hint) return;
+
+  hint.style.display = '';
+  hint.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Visitante anterior encontrado: </span>'
+    + '<strong style="color:var(--accent)">' + (prev.nombre_completo || '') + '</strong>'
+    + (prev.empresa ? ' &mdash; ' + prev.empresa : '')
+    + ' <button type="button" class="btn btn-secondary btn-sm" style="padding:2px 10px;font-size:11px;margin-left:8px" '
+    + 'onclick="_aplicarAutocompletarVisita()">Autocompletar</button>';
+
+  // Guardamos los datos para poder aplicarlos
+  hint._data = prev;
+}
+
+function _aplicarAutocompletarVisita() {
+  const hint = document.getElementById('visAppAutoHint');
+  if (!hint || !hint._data) return;
+  const d = hint._data;
+
+  const set = function(id, val) {
+    const el = document.getElementById(id);
+    if (el && val) el.value = val;
+  };
+  set('visAppNombre',              d.nombre_completo);
+  set('visAppEmpresa',             d.empresa);
+  set('visAppEps',                 d.eps);
+  set('visAppArl',                 d.arl);
+  set('visAppTelefono',            d.telefono);
+  set('visAppContactoNombre',      d.contacto_nombre);
+  set('visAppContactoEmergencia',  d.contacto_emergencia);
+
+  // Si el visitante siempre visita a la misma persona, preseleccionar
+  if (d.visita_a_id) {
+    const sel = document.getElementById('visAppAQuien');
+    if (sel) {
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value.startsWith(d.visita_a_id)) {
+          sel.value = sel.options[i].value;
+          break;
+        }
+      }
+    }
+  }
+
+  hint.style.display = 'none';
+  toast('Datos completados desde visita anterior', 'info', 2500);
 }
 
 function cerrarModalVisitaApp() {
@@ -5791,6 +5866,7 @@ function cerrarModalVisitaApp() {
   });
   const sel = document.getElementById('visAppAQuien');
   if (sel) sel.value = '';
+  _ocultarSugerenciaVisita();
 }
 
 async function registrarVisitaApp() {

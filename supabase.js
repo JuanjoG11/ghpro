@@ -1367,6 +1367,19 @@ const Visitas = {
     return data || [];
   },
 
+  async getByCedula(cedula) {
+    const { data, error } = await sb
+      .from('visitas')
+      .select('*')
+      .eq('cedula', cedula.trim())
+      .order('fecha', { ascending: false })
+      .order('hora', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (sbErr(error, 'visitas.getByCedula')) return null;
+    return data || null;
+  },
+
   async insert(row) {
     const { data, error } = await sb
       .from('visitas')
