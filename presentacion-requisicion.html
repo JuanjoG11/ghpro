@@ -1,146 +1,521 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Instrucciones — Portal Requisición Jefes</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #080d14; color: #e8f0fa;
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 24px;
-    }
-    .card {
-      background: rgba(12,18,32,0.98);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px; padding: 40px 44px;
-      max-width: 560px; width: 100%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-    .logo {
-      width: 64px; height: 64px;
-      background: linear-gradient(135deg,#3a82c8,#c87c3a);
-      border-radius: 16px;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 32px; margin-bottom: 20px;
-      box-shadow: 0 6px 24px rgba(58,130,200,0.35);
-    }
-    h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-    h1 span { background: linear-gradient(135deg,#3a82c8,#c87c3a);
-              -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .sub { font-size: 13px; color: #8fa8c8; margin-bottom: 28px; }
-    .qr-box {
-      background: #fff; border-radius: 12px; padding: 16px;
-      display: inline-block; margin-bottom: 20px;
-    }
-    #qrCode { width: 180px; height: 180px; }
-    .url {
-      font-size: 12px; color: #4a6080; word-break: break-all;
-      margin-bottom: 24px;
-    }
-    .steps { text-align: left; margin-bottom: 28px; }
-    .step {
-      display: flex; gap: 12px; align-items: flex-start;
-      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .step:last-child { border-bottom: none; }
-    .step-n {
-      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
-      background: rgba(58,130,200,0.2); border: 1px solid rgba(58,130,200,0.4);
-      color: #7ab4e8; display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700;
-    }
-    .step-text { font-size: 13px; color: #8fa8c8; padding-top: 3px; }
-    .step-text strong { color: #e8f0fa; }
-    .pins {
-      background: rgba(58,130,200,0.08); border: 1px solid rgba(58,130,200,0.2);
-      border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; text-align: left;
-    }
-    .pins h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #4a6080; margin-bottom: 10px; }
-    .pin-row { display: flex; justify-content: space-between; padding: 5px 0;
-               border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
-    .pin-row:last-child { border: none; }
-    .pin-num { font-family: monospace; font-weight: 700; color: #3a82c8; }
-    .footer { font-size: 11px; color: #4a6080; }
-    @media print {
-      body { background: #fff; }
-      .card { border: 1px solid #ddd; box-shadow: none; }
-      h1 span { -webkit-text-fill-color: #3a82c8; }
-      .steps, .pins { background: #f5f8ff; }
-    }
-  </style>
-  <script src="qrcode.min.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Guía — Portal de Solicitudes · TYM / TAT</title>
+<style>
+/* ── Reset & base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #080d14;
+  --surface: #0d1525;
+  --border:  rgba(255,255,255,0.08);
+  --accent:  #3a82c8;
+  --gold:    #c87c3a;
+  --success: #3aaa80;
+  --text:    #e8f0fa;
+  --muted:   #6a85a8;
+  --slide-h: 100svh;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100svh;
+}
+
+/* ── Presentación (slider) ─────────────────────────────────── */
+.slides {
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  position: relative;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(60px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+.slide.exit {
+  opacity: 0;
+  transform: translateX(-60px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+
+/* ── Contenido de cada slide ───────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 40px 44px;
+  max-width: 640px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 24px 24px 0 0;
+}
+
+/* Orbs decorativos */
+.orb {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  filter: blur(70px);
+}
+.orb1 { width: 220px; height: 220px; background: var(--accent); top: -80px; left: -80px; opacity: .07; }
+.orb2 { width: 180px; height: 180px; background: var(--gold);   bottom: -60px; right: -60px; opacity: .06; }
+
+/* Badge de paso */
+.step-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(58,130,200,.12);
+  border: 1px solid rgba(58,130,200,.3);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px; font-weight: 700;
+  color: var(--accent); letter-spacing: .8px; text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.slide-icon {
+  font-size: 48px; margin-bottom: 16px; display: block; text-align: center;
+}
+h2 {
+  font-size: 26px; font-weight: 900; margin-bottom: 8px; text-align: center;
+  line-height: 1.2;
+}
+h2 em { font-style: normal; color: var(--gold); }
+.lead {
+  font-size: 14px; color: var(--muted); text-align: center;
+  margin-bottom: 28px; line-height: 1.6;
+}
+
+/* Aviso importante */
+.aviso {
+  background: rgba(200,124,58,.08);
+  border: 1.5px solid rgba(200,124,58,.35);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-bottom: 24px;
+}
+.aviso-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.aviso-txt  { font-size: 13px; color: #c87c3a; line-height: 1.5; }
+.aviso-txt strong { color: #e0a050; display: block; margin-bottom: 2px; }
+
+/* Lista de items */
+.items { list-style: none; }
+.items li {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px; line-height: 1.5; color: #c8d8e8;
+}
+.items li:last-child { border-bottom: none; }
+.items li .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0; margin-top: 7px;
+}
+.items li strong { color: var(--text); }
+
+/* Chips de motivos */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip {
+  background: rgba(58,130,200,.1);
+  border: 1px solid rgba(58,130,200,.25);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px; color: #9ec8f0;
+}
+.chip.gold {
+  background: rgba(200,124,58,.1);
+  border-color: rgba(200,124,58,.3);
+  color: #e0a050;
+}
+
+/* Bifurcación sí/no */
+.fork {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px;
+}
+.fork-opt {
+  border-radius: 14px; padding: 16px 14px;
+  font-size: 13px; line-height: 1.5;
+}
+.fork-opt.no  { background: rgba(58,130,200,.08); border: 1px solid rgba(58,130,200,.2); }
+.fork-opt.si  { background: rgba(58,170,128,.08); border: 1px solid rgba(58,170,128,.2); }
+.fork-opt .fork-label {
+  font-size: 15px; font-weight: 800; margin-bottom: 6px;
+  display: block;
+}
+.fork-opt.no .fork-label  { color: var(--accent); }
+.fork-opt.si .fork-label  { color: var(--success); }
+.fork-opt p { color: var(--muted); }
+
+/* Recomendaciones */
+.recs { display: flex; flex-direction: column; gap: 10px; }
+.rec {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+}
+.rec-icon { font-size: 20px; flex-shrink: 0; }
+.rec-txt  { font-size: 13px; color: #c8d8e8; line-height: 1.4; }
+
+/* Slide final */
+.final-logo {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--accent), var(--gold));
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; margin: 0 auto 20px;
+  box-shadow: 0 8px 32px rgba(58,130,200,.35);
+}
+.final-title {
+  font-size: 28px; font-weight: 900; text-align: center; margin-bottom: 6px;
+}
+.final-title em { font-style: normal;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.contact-box {
+  background: rgba(58,130,200,.07);
+  border: 1px solid rgba(58,130,200,.2);
+  border-radius: 12px; padding: 14px 20px;
+  text-align: center; margin: 20px 0;
+  font-size: 13px; color: var(--muted); line-height: 1.6;
+}
+.contact-box strong { color: var(--text); font-size: 14px; }
+
+/* ── Controles nav ─────────────────────────────────────────── */
+.nav {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; z-index: 10;
+}
+.nav-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,.07);
+  border: 1px solid var(--border);
+  color: var(--text); font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, transform .15s;
+}
+.nav-btn:hover { background: rgba(255,255,255,.13); transform: scale(1.07); }
+.nav-btn:disabled { opacity: .25; cursor: default; transform: none; }
+
+.dots { display: flex; gap: 6px; align-items: center; }
+.dot-ind {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,.18); cursor: pointer;
+  transition: background .25s, transform .25s;
+}
+.dot-ind.active { background: var(--accent); transform: scale(1.4); }
+
+/* Contador */
+.counter {
+  position: fixed; top: 20px; right: 24px;
+  font-size: 12px; color: var(--muted); font-weight: 600;
+  letter-spacing: .5px;
+}
+
+/* ── Modo impresión / PDF ──────────────────────────────────── */
+@media print {
+  body { background: #fff; color: #111; overflow: visible; height: auto; }
+  .nav, .counter { display: none !important; }
+  .slides { overflow: visible; height: auto; }
+  .slide {
+    position: relative; opacity: 1 !important; pointer-events: all;
+    transform: none !important; padding: 20px 16px;
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .card {
+    border: 1.5px solid #c8d8e8; box-shadow: none;
+    background: #fff; color: #111; border-radius: 14px;
+  }
+  .card::before { background: #3a82c8; }
+  h2, .lead, .aviso-txt, .items li, .rec-txt { color: #111 !important; }
+  .muted { color: #666 !important; }
+  .orb { display: none; }
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .card { padding: 28px 22px; border-radius: 18px; }
+  h2 { font-size: 21px; }
+  .fork { grid-template-columns: 1fr; }
+}
+</style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">📋</div>
-  <h1>Portal de <span>Requisición</span></h1>
-  <div class="sub">TYM / TAT Distribuciones del Eje Cafetero · Gestión Humana</div>
 
-  <div class="qr-box">
-    <div id="qrCode"></div>
-  </div>
-  <div class="url" id="urlText"></div>
+<!-- Contador de slide -->
+<div class="counter" id="counter">1 / 8</div>
 
-  <div class="steps">
-    <div class="step">
-      <div class="step-n">1</div>
-      <div class="step-text">Escanee el QR o abra el enlace en su celular o computador</div>
-    </div>
-    <div class="step">
-      <div class="step-n">2</div>
-      <div class="step-text">Ingrese su <strong>número de cédula</strong> y su <strong>PIN de acceso</strong> (consulte la tabla abajo)</div>
-    </div>
-    <div class="step">
-      <div class="step-n">3</div>
-      <div class="step-text">Complete el formulario en <strong>4 pasos</strong>: cargo y motivo → condiciones → candidato → confirmar</div>
-    </div>
-    <div class="step">
-      <div class="step-n">4</div>
-      <div class="step-text">La requisición llega automáticamente a <strong>Gestión Humana</strong> para su aprobación</div>
+<div class="slides" id="slidesContainer">
+
+  <!-- ── SLIDE 0: Portada ───────────────────────────────────── -->
+  <div class="slide active" data-slide="0">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="final-logo">📋</div>
+      <div class="final-title"><em>Guía para solicitar</em><br>personal</div>
+      <p class="lead" style="margin-top:14px">Portal de Solicitudes de Vacantes<br><strong style="color:var(--text)">TYM / TAT — Gestión Humana</strong></p>
+      <div class="aviso">
+        <div class="aviso-icon">⚠️</div>
+        <div class="aviso-txt">
+          <strong>Importante</strong>
+          La solicitud debe realizarla directamente el <strong>jefe responsable</strong>. Gestión Humana revisará y aprobará cada solicitud antes de iniciar el proceso de selección.
+        </div>
+      </div>
+      <p style="text-align:center;font-size:12px;color:var(--muted)">Deslice → para comenzar</p>
     </div>
   </div>
 
-  <div class="pins">
-    <h3>🔑 PINs de acceso (confidencial — no compartir)</h3>
-    <div class="pin-row"><span>Ana Maria Acero</span>         <span class="pin-num">1001</span></div>
-    <div class="pin-row"><span>Robinson Calderón</span>       <span class="pin-num">1002</span></div>
-    <div class="pin-row"><span>Maria Yesenia Cañas</span>     <span class="pin-num">1003</span></div>
-    <div class="pin-row"><span>Juan Sebastian Arias</span>    <span class="pin-num">1004</span></div>
-    <div class="pin-row"><span>Daniel Murillo</span>          <span class="pin-num">1005</span></div>
-    <div class="pin-row"><span>Cristhian Castaño</span>       <span class="pin-num">1006</span></div>
-    <div class="pin-row"><span>Diego González</span>          <span class="pin-num">1007</span></div>
-    <div class="pin-row"><span>Bibiana Montoya</span>         <span class="pin-num">1008</span></div>
-    <div class="pin-row"><span>Juan José Guzmán</span>        <span class="pin-num">1009</span></div>
-    <div class="pin-row"><span>Erika Valencia</span>          <span class="pin-num">1010</span></div>
-    <div class="pin-row"><span>Juliana Gutiérrez</span>       <span class="pin-num">1011</span></div>
-    <div class="pin-row"><span>Alexandra Vanegas</span>       <span class="pin-num">1012</span></div>
-    <div class="pin-row"><span>Marco Aurelio Parra</span>     <span class="pin-num">1013</span></div>
+  <!-- ── SLIDE 1: Paso 1 — Ingresar al portal ──────────────── -->
+  <div class="slide" data-slide="1">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="step-badge">🔹 Paso 1 de 5</div>
+      <span class="slide-icon">🌐</span>
+      <h2>Ingrese al <em>portal</em></h2>
+      <p class="lead">Abra el enlace que recibió por WhatsApp o correo electrónico.</p>
+      <ul class="items">
+        <li><span class="dot"></span><span>No necesita instalar ninguna aplicación.</span></li>
+        <li><span class="dot"></span><span>Puede ingresar desde su <strong>celular o computador</strong>.</span></li>
+        <li><span class="dot"></span><span>El enlace lo lleva directamente al formulario.</span></li>
+      </ul>
+    </div>
   </div>
 
-  <div class="footer">
-    Para cambiar su PIN o reportar problemas, contacte a Gestión Humana · GH Pro v2
+  <!-- ── SLIDE 2: Paso 2 — Ingresar cédula ─────────────────── -->
+  <div class="slide" data-slide="2">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="step-badge">🔹 Paso 2 de 5</div>
+      <span class="slide-icon">🪪</span>
+      <h2>Ingrese su <em>cédula</em></h2>
+      <p class="lead">Escriba su número de cédula y seleccione "Ingresar".</p>
+      <ul class="items">
+        <li><span class="dot"></span><span>El sistema reconocerá automáticamente su usuario.</span></li>
+        <li><span class="dot"></span><span><strong>No necesita contraseña ni PIN.</strong></span></li>
+        <li><span class="dot"></span><span>Si no puede ingresar, comuníquese con Gestión Humana para activar su acceso.</span></li>
+      </ul>
+    </div>
   </div>
+
+  <!-- ── SLIDE 3: Paso 3 — Formulario ──────────────────────── -->
+  <div class="slide" data-slide="3">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="step-badge">🔹 Paso 3 de 5</div>
+      <span class="slide-icon">📝</span>
+      <h2>Complete el <em>formulario</em></h2>
+      <p class="lead">Diligencie los campos solicitados:</p>
+      <ul class="items">
+        <li><span class="dot"></span><span><strong>Empresa</strong> — se asigna automáticamente (TYM o TAT).</span></li>
+        <li><span class="dot"></span><span><strong>Sede</strong> — dónde necesita el personal.</span></li>
+        <li><span class="dot"></span><span><strong>Cargo</strong> — si no aparece, elija "Otro".</span></li>
+        <li><span class="dot"></span><span><strong>Número de vacantes</strong> — cuántas personas necesita.</span></li>
+        <li><span class="dot"></span><span><strong>Motivo, justificación y fecha de ingreso.</strong></span></li>
+      </ul>
+      <div style="margin-top:16px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px;font-weight:700">Motivos disponibles</p>
+        <div class="chips">
+          <span class="chip">Reemplazo por retiro</span>
+          <span class="chip">Reemplazo temporal</span>
+          <span class="chip">Cargo nuevo</span>
+          <span class="chip">Aumento de operación</span>
+          <span class="chip">Temporada</span>
+        </div>
+      </div>
+      <div class="aviso" style="margin-top:16px;margin-bottom:0">
+        <div class="aviso-icon">📌</div>
+        <div class="aviso-txt">Si solicita un <strong>reemplazo temporal</strong>, deberá buscar y seleccionar el nombre de la persona a reemplazar.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4: Paso 4 — Candidato ───────────────────────── -->
+  <div class="slide" data-slide="4">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="step-badge">🔹 Paso 4 de 5</div>
+      <span class="slide-icon">🧑‍💼</span>
+      <h2>¿Tiene un <em>candidato</em>?</h2>
+      <p class="lead">El sistema le preguntará si desea postular a alguien.</p>
+      <div class="fork">
+        <div class="fork-opt no">
+          <span class="fork-label">❌ NO</span>
+          <p>Gestión Humana se encargará de buscar los candidatos.</p>
+        </div>
+        <div class="fork-opt si">
+          <span class="fork-label">✅ SÍ</span>
+          <p>Deberá ingresar:<br>• Nombre completo<br>• Número de cédula<br>• Hoja de vida (PDF, Word o imagen, máx. 10 MB)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: Paso 5 — Enviar ──────────────────────────── -->
+  <div class="slide" data-slide="5">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="step-badge">🔹 Paso 5 de 5</div>
+      <span class="slide-icon">🚀</span>
+      <h2>Envíe la <em>solicitud</em></h2>
+      <p class="lead">Revise la información y seleccione <strong>"Enviar a Gestión Humana"</strong>.</p>
+      <ul class="items">
+        <li><span class="dot"></span><span>El sistema genera un <strong>número de radicado</strong> automáticamente.</span></li>
+        <li><span class="dot"></span><span>La solicitud llega de inmediato a Gestión Humana para su revisión.</span></li>
+        <li><span class="dot"></span><span><strong>No necesita enviar correos ni imprimir documentos.</strong></span></li>
+        <li><span class="dot"></span><span>Consulte el estado de sus solicitudes anteriores en la pestaña <strong>"Mis solicitudes"</strong>.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: Recomendaciones ──────────────────────────── -->
+  <div class="slide" data-slide="6">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="step-badge">💡 Recomendaciones</div>
+      <h2 style="margin-bottom:20px">Tenga en <em>cuenta</em></h2>
+      <div class="recs">
+        <div class="rec">
+          <div class="rec-icon">✍️</div>
+          <div class="rec-txt">Explique claramente por qué necesita el personal y cómo afecta la operación su ausencia.</div>
+        </div>
+        <div class="rec">
+          <div class="rec-icon">📅</div>
+          <div class="rec-txt">Tenga presente que el proceso puede tardar <strong>mínimo dos semanas</strong>.</div>
+        </div>
+        <div class="rec">
+          <div class="rec-icon">🔎</div>
+          <div class="rec-txt">Verifique el nombre de la persona si está solicitando un <strong>reemplazo temporal</strong>.</div>
+        </div>
+        <div class="rec">
+          <div class="rec-icon">📎</div>
+          <div class="rec-txt">Revise que la hoja de vida adjunta <strong>abra correctamente</strong> antes de enviar.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7: Contacto / Cierre ────────────────────────── -->
+  <div class="slide" data-slide="7">
+    <div class="card">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="final-logo">🤝</div>
+      <div class="final-title"><em>¿Necesita ayuda?</em></div>
+      <p class="lead" style="margin-top:12px">Si tiene problemas para ingresar o diligenciar el formulario, comuníquese con Gestión Humana.</p>
+      <div class="contact-box">
+        <strong>📞 TYM / TAT — Gestión Humana</strong><br>
+        Un proceso más fácil, ágil y organizado para todos.
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button onclick="window.print()" style="
+          background:linear-gradient(135deg,var(--accent),var(--gold));
+          border:none; border-radius:10px; padding:10px 24px;
+          color:#fff; font-weight:700; font-size:13px; cursor:pointer;
+          box-shadow:0 4px 16px rgba(58,130,200,.3);">
+          🖨️ Imprimir / Guardar PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /slides -->
+
+<!-- ── Navegación ──────────────────────────────────────────── -->
+<div class="nav">
+  <button class="nav-btn" id="btnPrev" onclick="changeSlide(-1)" disabled>‹</button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" id="btnNext" onclick="changeSlide(1)">›</button>
 </div>
 
 <script>
-  // Generar QR con la URL del portal
-  const base = window.location.href.replace('presentacion-requisicion.html','');
-  const url  = base + 'requisicion-jefes.html';
-  document.getElementById('urlText').textContent = url;
+  const TOTAL = document.querySelectorAll('.slide').length;
+  let cur = 0;
 
-  if (typeof QRCode !== 'undefined') {
-    new QRCode(document.getElementById('qrCode'), {
-      text: url, width: 180, height: 180,
-      colorDark: '#080d14', colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-  } else {
-    document.getElementById('qrCode').innerHTML =
-      `<div style="color:#4a6080;font-size:12px;padding:20px">${url}</div>`;
+  // Crear dots
+  const dotsEl = document.getElementById('dots');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot-ind' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
   }
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= TOTAL || idx === cur) return;
+    const slides = document.querySelectorAll('.slide');
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('exit');
+    setTimeout(() => slides[cur - (idx > cur ? 0 : 0)].classList.remove('exit'), 350);
+
+    // Limpiar exit de todos
+    slides.forEach(s => { if (s !== slides[cur]) s.classList.remove('exit'); });
+    slides[cur].classList.add('exit');
+    setTimeout(() => slides[idx === 0 ? 0 : cur < idx ? cur : cur].classList.remove('exit'), 350);
+
+    cur = idx;
+    slides[cur].classList.add('active');
+
+    // Dots
+    document.querySelectorAll('.dot-ind').forEach((d, i) => d.classList.toggle('active', i === cur));
+    // Counter
+    document.getElementById('counter').textContent = (cur + 1) + ' / ' + TOTAL;
+    // Buttons
+    document.getElementById('btnPrev').disabled = cur === 0;
+    document.getElementById('btnNext').disabled = cur === TOTAL - 1;
+  }
+
+  function changeSlide(dir) { goTo(cur + dir); }
+
+  // Teclado
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+  });
+
+  // Swipe táctil
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) changeSlide(dx < 0 ? 1 : -1);
+    touchX = null;
+  }, { passive: true });
 </script>
 </body>
 </html>
