@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Portal del Trabajador</title>
   <script src="qrcode.min.js"></script>
   <style>
@@ -253,8 +254,24 @@
 
     /* Print */
     @media print {
-      body { background: #000; }
-      .slide { margin: 0; box-shadow: none; page-break-after: always; page-break-inside: avoid; }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #06090f !important;
+      }
+      .slide {
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+        page-break-inside: avoid;
+        width: 210mm;
+        height: 297mm;
+      }
       .no-print { display: none !important; }
     }
     .print-btn {
