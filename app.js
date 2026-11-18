@@ -332,7 +332,7 @@ function _renderTrabajadoresFiltered(trabajadores) {
         <div style="display:flex;align-items:center;gap:10px">
           <div class="avatar" style="background:${avatarColor(t.nombre)}">${(t.nombre || '?').slice(0, 2).toUpperCase()}</div>
           <div>
-            <div style="font-weight:600">${t.nombre}</div>
+            <div style="font-weight:600;display:flex;align-items:center;gap:6px">${t.nombre}${(t.empresa||"").toUpperCase()==="TAT"?'<span style="background:#e6a817;color:#1a1a1a;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px">TAT</span>':""}</div>
             <div style="font-size:11px;color:var(--text-muted)">CC ${t.cedula || ''}${t.fecha_ingreso ? ' · Ingreso: ' + fmtDate(t.fecha_ingreso) : ''}</div>
           </div>
         </div>
@@ -693,7 +693,7 @@ async function renderEntregas() {
                 ${(g.trabajador_nombre || '?').slice(0, 2).toUpperCase()}
               </div>
               <div>
-                <div style="font-weight:600;color:var(--text-primary);">${g.trabajador_nombre}</div>
+                <div style="font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:6px">${g.trabajador_nombre}${((Cache.trabajadores||[]).find(t=>t.id===g.trabajador_id)||{}).empresa?.toUpperCase()==="TAT"?'<span style="background:#e6a817;color:#1a1a1a;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px">TAT</span>':""}</div>
                 <div style="font-size:11px;color:var(--text-muted);">${g.items.length} tipo(s) de prenda</div>
               </div>
             </div>
@@ -739,7 +739,7 @@ async function renderEntregas() {
           <td>
             <div style="display:flex;align-items:center;gap:8px">
               <div class="avatar" style="background:${avatarColor(e.trabajador_nombre)};width:28px;height:28px;font-size:11px">${(e.trabajador_nombre || '?').slice(0, 2).toUpperCase()}</div>
-              <span style="font-weight:600;">${e.trabajador_nombre}</span>
+              <span style="font-weight:600;display:inline-flex;align-items:center;gap:6px">${e.trabajador_nombre}${((Cache.trabajadores||[]).find(t=>t.id===e.trabajador_id)||{}).empresa?.toUpperCase()==="TAT"?'<span style="background:#e6a817;color:#1a1a1a;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px">TAT</span>':""}</span>
             </div>
           </td>
           <td>${e.articulo_nombre}</td>
@@ -4851,6 +4851,7 @@ async function generarActaEntregaPDF(datos) {
   const cargoTrabajador = trabajador.cargo || '—';
   const ciudadTrabajador = trabajador.ciudad || '—';
   const marcaTrabajador = trabajador.marca || trabajador.unidad_organizacional || '—';
+  const empresaTrabajador = (trabajador.empresa || '').toUpperCase();
   const ingresoTrabajador = trabajador.fecha_ingreso ? fmtDate(trabajador.fecha_ingreso) : '—';
   const telefonoTrabajador = trabajador.telefono || '—';
 
@@ -4893,7 +4894,8 @@ async function generarActaEntregaPDF(datos) {
   });
 
   // ── Branding condicional por marca ──────────────────────────
-  const esFamilia = (marcaTrabajador || '').toUpperCase().includes('FAMILIA');
+  const esTAT = empresaTrabajador === 'TAT';
+  const esFamilia = esTAT || (marcaTrabajador || '').toUpperCase().includes('FAMILIA');
   const _baseUrl = location.origin + (location.pathname.replace(/\/[^/]*$/, '/'));
 
   const logoUrl       = esFamilia ? _baseUrl + 'icons/logo_tat.jpg'                  : _baseUrl + 'icons/logo_tym.png';
