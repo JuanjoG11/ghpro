@@ -1853,6 +1853,22 @@ async function marcarContratoGenerado(ocId) {
   showLoading(false);
 
   if (ocActualizada) {
+    // ── Crear evaluación de periodo de prueba automáticamente ──────────
+    if (oc.periodo_prueba_dias && oc.periodo_prueba_dias > 0) {
+      try {
+        const { data: evalId, error: evalErr } = await sb
+          .rpc('fn_crear_evaluacion_prueba', { p_orden_id: ocId });
+        if (evalErr) {
+          console.warn('No se pudo crear evaluación de periodo de prueba:', evalErr.message);
+        } else if (evalId) {
+          console.log('✅ Evaluación de periodo de prueba creada:', evalId);
+        }
+      } catch (e) {
+        console.warn('Error al crear evaluación de periodo de prueba:', e.message);
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────
+
     toast(
       trabajadorExistente
         ? `✅ Contrato generado — trabajador ${oc.nombres} actualizado en el sistema`
@@ -2088,7 +2104,17 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
             <label class="form-label">Fecha de terminación</label>
             <input type="date" class="form-input" id="ocFechaTerminacion" value="${d.fecha_terminacion||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Periodo de prueba (días) <span class="req-star">*</span> <span style="font-size:11px;color:var(--text-muted)">(máx. 60)</span></label>
-            <input type="number" class="form-input" id="ocPeriodoPrueba" value="${d.periodo_prueba_dias||60}" min="0" max="60" ${isReadOnly?'readonly':''}></div>
+            <input type="number" class="form-input" id="ocPeriodoPrueba" value="${d.periodo_prueba_dias||60}" min="0" max="60" ${isReadOnly?'readonly':''} onchange="calcTopeQuintaParte()"></div>
+          <div class="form-group" id="grpDuracionContrato" style="display:${['termino_fijo','obra_labor'].includes(d.tipo_contrato)?'block':'none'}">
+            <label class="form-label">Duración del contrato (días) <span style="font-size:11px;color:var(--text-muted)">Para validar tope periodo de prueba</span></label>
+            <input type="number" class="form-input" id="ocDuracionContratoDias" value="${d.duracion_contrato_dias||''}" min="1" placeholder="Ej: 90" ${isReadOnly?'readonly':''} onchange="calcTopeQuintaParte()">
+            <div id="topeQuintaParteHint" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div></div>
+          <div class="form-group"><label class="form-label">¿Es el primer contrato con esta persona?</label>
+            <select class="form-select" id="ocEsPrimerContrato" ${isReadOnly?'disabled':''}>
+              <option value="true"  ${d.es_primer_contrato===false?'':'selected'}>Sí — aplica periodo de prueba</option>
+              <option value="false" ${d.es_primer_contrato===false?'selected':''}>No — contrato sucesivo, sin periodo de prueba</option>
+            </select>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">En contratos sucesivos con la misma persona no hay periodo de prueba (CST art. 77).</div></div>
           <div class="form-group"><label class="form-label">Salario básico mensual (COP) <span class="req-star">*</span></label>
             <input type="number" class="form-input" id="ocSalario" value="${d.salario||''}" oninput="calcAuxTransporteOC()" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Tipo de salario</label>
@@ -2183,6 +2209,27 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
 function toggleOCFechaTerminacion() {
   const tc = fv('ocTipoContrato');
   show('grpFechaTermOC', tc==='termino_fijo'||tc==='obra_labor');
+  show('grpDuracionContrato', tc==='termino_fijo'||tc==='obra_labor');
+  calcTopeQuintaParte();
+}
+
+function calcTopeQuintaParte() {
+  const tc        = fv('ocTipoContrato');
+  const dias      = parseInt(fv('ocDuracionContratoDias'))||0;
+  const prueba    = parseInt(fv('ocPeriodoPrueba'))||0;
+  const hint      = document.getElementById('topeQuintaParteHint');
+  if (!hint) return;
+
+  if ((tc === 'termino_fijo' || tc === 'obra_labor') && dias > 0 && dias < 365) {
+    const tope = Math.min(Math.floor(dias / 5), 60);
+    hint.textContent = `Tope legal: ${tope} días (1/5 de ${dias} días, máx. 60)`;
+    hint.style.color = prueba > tope ? '#dc2626' : '#64748b';
+    if (prueba > tope) {
+      hint.textContent += ` ⚠ El periodo de prueba ingresado (${prueba} d.) supera el tope.`;
+    }
+  } else {
+    hint.textContent = '';
+  }
 }
 
 function toggleJornadaOtro() {
@@ -2329,6 +2376,8 @@ async function guardarOrden() {
     fecha_ingreso: fIngreso,
     fecha_terminacion: (tipoC==='termino_fijo'||tipoC==='obra_labor') ? (fv('ocFechaTerminacion')||null) : null,
     periodo_prueba_dias: periodo, salario, tipo_salario: tipoSal,
+    es_primer_contrato: fv('ocEsPrimerContrato') !== 'false',
+    duracion_contrato_dias: (parseInt(fv('ocDuracionContratoDias'))||null),
     auxilio_transporte: fv('ocAuxTransporte')==='true',
     otros_pagos: fv('ocOtrosPagos')||null,
     jornada, forma_pago: formaPago,
@@ -2444,6 +2493,8 @@ async function verOrden(ocId) {
           ${row('Contacto emergencia', oc.contacto_emergencia)}
           ${row('Fecha ingreso', fmtDate(oc.fecha_ingreso))}
           ${row('Periodo de prueba', `${oc.periodo_prueba_dias} días`)}
+          ${oc.duracion_contrato_dias ? row('Duración contrato', `${oc.duracion_contrato_dias} días`) : ''}
+          ${row('Primer contrato', oc.es_primer_contrato === false ? 'No (contrato sucesivo)' : 'Sí')}
           ${row('Salario', fmtCOP(oc.salario))}
           ${row('Tipo salario', LBL.tipo_salario[oc.tipo_salario]||oc.tipo_salario)}
           ${row('Aux. transporte', oc.auxilio_transporte?'Sí':'No')}
