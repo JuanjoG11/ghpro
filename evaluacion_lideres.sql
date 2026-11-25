@@ -20,8 +20,15 @@ create table if not exists usuarios_evaluacion (
 
 -- RLS abierto (igual que el resto del módulo)
 alter table usuarios_evaluacion enable row level security;
-create policy "allow_all_usuarios_evaluacion"
-  on usuarios_evaluacion for all using (true) with check (true);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where tablename = 'usuarios_evaluacion' and policyname = 'allow_all_usuarios_evaluacion'
+  ) then
+    create policy "allow_all_usuarios_evaluacion"
+      on usuarios_evaluacion for all using (true) with check (true);
+  end if;
+end $$;
 
 -- ── Columna en evaluaciones para vincular al usuario ─────────
 alter table evaluaciones

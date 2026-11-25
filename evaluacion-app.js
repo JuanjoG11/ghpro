@@ -25,6 +25,12 @@ const CLASIF_LABEL = {
   cumple_parcialmente:'Cumple parcialmente',
   no_cumple:'No cumple'
 };
+const CLASIF_BADGE = {
+  cumple_perfil:        'badge-success',
+  oportunidades_mejora: 'badge-info',
+  cumple_parcialmente:  'badge-warning',
+  no_cumple:            'badge-danger'
+};
 const PUNTAJE = { A:4, B:3, C:2, D:1 };
 const GRADO_NOMBRE = { A:'A – Alto', B:'B – Bueno', C:'C – Mínimo', D:'D – Insuficiente' };
 
@@ -69,8 +75,88 @@ function toast(msg, tipo='success') {
 }
 
 /* ════════════════════════════════════════════════════════════
-   MÓDULO
+   CÁLCULO LOCAL (mismo algoritmo que fn_calcular_indice)
+   Se usa para la vista previa en el resumen antes de enviar.
    ════════════════════════════════════════════════════════════ */
+function calcularIndiceLocal(detalle, params) {
+  const pts   = { A: parseInt(params.escala_A||4), B: parseInt(params.escala_B||3), C: parseInt(params.escala_C||2), D: parseInt(params.escala_D||1) };
+  const modo  = params.modo_ponderacion || 'POR_PUNTOS';
+  const decs  = parseInt(params.decimales_indice || 1);
+
+  const bandaPerfil  = parseFloat(params.banda_cumple_perfil  || 100);
+  const bandaOpor    = parseFloat(params.banda_oportunidades   || 85);
+  const bandaParcial = parseFloat(params.banda_parcial         || 70);
+
+  const pesos = {
+    'Transversal':       parseFloat(params.peso_transversales || 30),
+    'Liderazgo':         parseFloat(params.peso_liderazgo     || 20),
+    'Funcional':         parseFloat(params.peso_funcionales   || 25),
+    'Técnica comercial': parseFloat(params.peso_tecnicas      || 25) / 2,
+    'Técnica logística': parseFloat(params.peso_tecnicas      || 25) / 2
+  };
+
+  let sumValidos = 0, sumReq = 0;
+  const grupos = {};
+
+  detalle.forEach(d => {
+    if (!d.grado_observado) return;
+    const obs     = pts[d.grado_observado];
+    const req     = pts[d.grado_exigido];
+    const validos = Math.min(obs, req);
+    const grupo   = d.competencia?.tipo || d.grupo_competencia || 'Funcional';
+
+    sumValidos += validos;
+    sumReq     += req;
+
+    if (!grupos[grupo]) grupos[grupo] = { validos: 0, req: 0 };
+    grupos[grupo].validos += validos;
+    grupos[grupo].req     += req;
+
+    // estado por competencia
+    d._validos = validos;
+    d._cumplPct = req > 0 ? validos / req * 100 : 0;
+    d._estado = obs > req ? 'fortaleza' : obs < req ? 'brecha' : 'cumple';
+  });
+
+  if (sumReq === 0) return null;
+
+  let indice;
+
+  if (modo === 'POR_GRUPO') {
+    const gruposPresentes = Object.keys(grupos);
+    const pesoTotal = gruposPresentes.reduce((s, g) => s + (pesos[g] || 0), 0);
+    if (pesoTotal === 0) {
+      indice = sumValidos / sumReq * 100;
+    } else {
+      indice = gruposPresentes.reduce((s, g) => {
+        const cumplG = grupos[g].req > 0 ? grupos[g].validos / grupos[g].req * 100 : 0;
+        return s + ((pesos[g] || 0) / pesoTotal * cumplG);
+      }, 0);
+    }
+  } else {
+    indice = sumValidos / sumReq * 100;
+  }
+
+  // Truncar (no redondear)
+  const factor    = Math.pow(10, decs);
+  const indiceTrunc = Math.trunc(indice * factor) / factor;
+
+  const clasif = indice >= bandaPerfil  ? 'cumple_perfil'
+               : indice >= bandaOpor    ? 'oportunidades_mejora'
+               : indice >= bandaParcial ? 'cumple_parcialmente'
+               :                         'no_cumple';
+
+  return {
+    indice,          // valor exacto para clasificación
+    indiceMostrar: indiceTrunc,
+    clasif,
+    sumValidos,
+    sumReq,
+    grupos,
+    brechas:    detalle.filter(d => d._estado === 'brecha'),
+    fortalezas: detalle.filter(d => d._estado === 'fortaleza')
+  };
+}
 const EvalMod = {
 
   usuarioActual: null,
@@ -156,8 +242,16 @@ const EvalMod = {
     document.getElementById('topbar-nav').innerHTML = `
       <button class="topbar-nav-btn ${tab==='evaluaciones'?'active':''}"
         onclick="EvalMod.mostrarBandeja()">Evaluaciones</button>
-      ${esGH ? `<button class="topbar-nav-btn ${tab==='periodos'?'active':''}"
-        onclick="EvalMod.mostrarPeriodosPrueba()">Periodos de prueba</button>` : ''}
+      ${esGH ? `
+        <button class="topbar-nav-btn ${tab==='periodos'?'active':''}"
+          onclick="EvalMod.mostrarPeriodosPrueba()">Periodos de prueba</button>
+        <button class="topbar-nav-btn ${tab==='ciclos'?'active':''}"
+          onclick="EvalAdmin.mostrarCiclos()">Ciclos</button>
+        <button class="topbar-nav-btn ${tab==='reportes'?'active':''}"
+          onclick="EvalAdmin.mostrarReportes()">Reportes</button>
+        <button class="topbar-nav-btn ${tab==='parametrizacion'?'active':''}"
+          onclick="EvalAdmin.mostrarParametrizacion()">⚙ Parametrización</button>
+      ` : ''}
       <button class="topbar-nav-btn" onclick="window.location.href='index.html'">← GH PRO</button>
     `;
     document.getElementById('topbar-user').innerHTML = `
@@ -616,13 +710,11 @@ const EvalMod = {
     const sinCal     = det.filter(d => !d.grado_observado);
     const calificadas = det.filter(d => d.grado_observado);
 
-    // Calcular índice provisional
-    let sumMin = 0, sumEx = 0;
-    calificadas.forEach(d => {
-      sumEx  += PUNTAJE[d.grado_exigido];
-      sumMin += Math.min(PUNTAJE[d.grado_observado], PUNTAJE[d.grado_exigido]);
-    });
-    const indiceProvisional = sumEx > 0 ? Math.round(sumMin / sumEx * 100 * 10) / 10 : null;
+    // Calcular índice provisional con el algoritmo completo
+    const resultado = calcularIndiceLocal(det, this.parametros);
+    const indiceProvisional = resultado?.indiceMostrar ?? null;
+    const brechasCalc    = resultado?.brechas    || brechas;
+    const fortalezasCalc = resultado?.fortalezas || [];
 
     const filaComp = det.map(d => `
       <tr>
@@ -701,8 +793,9 @@ const EvalMod = {
             <div style="background:#f0f4ff;border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;">
               <div style="font-size:2rem;font-weight:800;color:#1d3a6e;">${indiceProvisional}%</div>
               <div>
-                <div style="font-size:.78rem;color:#64748b;">Índice provisional</div>
-                <div style="font-size:.84rem;font-weight:700;">${brechas.length} brecha(s) · ${det.filter(d=>d.grado_observado&&PUNTAJE[d.grado_observado]>PUNTAJE[d.grado_exigido]).length} fortaleza(s)</div>
+                <div style="font-size:.78rem;color:#64748b;">Índice provisional · ${(this.parametros.modo_ponderacion||'POR_PUNTOS')==='POR_GRUPO'?'Ponderado por grupo':'Por puntos'}</div>
+                <div style="font-size:.84rem;font-weight:700;">${CLASIF_LABEL[resultado?.clasif]||''}</div>
+                <div style="font-size:.8rem;color:#64748b;margin-top:.2rem;">${brechasCalc.length} brecha(s) · ${fortalezasCalc.length} fortaleza(s) · ${resultado?.sumValidos||0} de ${resultado?.sumReq||0} puntos</div>
               </div>
             </div>` : ''}
 

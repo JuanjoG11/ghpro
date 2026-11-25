@@ -648,11 +648,16 @@ on conflict (cargo_id, competencia_id, version_diccionario) do nothing;
 -- CAMPOS NUEVOS EN ORDEN_CONTRATACION
 -- ════════════════════════════════════════════════════════════
 
-alter table orden_contratacion
-  add column if not exists es_primer_contrato      boolean default true,
-  add column if not exists duracion_contrato_dias  integer,          -- para contratos a término fijo
-  add column if not exists cargo_evaluacion_id     uuid references cargos_evaluacion(id),
-  add column if not exists lider_id                uuid;             -- evaluador asignado (FK a usuarios futura)
+-- Columnas adicionales en orden_contratacion (solo si existe la tabla)
+do $$ begin
+  if exists (select 1 from information_schema.tables where table_name = 'orden_contratacion') then
+    alter table orden_contratacion
+      add column if not exists es_primer_contrato      boolean default true,
+      add column if not exists duracion_contrato_dias  integer,
+      add column if not exists cargo_evaluacion_id     uuid,
+      add column if not exists lider_id                uuid;
+  end if;
+end $$;
 
 -- ════════════════════════════════════════════════════════════
 -- EVALUACIONES
@@ -680,7 +685,7 @@ on conflict do nothing;
 create table if not exists evaluaciones (
   id                      uuid primary key default gen_random_uuid(),
   ciclo_id                uuid references ciclos_evaluacion(id),
-  colaborador_id          uuid references orden_contratacion(id) on delete cascade,
+  colaborador_id          uuid,                                     -- referencia opcional a orden_contratacion
   cargo_nombre            text not null,                            -- copia al crear
   cargo_evaluacion_id     uuid references cargos_evaluacion(id),
   evaluador_nombre        text,
@@ -699,6 +704,7 @@ create table if not exists evaluaciones (
   fecha_cierre            timestamptz,
   version_diccionario     integer not null default 2,
   orden_contratacion_num  text,                                     -- para trazabilidad
+  trabajador_id           uuid,                                     -- referencia opcional a trabajadores
   created_at              timestamptz default now(),
   updated_at              timestamptz default now()
 );
@@ -878,117 +884,91 @@ end;
 $$;
 
 -- ════════════════════════════════════════════════════════════
--- FUNCIÓN: crear evaluación de periodo de prueba
--- Se llama desde la app cuando se aprueba una orden de contratación
+-- FUNCIÓN: crear evaluación de periodo de prueba desde trabajador
 -- ════════════════════════════════════════════════════════════
-create or replace function fn_crear_evaluacion_prueba(p_orden_id uuid)
+create or replace function fn_crear_evaluacion_prueba(p_trabajador_id uuid)
 returns uuid language plpgsql as $$
 declare
-  v_orden         record;
+  v_t             record;
   v_ciclo_id      uuid;
-  v_cargo_ev_id   uuid;
   v_eval_id       uuid;
   v_fecha_venc    date;
   v_fecha_lim     date;
-  v_dias_apertura integer;
   v_dias_limite   integer;
+  v_evaluador_nom text;
+  v_evaluador_uid uuid;
   v_comp          record;
-  v_grado         text;
   v_puntaje_ex    integer;
 begin
-  -- Leer la orden
-  select * into v_orden from orden_contratacion where id = p_orden_id;
+  select * into v_t from trabajadores where id = p_trabajador_id;
 
-  -- Solo si tiene periodo de prueba pactado y es primer contrato
-  if v_orden.periodo_prueba_dias is null or v_orden.periodo_prueba_dias = 0 then
-    return null;
-  end if;
-  if v_orden.es_primer_contrato = false then
-    return null;
-  end if;
+  if v_t is null then return null; end if;
+  if v_t.estado <> 'activo' then return null; end if;
+  if coalesce(v_t.periodo_prueba_dias, 0) = 0 then return null; end if;
+  if v_t.es_primer_contrato = false then return null; end if;
+  if v_t.fecha_ingreso is null then return null; end if;
 
-  -- Validar tope para contratos a término fijo < 1 año
-  if v_orden.tipo_contrato = 'termino_fijo'
-     and v_orden.duracion_contrato_dias is not null
-     and v_orden.duracion_contrato_dias < 365 then
-    declare
-      v_tope integer := least(floor(v_orden.duracion_contrato_dias::numeric / 5)::integer, 60);
-    begin
-      if v_orden.periodo_prueba_dias > v_tope then
-        raise exception 'El periodo de prueba (% días) supera el tope legal (% días = 1/5 de % días de contrato)',
-          v_orden.periodo_prueba_dias, v_tope, v_orden.duracion_contrato_dias;
-      end if;
-    end;
-  end if;
+  -- No duplicar
+  if exists (
+    select 1 from evaluaciones e
+    join ciclos_evaluacion c on c.id = e.ciclo_id
+    where e.trabajador_id = p_trabajador_id
+      and c.tipo = 'PRUEBA'
+      and e.estado <> 'anulada'
+  ) then return null; end if;
 
-  -- Buscar ciclo permanente de prueba
+  -- Ciclo permanente
   select id into v_ciclo_id from ciclos_evaluacion
-  where tipo = 'PRUEBA' and estado = 'abierto'
-  limit 1;
-
-  -- Buscar cargo en tabla de evaluación por nombre
-  select id into v_cargo_ev_id from cargos_evaluacion
-  where nombre ilike v_orden.cargo
-  limit 1;
-
-  if v_cargo_ev_id is null then
-    -- Si el cargo no está en el diccionario, no bloqueamos; creamos sin competencias
-    null;
-  end if;
+  where tipo = 'PRUEBA' and estado = 'abierto' limit 1;
 
   -- Fechas
-  v_fecha_venc := v_orden.fecha_ingreso + v_orden.periodo_prueba_dias - 1;
-
-  select valor::integer into v_dias_apertura
-  from parametros_evaluacion where clave = 'dias_apertura_prueba';
+  v_fecha_venc := v_t.fecha_ingreso + v_t.periodo_prueba_dias - 1;
   select valor::integer into v_dias_limite
   from parametros_evaluacion where clave = 'dias_limite_lider_prueba';
+  v_fecha_lim := v_fecha_venc - coalesce(v_dias_limite, 10);
 
-  v_dias_apertura := coalesce(v_dias_apertura, 20);
-  v_dias_limite   := coalesce(v_dias_limite, 10);
-
-  v_fecha_lim := v_fecha_venc - v_dias_limite;
+  -- Evaluador
+  if exists (select 1 from cargos_evaluacion where id = v_t.cargo_evaluacion_id and tiene_personal_a_cargo = true) then
+    select id, nombre into v_evaluador_uid, v_evaluador_nom
+    from usuarios_evaluacion where rol = 'gerencia' and activo = true limit 1;
+  else
+    select id, nombre into v_evaluador_uid, v_evaluador_nom
+    from usuarios_evaluacion where id = v_t.lider_evaluacion_id limit 1;
+    if v_evaluador_nom is null then v_evaluador_nom := v_t.jefe; end if;
+  end if;
 
   -- Crear evaluación
   insert into evaluaciones (
-    ciclo_id, colaborador_id, cargo_nombre, cargo_evaluacion_id,
-    evaluador_nombre, evaluador_cedula, rol_evaluador,
-    fecha_limite, estado, version_diccionario, orden_contratacion_num
+    ciclo_id, trabajador_id, cargo_nombre, cargo_evaluacion_id,
+    evaluador_nombre, evaluador_usuario_id, rol_evaluador,
+    fecha_limite, estado, version_diccionario
   ) values (
-    v_ciclo_id, p_orden_id, v_orden.cargo, v_cargo_ev_id,
-    v_orden.jefe_inmediato, null, 'JEFE',
-    v_fecha_lim, 'pendiente', 2, v_orden.numero
+    v_ciclo_id, p_trabajador_id, v_t.cargo, v_t.cargo_evaluacion_id,
+    v_evaluador_nom, v_evaluador_uid, 'JEFE',
+    v_fecha_lim, 'pendiente', 2
   )
   returning id into v_eval_id;
 
-  -- Cargar competencias del cargo desde la matriz
-  if v_cargo_ev_id is not null then
+  -- Competencias
+  if v_t.cargo_evaluacion_id is not null then
     for v_comp in
-      select c.id as comp_id, c.codigo, c.nombre, m.grado_exigido
+      select c.id as comp_id, c.codigo, c.nombre, c.tipo, m.grado_exigido
       from matriz_cargo_competencia m
       join competencias c on c.id = m.competencia_id
-      where m.cargo_id = v_cargo_ev_id
-        and m.version_diccionario = 2
+      where m.cargo_id = v_t.cargo_evaluacion_id and m.version_diccionario = 2
       order by c.codigo
     loop
-      v_puntaje_ex := case v_comp.grado_exigido
-        when 'A' then 4
-        when 'B' then 3
-        when 'C' then 2
-        else 1
-      end;
-
+      v_puntaje_ex := case v_comp.grado_exigido when 'A' then 4 when 'B' then 3 when 'C' then 2 else 1 end;
       insert into evaluacion_detalle (
         evaluacion_id, competencia_id, codigo, nombre_comp,
-        grado_exigido, puntaje_exigido
+        grado_exigido, puntaje_exigido, grupo_competencia
       ) values (
         v_eval_id, v_comp.comp_id, v_comp.codigo, v_comp.nombre,
-        v_comp.grado_exigido, v_puntaje_ex
+        v_comp.grado_exigido, v_puntaje_ex, v_comp.tipo
       );
     end loop;
   end if;
 
-  -- Auditoría
   insert into auditoria_evaluacion (tabla, registro_id, accion, valor_nuevo, usuario_nombre)
   values ('evaluaciones', v_eval_id, 'creacion', 'pendiente', 'sistema');
 
@@ -1001,30 +981,27 @@ $$;
 -- ════════════════════════════════════════════════════════════
 create or replace view v_periodos_prueba as
 select
-  e.id                                                      as evaluacion_id,
+  e.id                                                            as evaluacion_id,
   e.estado,
   e.orden_contratacion_num,
-  oc.nombres                                                as colaborador,
-  oc.numero_id                                              as cedula,
-  oc.empresa,
-  oc.cargo,
-  oc.sede_nombre,
-  oc.jefe_inmediato                                         as lider,
-  oc.fecha_ingreso,
-  oc.periodo_prueba_dias,
-  (oc.fecha_ingreso + oc.periodo_prueba_dias - 1)           as fecha_fin_prueba,
-  e.fecha_limite                                            as fecha_limite_lider,
-  ((oc.fecha_ingreso + oc.periodo_prueba_dias - 1) - current_date)::int as dias_restantes,
+  t.nombre                                                        as colaborador,
+  t.cedula,
+  t.empresa,
+  t.cargo,
+  t.ciudad                                                        as sede_nombre,
+  t.jefe                                                          as lider,
+  t.fecha_ingreso,
+  t.periodo_prueba_dias,
+  (t.fecha_ingreso + t.periodo_prueba_dias - 1)                   as fecha_fin_prueba,
+  e.fecha_limite                                                  as fecha_limite_lider,
+  ((t.fecha_ingreso + t.periodo_prueba_dias - 1) - current_date)::int as dias_restantes,
   e.concepto_prueba,
   e.indice_ajuste,
   e.clasificacion
 from evaluaciones e
-join orden_contratacion oc on oc.id = e.colaborador_id
-where e.rol_evaluador = 'JEFE'
-  and exists (
-    select 1 from ciclos_evaluacion c
-    where c.id = e.ciclo_id and c.tipo = 'PRUEBA'
-  );
+join trabajadores t on t.id = e.trabajador_id
+join ciclos_evaluacion c on c.id = e.ciclo_id and c.tipo = 'PRUEBA'
+where e.rol_evaluador = 'JEFE';
 
 -- ════════════════════════════════════════════════════════════
 -- ÍNDICES
@@ -1061,9 +1038,15 @@ do $$ declare t text; begin
     'matriz_cargo_competencia','parametros_evaluacion','ciclos_evaluacion',
     'evaluaciones','evaluacion_detalle','planes_mejora','evaluacion_firmas','auditoria_evaluacion'
   ] loop
-    execute format(
-      'create policy "allow_all_%s" on %I for all using (true) with check (true)',
-      t, t
-    );
+    execute format('alter table %I enable row level security', t);
+    if not exists (
+      select 1 from pg_policies
+      where tablename = t and policyname = 'allow_all_' || t
+    ) then
+      execute format(
+        'create policy "allow_all_%s" on %I for all using (true) with check (true)',
+        t, t
+      );
+    end if;
   end loop;
 end $$;
