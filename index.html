@@ -477,6 +477,153 @@
 </head>
 <body>
 
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="loginOverlay" style="
+  position:fixed; inset:0; z-index:9999;
+  background:#080d14;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  overflow:hidden;
+">
+  <!-- Orbs de fondo en el login -->
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+    <div style="position:absolute;width:600px;height:600px;border-radius:50%;background:#3a82c8;filter:blur(90px);opacity:0.12;top:-200px;left:-200px;animation:floatOrb 20s infinite ease-in-out"></div>
+    <div style="position:absolute;width:400px;height:400px;border-radius:50%;background:#c87c3a;filter:blur(90px);opacity:0.10;bottom:-100px;right:-100px;animation:floatOrb 20s infinite ease-in-out;animation-delay:-7s"></div>
+    <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:#c89a3a;filter:blur:90px;opacity:0.08;top:50%;left:50%;animation:floatOrb 20s infinite ease-in-out;animation-delay:-14s"></div>
+  </div>
+
+  <!-- Card login -->
+  <div style="
+    position:relative; width:100%; max-width:420px; margin:16px;
+    background:rgba(12,18,32,0.95); backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.09); border-radius:24px;
+    padding:40px 36px 36px;
+    box-shadow:0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(58,130,200,0.12), 0 0 60px rgba(58,130,200,0.08);
+  ">
+    <!-- Logo / Header -->
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="
+        width:64px;height:64px;border-radius:18px;margin:0 auto 16px;
+        background:linear-gradient(135deg,#3a82c8,#c87c3a);
+        display:flex;align-items:center;justify-content:center;
+        font-size:30px;box-shadow:0 8px 24px rgba(58,130,200,0.35);
+      ">🏢</div>
+      <div style="font-size:22px;font-weight:800;color:#e8f0fa;letter-spacing:-0.3px">GH Pro</div>
+      <div style="font-size:13px;color:#4a6080;margin-top:4px">Gestión Humana · Acceso privado</div>
+    </div>
+
+    <!-- Error msg -->
+    <div id="loginError" style="
+      display:none; margin-bottom:16px; padding:12px 16px;
+      background:rgba(224,85,85,0.12); border:1px solid rgba(224,85,85,0.3);
+      border-radius:12px; color:#e88; font-size:13px; text-align:center;
+    ">Usuario o contraseña incorrectos</div>
+
+    <!-- Form -->
+    <form onsubmit="doLogin(event)" autocomplete="on">
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#8fa8c8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px">Usuario</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px">👤</span>
+          <input id="loginUser" type="text" placeholder="tu usuario" autocomplete="username" style="
+            width:100%;padding:12px 14px 12px 42px;
+            background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);
+            border-radius:12px;color:#e8f0fa;font-size:14px;outline:none;
+            transition:border-color 0.2s,box-shadow 0.2s;
+          "
+          onfocus="this.style.borderColor='rgba(58,130,200,0.5)';this.style.boxShadow='0 0 0 3px rgba(58,130,200,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.09)';this.style.boxShadow='none'"
+          >
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#8fa8c8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px">Contraseña</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px">🔒</span>
+          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" style="
+            width:100%;padding:12px 44px 12px 42px;
+            background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);
+            border-radius:12px;color:#e8f0fa;font-size:14px;outline:none;
+            transition:border-color 0.2s,box-shadow 0.2s;
+          "
+          onfocus="this.style.borderColor='rgba(58,130,200,0.5)';this.style.boxShadow='0 0 0 3px rgba(58,130,200,0.12)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.09)';this.style.boxShadow='none'"
+          >
+          <button type="button" onclick="toggleLoginPass()" style="
+            position:absolute;right:12px;top:50%;transform:translateY(-50%);
+            background:none;border:none;cursor:pointer;font-size:17px;padding:4px;opacity:0.5;
+          " title="Mostrar/ocultar">👁️</button>
+        </div>
+      </div>
+
+      <button type="submit" style="
+        width:100%;padding:14px;border:none;border-radius:12px;cursor:pointer;
+        background:linear-gradient(135deg,#3a82c8,#2a6aaa);
+        color:#fff;font-size:15px;font-weight:700;letter-spacing:0.3px;
+        box-shadow:0 6px 20px rgba(58,130,200,0.30);
+        transition:transform 0.15s,box-shadow 0.15s;
+      "
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 28px rgba(58,130,200,0.45)'"
+      onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 20px rgba(58,130,200,0.30)'"
+      >Ingresar →</button>
+    </form>
+
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:#2a3a50">
+      © 2025 GH Pro · Acceso restringido
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  /* ── Usuarios autorizados ── */
+  const USERS = {
+    'erika':  'Gh2026!Eri',
+    'karina': 'Gh2026!Kar',
+    'majo':   'Gh2026!Maj'
+  };
+
+  /* Verificar si ya hay sesión activa */
+  if (sessionStorage.getItem('gh_logged') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+  }
+
+  window.doLogin = function(e) {
+    e.preventDefault();
+    const u = document.getElementById('loginUser').value.trim().toLowerCase();
+    const p = document.getElementById('loginPass').value;
+    const err = document.getElementById('loginError');
+
+    if (USERS[u] && USERS[u] === p) {
+      sessionStorage.setItem('gh_logged', '1');
+      sessionStorage.setItem('gh_user', u);
+      const overlay = document.getElementById('loginOverlay');
+      overlay.style.transition = 'opacity 0.5s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.display = 'none'; }, 500);
+    } else {
+      err.style.display = 'block';
+      const passEl = document.getElementById('loginPass');
+      passEl.style.borderColor = 'rgba(224,85,85,0.6)';
+      passEl.style.boxShadow = '0 0 0 3px rgba(224,85,85,0.12)';
+      passEl.value = '';
+      setTimeout(() => {
+        err.style.display = 'none';
+        passEl.style.borderColor = 'rgba(255,255,255,0.09)';
+        passEl.style.boxShadow = 'none';
+      }, 2500);
+    }
+  };
+
+  window.toggleLoginPass = function() {
+    const el = document.getElementById('loginPass');
+    el.type = el.type === 'password' ? 'text' : 'password';
+  };
+})();
+</script>
+<!-- ===== /LOGIN OVERLAY ===== -->
+
 <!-- Animated background orbs -->
 <div class="bg-orbs">
   <div class="orb orb-1"></div>
