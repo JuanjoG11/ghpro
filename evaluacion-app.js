@@ -190,21 +190,34 @@ const EvalMod = {
       fecha_limite, concepto_prueba, indice_ajuste, clasificacion,
       orden_contratacion_num, created_at, updated_at,
       colaborador:colaborador_id (nombres, numero_id, empresa, sede_nombre, fecha_ingreso, periodo_prueba_dias),
+      trabajador:trabajador_id (nombre, cedula, empresa, ciudad, fecha_ingreso, periodo_prueba_dias),
       ciclo:ciclo_id (tipo, nombre)
     `).order('created_at', { ascending: false });
 
     if (u.rol === 'lider' || u.rol === 'gerencia') q = q.eq('evaluador_nombre', u.nombre);
 
     const { data: evals } = await q;
-    const todos = evals || [];
+    const todos = (evals || []).map(e => {
+      // Normalizar: si viene de trabajador_id, unificar estructura
+      const colab = e.colaborador || (e.trabajador ? {
+        nombres:          e.trabajador.nombre,
+        numero_id:        e.trabajador.cedula,
+        empresa:          e.trabajador.empresa,
+        sede_nombre:      e.trabajador.ciudad,
+        fecha_ingreso:    e.trabajador.fecha_ingreso,
+        periodo_prueba_dias: e.trabajador.periodo_prueba_dias
+      } : null);
+      return { ...e, _colab: colab };
+    });
 
     // Calcular días restantes para cada evaluación
     const hoy = new Date(); hoy.setHours(0,0,0,0);
     const conDias = todos.map(e => {
+      const colab = e._colab;
       let dias = null;
-      if (e.colaborador?.fecha_ingreso && e.colaborador?.periodo_prueba_dias && e.ciclo?.tipo === 'PRUEBA') {
-        const venc = new Date(e.colaborador.fecha_ingreso);
-        venc.setDate(venc.getDate() + e.colaborador.periodo_prueba_dias - 1);
+      if (colab?.fecha_ingreso && colab?.periodo_prueba_dias && e.ciclo?.tipo === 'PRUEBA') {
+        const venc = new Date(colab.fecha_ingreso);
+        venc.setDate(venc.getDate() + colab.periodo_prueba_dias - 1);
         dias = Math.ceil((venc - hoy) / 86400000);
       } else if (e.fecha_limite) {
         const lim = new Date(e.fecha_limite + 'T00:00:00');
@@ -255,11 +268,12 @@ const EvalMod = {
     const filas = activos.map(e => {
       const tipo = e.ciclo?.tipo === 'PRUEBA' ? 'Periodo de prueba' : (e.ciclo?.nombre || 'Desempeño');
       const dl   = diasLabel(e._dias);
+      const colab = e._colab;
       return `
         <tr>
           <td class="col-colaborador">
-            <strong>${esc(e.colaborador?.nombres || '—')}</strong>
-            <small>${esc(e.colaborador?.numero_id || '')}${e.colaborador?.sede_nombre ? ' · ' + esc(e.colaborador.sede_nombre) : ''}</small>
+            <strong>${esc(colab?.nombres || colab?.nombre || '—')}</strong>
+            <small>${esc(colab?.numero_id || colab?.cedula || '')}${colab?.sede_nombre || colab?.ciudad ? ' · ' + esc(colab?.sede_nombre || colab?.ciudad) : ''}</small>
           </td>
           <td>${esc(e.cargo_nombre)}</td>
           <td>${esc(tipo)}</td>
@@ -394,9 +408,21 @@ const EvalMod = {
     c.innerHTML = '<div class="loading">Cargando…</div>';
 
     const { data: ev, error } = await sb.from('evaluaciones')
-      .select('*, colaborador:colaborador_id(*), ciclo:ciclo_id(*)')
+      .select('*, colaborador:colaborador_id(*), trabajador:trabajador_id(*), ciclo:ciclo_id(*)')
       .eq('id', evalId).single();
     if (error) { c.innerHTML = `<p class="text-danger">${error.message}</p>`; return; }
+
+    // Normalizar colaborador desde cualquiera de las dos fuentes
+    if (!ev.colaborador && ev.trabajador) {
+      ev.colaborador = {
+        nombres:             ev.trabajador.nombre,
+        numero_id:           ev.trabajador.cedula,
+        empresa:             ev.trabajador.empresa,
+        sede_nombre:         ev.trabajador.ciudad,
+        fecha_ingreso:       ev.trabajador.fecha_ingreso,
+        periodo_prueba_dias: ev.trabajador.periodo_prueba_dias
+      };
+    }
 
     const { data: detalle } = await sb.from('evaluacion_detalle')
       .select('*, competencia:competencia_id(codigo, nombre, tipo, definicion)')
@@ -883,8 +909,16 @@ const EvalMod = {
     c.innerHTML = '<div class="loading">Cargando…</div>';
 
     const { data: ev } = await sb.from('evaluaciones')
-      .select('*, colaborador:colaborador_id(*), ciclo:ciclo_id(*)')
+      .select('*, colaborador:colaborador_id(*), trabajador:trabajador_id(*), ciclo:ciclo_id(*)')
       .eq('id', evalId).single();
+
+    if (!ev.colaborador && ev.trabajador) {
+      ev.colaborador = {
+        nombres:   ev.trabajador.nombre,
+        numero_id: ev.trabajador.cedula,
+        empresa:   ev.trabajador.empresa
+      };
+    }
 
     const { data: det } = await sb.from('evaluacion_detalle')
       .select('*, competencia:competencia_id(codigo, nombre, tipo)')
