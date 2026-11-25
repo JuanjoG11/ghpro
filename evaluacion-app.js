@@ -5,113 +5,87 @@
 'use strict';
 
 /* ════════════════════════════════════════════════════════════
-   CONSTANTES Y ETIQUETAS
+   CONSTANTES
    ════════════════════════════════════════════════════════════ */
 const EVAL_ESTADO = {
-  pendiente:           'Pendiente',
-  en_diligenciamiento: 'En diligenciamiento',
-  enviada_gh:          'Enviada a GH',
-  devuelta:            'Devuelta',
-  socializada:         'Socializada',
-  firmada:             'Firmada',
-  cerrada:             'Cerrada',
-  anulada:             'Anulada',
-  vencida:             'Vencida'
+  pendiente:'Pendiente', en_diligenciamiento:'En borrador',
+  enviada_gh:'Enviada a GH', devuelta:'Devuelta',
+  socializada:'Socializada', firmada:'Firmada',
+  cerrada:'Cerrada', anulada:'Anulada', vencida:'Vencida'
 };
-const EVAL_BADGE = {
-  pendiente:           'badge-warning',
-  en_diligenciamiento: 'badge-info',
-  enviada_gh:          'badge-primary',
-  devuelta:            'badge-danger',
-  socializada:         'badge-success',
-  firmada:             'badge-success',
-  cerrada:             'badge-neutral',
-  anulada:             'badge-danger',
-  vencida:             'badge-danger'
+const EVAL_BADGE_CLASS = {
+  pendiente:'badge-pendiente', en_diligenciamiento:'badge-borrador',
+  enviada_gh:'badge-enviada', devuelta:'badge-devuelta',
+  socializada:'badge-socializada', firmada:'badge-firmada',
+  cerrada:'badge-cerrada', anulada:'badge-danger', vencida:'badge-vencida'
 };
 const CLASIF_LABEL = {
-  cumple_perfil:         'Cumple el perfil',
-  oportunidades_mejora:  'Cumple con oportunidades de mejora',
-  cumple_parcialmente:   'Cumple parcialmente',
-  no_cumple:             'No cumple'
+  cumple_perfil:'Cumple el perfil',
+  oportunidades_mejora:'Cumple con oportunidades de mejora',
+  cumple_parcialmente:'Cumple parcialmente',
+  no_cumple:'No cumple'
 };
-const CLASIF_BADGE = {
-  cumple_perfil:         'badge-success',
-  oportunidades_mejora:  'badge-info',
-  cumple_parcialmente:   'badge-warning',
-  no_cumple:             'badge-danger'
-};
-const GRADO_LABEL = { A:'A – Alto', B:'B – Bueno', C:'C – Mínimo', D:'D – Insuficiente' };
-const PUNTAJE    = { A:4, B:3, C:2, D:1 };
+const PUNTAJE = { A:4, B:3, C:2, D:1 };
+const GRADO_NOMBRE = { A:'A – Alto', B:'B – Bueno', C:'C – Mínimo', D:'D – Insuficiente' };
 
 /* ════════════════════════════════════════════════════════════
    HELPERS
    ════════════════════════════════════════════════════════════ */
-function evalBadge(estado) {
-  return `<span class="badge ${EVAL_BADGE[estado]||'badge-neutral'}">${EVAL_ESTADO[estado]||estado}</span>`;
-}
-function clasifBadge(c) {
-  if (!c) return '';
-  return `<span class="badge ${CLASIF_BADGE[c]||'badge-neutral'}">${CLASIF_LABEL[c]||c}</span>`;
-}
-function fmtDate(d) {
-  if (!d) return '—';
-  const dt = new Date(d + 'T00:00:00');
-  return dt.toLocaleDateString('es-CO', { day:'2-digit', month:'2-digit', year:'numeric' });
-}
-function diasRestantesHtml(dias) {
-  if (dias === null || dias === undefined) return '';
-  if (dias < 0)  return `<span class="badge badge-danger">${Math.abs(dias)} días vencido</span>`;
-  if (dias <= 5) return `<span class="badge badge-danger">⚠ ${dias} días</span>`;
-  if (dias <= 10) return `<span class="badge badge-warning">${dias} días</span>`;
-  return `<span class="badge badge-info">${dias} días</span>`;
-}
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function toast(msg, tipo = 'success') {
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,dd] = d.split('T')[0].split('-');
+  return `${dd}/${m}/${y}`;
+}
+function estadoBadge(estado) {
+  return `<span class="badge ${EVAL_BADGE_CLASS[estado]||'badge-neutral'}">${EVAL_ESTADO[estado]||estado}</span>`;
+}
+function diasLabel(dias) {
+  if (dias === null || dias === undefined) return { html:'—', cls:'' };
+  if (dias < 0)   return { html:`Vencida hace ${Math.abs(dias)} día${Math.abs(dias)>1?'s':''}`, cls:'fecha-danger' };
+  if (dias === 0) return { html:'Vence hoy', cls:'fecha-danger' };
+  if (dias <= 5)  return { html:`En ${dias} día${dias>1?'s':''}`, cls:'fecha-danger' };
+  if (dias <= 10) return { html:`En ${dias} días`, cls:'fecha-warn' };
+  return { html:`Día ${dias} del ciclo`, cls:'fecha-ok' };
+}
+function btnAccion(estado, evalId, esGH) {
+  if (estado === 'pendiente')           return `<button class="btn-accion" onclick="EvalMod.abrirFormulario('${evalId}')">Evaluar</button>`;
+  if (estado === 'en_diligenciamiento') return `<button class="btn-accion" onclick="EvalMod.abrirFormulario('${evalId}')">Continuar</button>`;
+  if (estado === 'devuelta')            return `<button class="btn-accion" onclick="EvalMod.abrirFormulario('${evalId}')">Corregir</button>`;
+  if (estado === 'vencida')             return `<button class="btn-accion" onclick="EvalMod.abrirFormulario('${evalId}')">Evaluar</button>`;
+  if ((estado === 'enviada_gh' || estado === 'socializada') && esGH)
+                                        return `<button class="btn-accion" onclick="EvalMod.abrirRevisionGH('${evalId}')">Revisar</button>`;
+  return `<button class="btn-accion secundario" onclick="EvalMod.abrirFormulario('${evalId}')">Ver</button>`;
+}
+function toast(msg, tipo='success') {
   const t = document.createElement('div');
-  t.className = `toast toast-${tipo}`;
+  t.className = `toast${tipo==='error'?' toast-error':tipo==='warning'?' toast-warning':''}`;
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
-}
-async function supaRPC(fn, params = {}) {
-  const { data, error } = await sb.rpc(fn, params);
-  if (error) throw error;
-  return data;
+  setTimeout(() => t.remove(), 3200);
 }
 
 /* ════════════════════════════════════════════════════════════
-   MÓDULO PRINCIPAL
+   MÓDULO
    ════════════════════════════════════════════════════════════ */
 const EvalMod = {
 
-  /* ── estado UI ─────────────────────────────────────────── */
-  vista: 'bandeja',
+  usuarioActual: null,
   evaluacionActiva: null,
   detalleCache: [],
   planesCache: [],
-  competenciasCache: [],
   parametros: {},
-  usuarioActual: null,       // { id, nombre, cargo, rol }
-  usuariosLista: [],
+  compActual: 0,   // índice de competencia en formulario paso a paso
 
-  /* ════════════════════════════════════════════════════════
-     INICIALIZAR
-     ════════════════════════════════════════════════════════ */
+  /* ── INIT ─────────────────────────────────────────────── */
   async init() {
     await this.cargarParametros();
-    // Intentar recuperar usuario de sesión anterior
     const guardado = sessionStorage.getItem('eval_usuario');
-    if (guardado) {
-      try { this.usuarioActual = JSON.parse(guardado); } catch(e) {}
-    }
-    if (!this.usuarioActual) {
-      await this.mostrarSelectorIdentidad();
-      return;
-    }
+    if (guardado) { try { this.usuarioActual = JSON.parse(guardado); } catch(e){} }
+    if (!this.usuarioActual) { this.renderLogin(); return; }
     this.renderTopbar();
     await this.mostrarBandeja();
   },
@@ -121,607 +95,700 @@ const EvalMod = {
     if (data) data.forEach(p => { this.parametros[p.clave] = p.valor; });
   },
 
-  /* ════════════════════════════════════════════════════════
-     SELECTOR DE IDENTIDAD — cédula + PIN igual que requisición
-     ════════════════════════════════════════════════════════ */
-  async mostrarSelectorIdentidad() {
-    const contenedor = document.getElementById('eval-contenido');
-    if (!contenedor) return;
-
-    contenedor.innerHTML = `
-      <div class="selector-identidad">
-        <div class="selector-card">
-          <div class="selector-icon">📊</div>
+  /* ── LOGIN ────────────────────────────────────────────── */
+  renderLogin() {
+    document.getElementById('app-contenido').innerHTML = `
+      <div class="login-wrap">
+        <div class="login-card">
+          <div class="login-icon">📊</div>
           <h2>Evaluación de Desempeño</h2>
-          <p class="text-muted">Ingresa tu cédula y PIN para continuar</p>
-          <div class="selector-form">
-            <div class="selector-campo">
-              <label>Número de cédula</label>
-              <input type="text" id="eval-cedula" class="form-control"
-                placeholder="Ej: 1234567890"
-                inputmode="numeric"
-                onkeydown="if(event.key==='Enter') document.getElementById('eval-pin').focus()" />
-            </div>
-            <div class="selector-campo">
-              <label>PIN</label>
-              <input type="password" id="eval-pin" class="form-control"
-                placeholder="PIN de 4-6 dígitos"
-                maxlength="6"
-                onkeydown="if(event.key==='Enter') EvalMod.verificarAcceso()" />
-            </div>
-            <div id="eval-login-error" class="alert alert-danger" style="display:none"></div>
-            <button class="btn btn-primary" style="width:100%;margin-top:.5rem"
-              onclick="EvalMod.verificarAcceso()">Ingresar →</button>
+          <p>Ingresa tu cédula y PIN para continuar</p>
+          <div class="login-campo">
+            <label>Número de cédula</label>
+            <input id="ev-ced" type="text" class="login-input" placeholder="Ej: 1234567890"
+              inputmode="numeric"
+              onkeydown="if(event.key==='Enter') document.getElementById('ev-pin').focus()" />
           </div>
+          <div class="login-campo">
+            <label>PIN</label>
+            <input id="ev-pin" type="password" class="login-input" placeholder="PIN de 4-6 dígitos"
+              maxlength="6"
+              onkeydown="if(event.key==='Enter') EvalMod.login()" />
+          </div>
+          <div id="ev-err" class="login-error"></div>
+          <button class="btn-login" onclick="EvalMod.login()">Ingresar →</button>
         </div>
       </div>
     `;
-
-    // Foco automático en cédula
-    setTimeout(() => document.getElementById('eval-cedula')?.focus(), 100);
+    setTimeout(() => document.getElementById('ev-ced')?.focus(), 100);
   },
 
-  async verificarAcceso() {
-    const cedula = (document.getElementById('eval-cedula')?.value || '').trim();
-    const pin    = (document.getElementById('eval-pin')?.value    || '').trim();
-    const errDiv = document.getElementById('eval-login-error');
+  async login() {
+    const cedula = (document.getElementById('ev-ced')?.value||'').trim();
+    const pin    = (document.getElementById('ev-pin')?.value||'').trim();
+    const err    = document.getElementById('ev-err');
+    if (!cedula||!pin) { err.textContent='Ingresa tu cédula y PIN.'; err.style.display='block'; return; }
 
-    if (!cedula || !pin) {
-      errDiv.textContent = 'Ingresa tu cédula y PIN.';
-      errDiv.style.display = 'block';
-      return;
+    const { data } = await sb.from('usuarios_evaluacion')
+      .select('*').eq('cedula',cedula).eq('activo',true).limit(1);
+
+    if (!data||data.length===0) {
+      err.textContent='Cédula no encontrada. Verifica o contacta a Gestión Humana.';
+      err.style.display='block'; return;
     }
-
-    const { data: usuarios, error } = await sb
-      .from('usuarios_evaluacion')
-      .select('*')
-      .eq('cedula', cedula)
-      .eq('activo', true)
-      .limit(1);
-
-    if (error || !usuarios || usuarios.length === 0) {
-      errDiv.textContent = 'Cédula no encontrada. Verifica o contacta a Gestión Humana.';
-      errDiv.style.display = 'block';
-      return;
+    if (data[0].pin !== pin) {
+      err.textContent='PIN incorrecto.'; err.style.display='block';
+      document.getElementById('ev-pin').value='';
+      document.getElementById('ev-pin').focus(); return;
     }
-
-    const u = usuarios[0];
-
-    if (u.pin !== pin) {
-      errDiv.textContent = 'PIN incorrecto.';
-      errDiv.style.display = 'block';
-      document.getElementById('eval-pin').value = '';
-      document.getElementById('eval-pin').focus();
-      return;
-    }
-
-    this.usuarioActual = u;
-    sessionStorage.setItem('eval_usuario', JSON.stringify(u));
+    this.usuarioActual = data[0];
+    sessionStorage.setItem('eval_usuario', JSON.stringify(data[0]));
     this.renderTopbar();
     await this.mostrarBandeja();
   },
 
-  /* ════════════════════════════════════════════════════════
-     TOPBAR — muestra quién está activo y botón cambiar
-     ════════════════════════════════════════════════════════ */
-  renderTopbar() {
-    const nav = document.getElementById('eval-nav');
-    if (!nav || !this.usuarioActual) return;
+  /* ── TOPBAR ───────────────────────────────────────────── */
+  renderTopbar(tab='evaluaciones') {
     const u = this.usuarioActual;
-    nav.innerHTML = `
-      <span style="font-size:.85rem;opacity:.8">
-        ${u.nombre} · <em>${u.cargo}</em>
-      </span>
-      <button class="btn btn-sm btn-ghost" onclick="EvalMod.cambiarUsuario()" title="Cambiar usuario">
-        🔄 Cambiar
-      </button>
+    if (!u) return;
+    const esGH = u.rol === 'gh' || u.rol === 'gerencia';
+
+    document.getElementById('topbar-nav').innerHTML = `
+      <button class="topbar-nav-btn ${tab==='evaluaciones'?'active':''}"
+        onclick="EvalMod.mostrarBandeja()">Evaluaciones</button>
+      ${esGH ? `<button class="topbar-nav-btn ${tab==='periodos'?'active':''}"
+        onclick="EvalMod.mostrarPeriodosPrueba()">Periodos de prueba</button>` : ''}
+      <button class="topbar-nav-btn" onclick="window.location.href='index.html'">← GH PRO</button>
+    `;
+    document.getElementById('topbar-user').innerHTML = `
+      <span>[${esc(u.nombre)}] · ${esc(u.cargo)}</span>
+      <button onclick="EvalMod.logout()">Salir</button>
     `;
   },
 
-  cambiarUsuario() {
+  logout() {
     this.usuarioActual = null;
     sessionStorage.removeItem('eval_usuario');
-    this.mostrarSelectorIdentidad();
+    this.renderLogin();
+    document.getElementById('topbar-nav').innerHTML = '';
+    document.getElementById('topbar-user').innerHTML = '';
   },
 
-  /* ════════════════════════════════════════════════════════
-     BANDEJA — filtrada por rol del usuario actual
-     ════════════════════════════════════════════════════════ */
-  async mostrarBandeja(filtroEstado = '') {
-    if (!this.usuarioActual) { await this.mostrarSelectorIdentidad(); return; }
-    const contenedor = document.getElementById('eval-contenido');
-    if (!contenedor) return;
-    contenedor.innerHTML = '<div class="loading">Cargando evaluaciones…</div>';
+  /* ── BANDEJA ──────────────────────────────────────────── */
+  async mostrarBandeja(filtro='pendiente') {
+    if (!this.usuarioActual) { this.renderLogin(); return; }
+    this.renderTopbar('evaluaciones');
+    const c = document.getElementById('app-contenido');
+    c.innerHTML = '<div class="loading">Cargando…</div>';
 
-    let q = sb
-      .from('evaluaciones')
-      .select(`
-        id, estado, cargo_nombre, evaluador_nombre, rol_evaluador,
-        fecha_limite, concepto_prueba, indice_ajuste, clasificacion,
-        orden_contratacion_num, created_at,
-        colaborador:colaborador_id (nombres, numero_id, empresa, sede_nombre),
-        ciclo:ciclo_id (tipo, nombre)
-      `)
-      .order('created_at', { ascending: false });
-
-    // Filtrar por rol:
-    // lider → solo ve sus evaluaciones (donde él es el evaluador asignado)
-    // gh    → ve todas
-    // gerencia → solo ve evaluaciones de los cargos de liderazgo
     const u = this.usuarioActual;
-    if (u.rol === 'lider') {
-      q = q.eq('evaluador_nombre', u.nombre);
-    } else if (u.rol === 'gerencia') {
-      // gerencia ve evaluaciones donde el colaborador tiene cargo de liderazgo
-      // Filtramos por evaluador_nombre también (el GG es evaluador de los líderes)
-      q = q.eq('evaluador_nombre', u.nombre);
-    }
-    // gh no tiene filtro adicional — ve todo
+    const esGH = u.rol === 'gh' || u.rol === 'gerencia';
 
-    if (filtroEstado) q = q.eq('estado', filtroEstado);
+    // Cargar evaluaciones
+    let q = sb.from('evaluaciones').select(`
+      id, estado, cargo_nombre, evaluador_nombre,
+      fecha_limite, concepto_prueba, indice_ajuste, clasificacion,
+      orden_contratacion_num, created_at, updated_at,
+      colaborador:colaborador_id (nombres, numero_id, empresa, sede_nombre, fecha_ingreso, periodo_prueba_dias),
+      ciclo:ciclo_id (tipo, nombre)
+    `).order('created_at', { ascending: false });
 
-    const { data: evals, error } = await q;
-    if (error) { contenedor.innerHTML = `<p class="error">${error.message}</p>`; return; }
+    if (u.rol === 'lider' || u.rol === 'gerencia') q = q.eq('evaluador_nombre', u.nombre);
 
-    const filas = (evals || []).map(e => `
-      <tr>
-        <td><strong>${esc(e.colaborador?.nombres || '—')}</strong><br>
-            <small>${esc(e.colaborador?.numero_id || '')}</small></td>
-        <td>${esc(e.cargo_nombre)}</td>
-        <td><span class="badge badge-neutral">${esc(e.ciclo?.tipo === 'PRUEBA' ? 'Prueba' : e.ciclo?.nombre || '')}</span></td>
-        <td>${evalBadge(e.estado)}</td>
-        <td>${e.indice_ajuste != null ? e.indice_ajuste + '%' : '—'}</td>
-        <td>${e.concepto_prueba ? (e.concepto_prueba === 'CONTINUA'
-              ? '<span class="badge badge-success">Continúa</span>'
-              : '<span class="badge badge-danger">No continúa</span>') : '—'}</td>
-        <td>${fmtDate(e.fecha_limite)}</td>
-        <td>
-          <button class="btn btn-xs" onclick="EvalMod.abrirFormulario('${e.id}')">
-            ${['pendiente','en_diligenciamiento','devuelta'].includes(e.estado) ? '✏ Evaluar' : '👁 Ver'}
-          </button>
-          ${['enviada_gh','socializada'].includes(e.estado)
-            ? `<button class="btn btn-xs btn-success" onclick="EvalMod.abrirRevisionGH('${e.id}')">🔍 Revisar</button>`
-            : ''}
-        </td>
-      </tr>
-    `).join('');
+    const { data: evals } = await q;
+    const todos = evals || [];
 
-    contenedor.innerHTML = `
-      <div class="eval-toolbar">
-        <h2>📋 ${u.rol === 'lider' ? 'Mis evaluaciones' : u.rol === 'gerencia' ? 'Evaluaciones a tu cargo' : 'Todas las evaluaciones'}</h2>
-        <div class="toolbar-actions">
-          ${u.rol !== 'lider' ? `
-          <select id="filtro-estado-eval" onchange="EvalMod.mostrarBandeja(this.value)" class="form-select form-select-sm">
-            <option value="">Todos los estados</option>
-            ${Object.entries(EVAL_ESTADO).map(([k,v]) =>
-              `<option value="${k}" ${k === filtroEstado ? 'selected' : ''}>${v}</option>`
-            ).join('')}
-          </select>` : ''}
+    // Calcular días restantes para cada evaluación
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const conDias = todos.map(e => {
+      let dias = null;
+      if (e.colaborador?.fecha_ingreso && e.colaborador?.periodo_prueba_dias && e.ciclo?.tipo === 'PRUEBA') {
+        const venc = new Date(e.colaborador.fecha_ingreso);
+        venc.setDate(venc.getDate() + e.colaborador.periodo_prueba_dias - 1);
+        dias = Math.ceil((venc - hoy) / 86400000);
+      } else if (e.fecha_limite) {
+        const lim = new Date(e.fecha_limite + 'T00:00:00');
+        dias = Math.ceil((lim - hoy) / 86400000);
+      }
+      return { ...e, _dias: dias };
+    });
+
+    // Filtros
+    const pendientes  = conDias.filter(e => ['pendiente','en_diligenciamiento'].includes(e.estado));
+    const enviadas    = conDias.filter(e => ['enviada_gh','socializada','firmada'].includes(e.estado));
+    const devueltas   = conDias.filter(e => e.estado === 'devuelta');
+    const vencidas    = conDias.filter(e => e.estado === 'vencida');
+    const planes      = conDias.filter(e => ['socializada','firmada','cerrada'].includes(e.estado));
+
+    const grupos = { pendiente: pendientes, enviada: enviadas, devuelta: devueltas, vencida: vencidas, planes };
+    const activos = filtro === 'planes' ? planes :
+                    filtro === 'enviada' ? enviadas :
+                    filtro === 'devuelta' ? [...devueltas, ...vencidas] :
+                    pendientes;
+
+    // KPIs resumen
+    const pruebaProximas = conDias.filter(e =>
+      e.ciclo?.tipo === 'PRUEBA' && e._dias !== null && e._dias <= 15 &&
+      !['cerrada','anulada'].includes(e.estado)
+    );
+    const masCercano = pruebaProximas.sort((a,b) => a._dias - b._dias)[0];
+
+    // Ciclo desempeño activo
+    const { data: cicloActivo } = await sb.from('ciclos_evaluacion')
+      .select('*').eq('tipo','DESEMPENO').eq('estado','en_curso').limit(1);
+    const ciclo = cicloActivo?.[0];
+    const totalCiclo = ciclo ? conDias.filter(e => e.ciclo?.nombre === ciclo.nombre).length : 0;
+    const enviadasCiclo = ciclo ? conDias.filter(e =>
+      e.ciclo?.nombre === ciclo.nombre && ['enviada_gh','socializada','firmada','cerrada'].includes(e.estado)
+    ).length : 0;
+    const pct = totalCiclo ? Math.round(enviadasCiclo / totalCiclo * 100) : 0;
+
+    // Planes con seguimiento este mes
+    const { data: planesMes } = await sb.from('planes_mejora')
+      .select('id, estado, fecha_seguimiento')
+      .gte('fecha_seguimiento', new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0])
+      .lte('fecha_seguimiento', new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).toISOString().split('T')[0]);
+    const planesMesTotal = planesMes?.length || 0;
+    const planesVencidos = (planesMes||[]).filter(p => p.estado === 'vencido' || (p.fecha_seguimiento < hoy.toISOString().split('T')[0] && p.estado === 'pendiente')).length;
+
+    // Tabla
+    const filas = activos.map(e => {
+      const tipo = e.ciclo?.tipo === 'PRUEBA' ? 'Periodo de prueba' : (e.ciclo?.nombre || 'Desempeño');
+      const dl   = diasLabel(e._dias);
+      return `
+        <tr>
+          <td class="col-colaborador">
+            <strong>${esc(e.colaborador?.nombres || '—')}</strong>
+            <small>${esc(e.colaborador?.numero_id || '')}${e.colaborador?.sede_nombre ? ' · ' + esc(e.colaborador.sede_nombre) : ''}</small>
+          </td>
+          <td>${esc(e.cargo_nombre)}</td>
+          <td>${esc(tipo)}</td>
+          <td class="${dl.cls}">${dl.html}</td>
+          <td>${estadoBadge(e.estado)}</td>
+          <td>${btnAccion(e.estado, e.id, esGH)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const tabFiltro = (key, label, count) => `
+      <button class="filtro-tab ${filtro===key?'active':''}"
+        onclick="EvalMod.mostrarBandeja('${key}')">
+        ${label}${count ? ` (${count})` : ''}
+      </button>
+    `;
+
+    c.innerHTML = `
+      <div class="main">
+        <div class="bandeja-header">
+          <div>
+            <h1>Mis evaluaciones</h1>
+            <p>Califica a tu equipo antes de la fecha límite. Las vencidas se reportan a Gestión Humana.</p>
+          </div>
+          <div class="filtros-tabs">
+            ${tabFiltro('pendiente',  'Pendientes',    pendientes.length + devueltas.length + vencidas.length)}
+            ${tabFiltro('enviada',    'Enviadas',       enviadas.length)}
+            ${tabFiltro('planes',     'Planes de mejora', '')}
+          </div>
+        </div>
+
+        <div class="resumen-grid">
+          <div class="resumen-card">
+            <div class="resumen-label">${ciclo ? ciclo.nombre : 'Sin ciclo activo'}</div>
+            <div class="resumen-num">${enviadasCiclo} de ${totalCiclo}</div>
+            <div class="resumen-progress"><div class="resumen-progress-bar" style="width:${pct}%"></div></div>
+            <div class="resumen-sub">Fecha límite: ${ciclo ? fmtDate(ciclo.fecha_limite) : '—'}</div>
+          </div>
+          <div class="resumen-card ${pruebaProximas.length > 0 ? 'warn' : ''}">
+            <div class="resumen-label">Periodos de prueba por vencer</div>
+            <div class="resumen-num ${pruebaProximas.length > 0 ? 'warn' : ''}">${pruebaProximas.length}</div>
+            <div class="resumen-sub">
+              ${masCercano
+                ? `El más próximo vence en <strong>${masCercano._dias} días</strong>. Debes entregar el concepto ${this.parametros.dias_limite_lider_prueba || 10} días antes.`
+                : 'Sin periodos de prueba próximos.'}
+            </div>
+          </div>
+          <div class="resumen-card">
+            <div class="resumen-label">Planes de mejora con seguimiento este mes</div>
+            <div class="resumen-num">${planesMesTotal}</div>
+            <div class="resumen-sub">${planesVencidos > 0 ? `${planesVencidos} compromiso${planesVencidos>1?'s':''} vencido${planesVencidos>1?'s':''} sin seguimiento.` : 'Sin compromisos vencidos.'}</div>
+          </div>
+        </div>
+
+        <div class="eval-table-wrap">
+          <table class="eval-table">
+            <thead>
+              <tr>
+                <th>Colaborador</th>
+                <th>Cargo</th>
+                <th>Tipo</th>
+                <th>Fecha límite</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${activos.length === 0
+                ? `<tr><td colspan="6" class="empty-state">No hay evaluaciones en esta sección.</td></tr>`
+                : filas}
+            </tbody>
+          </table>
         </div>
       </div>
-      ${u.rol === 'lider' ? `
-        <div class="alert alert-info" style="margin-bottom:1rem">
-          Estás viendo las evaluaciones de tu equipo como <strong>${esc(u.cargo)}</strong>.
-          Solo los líderes de proceso con personal a cargo pueden evaluar.
-        </div>` : ''}
-      ${evals?.length === 0 ? '<p class="empty-state">No hay evaluaciones pendientes.</p>' : ''}
-      <div class="table-responsive">
-        <table class="tabla-gh">
-          <thead>
-            <tr>
-              <th>Colaborador</th><th>Cargo</th><th>Ciclo</th><th>Estado</th>
-              <th>Índice</th><th>Concepto prueba</th><th>Fecha límite</th><th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>${filas}</tbody>
-        </table>
-      </div>
     `;
   },
 
-  /* ════════════════════════════════════════════════════════
-     PERIODOS DE PRUEBA
-     ════════════════════════════════════════════════════════ */
+  /* ── PERIODOS DE PRUEBA (vista GH) ───────────────────── */
   async mostrarPeriodosPrueba() {
-    const contenedor = document.getElementById('eval-contenido');
-    if (!contenedor) return;
-    contenedor.innerHTML = '<div class="loading">Cargando periodos de prueba…</div>';
+    this.renderTopbar('periodos');
+    const c = document.getElementById('app-contenido');
+    c.innerHTML = '<div class="loading">Cargando…</div>';
 
-    const { data, error } = await sb
-      .from('v_periodos_prueba')
-      .select('*')
-      .order('dias_restantes', { ascending: true });
+    const { data, error } = await sb.from('v_periodos_prueba')
+      .select('*').order('dias_restantes', { ascending: true });
+    if (error) { c.innerHTML = `<p class="text-danger">${error.message}</p>`; return; }
 
-    if (error) { contenedor.innerHTML = `<p class="error">${error.message}</p>`; return; }
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const filas = (data||[]).map(p => {
+      const dl = diasLabel(p.dias_restantes);
+      return `
+        <tr>
+          <td class="col-colaborador">
+            <strong>${esc(p.colaborador)}</strong>
+            <small>${esc(p.cedula)} · ${esc(p.empresa)}</small>
+          </td>
+          <td>${esc(p.cargo)}</td>
+          <td>${esc(p.lider)}</td>
+          <td class="${dl.cls}">${dl.html}</td>
+          <td>${estadoBadge(p.estado)}</td>
+          <td>${p.concepto_prueba
+            ? (p.concepto_prueba==='CONTINUA'
+              ? '<span class="badge badge-success">Continúa</span>'
+              : '<span class="badge badge-danger">No continúa</span>')
+            : '—'}</td>
+          <td>${btnAccion(p.estado, p.evaluacion_id, true)}</td>
+        </tr>
+      `;
+    }).join('');
 
-    const filas = (data || []).map(p => `
-      <tr class="${p.dias_restantes !== null && p.dias_restantes <= 10 ? 'fila-alerta' : ''}">
-        <td><strong>${esc(p.colaborador)}</strong><br><small>${esc(p.cedula)}</small></td>
-        <td>${esc(p.empresa)}</td>
-        <td>${esc(p.cargo)}</td>
-        <td>${esc(p.lider)}</td>
-        <td>${fmtDate(p.fecha_fin_prueba)}</td>
-        <td>${diasRestantesHtml(p.dias_restantes)}</td>
-        <td>${evalBadge(p.estado)}</td>
-        <td>${p.concepto_prueba
-              ? (p.concepto_prueba === 'CONTINUA'
-                  ? '<span class="badge badge-success">Continúa</span>'
-                  : '<span class="badge badge-danger">No continúa</span>')
-              : '—'}</td>
-        <td>
-          <button class="btn btn-xs" onclick="EvalMod.abrirFormulario('${p.evaluacion_id}')">
-            ${['pendiente','en_diligenciamiento','devuelta'].includes(p.estado) ? '✏ Evaluar' : '👁 Ver'}
-          </button>
-        </td>
-      </tr>
-    `).join('');
-
-    contenedor.innerHTML = `
-      <div class="eval-toolbar">
-        <h2>⏱ Periodos de Prueba</h2>
-      </div>
-      <div class="table-responsive">
-        <table class="tabla-gh">
-          <thead>
-            <tr>
-              <th>Colaborador</th><th>Empresa</th><th>Cargo</th><th>Líder</th>
-              <th>Vence</th><th>Días restantes</th><th>Estado</th><th>Concepto</th><th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>${filas || '<tr><td colspan="9" class="empty-state">Sin periodos de prueba activos.</td></tr>'}</tbody>
-        </table>
+    c.innerHTML = `
+      <div class="main">
+        <div class="bandeja-header">
+          <div><h1>Periodos de prueba</h1><p>Seguimiento a todas las evaluaciones de periodo de prueba activas.</p></div>
+        </div>
+        <div class="eval-table-wrap">
+          <table class="eval-table">
+            <thead><tr>
+              <th>Colaborador</th><th>Cargo</th><th>Líder</th>
+              <th>Vencimiento</th><th>Estado</th><th>Concepto</th><th></th>
+            </tr></thead>
+            <tbody>${filas || '<tr><td colspan="7" class="empty-state">Sin periodos de prueba activos.</td></tr>'}</tbody>
+          </table>
+        </div>
       </div>
     `;
   },
 
-  /* ════════════════════════════════════════════════════════
-     FORMULARIO DE EVALUACIÓN
-     ════════════════════════════════════════════════════════ */
+  /* ── FORMULARIO PASO A PASO ───────────────────────────── */
   async abrirFormulario(evalId) {
-    const contenedor = document.getElementById('eval-contenido');
-    contenedor.innerHTML = '<div class="loading">Cargando formulario…</div>';
+    const c = document.getElementById('app-contenido');
+    c.innerHTML = '<div class="loading">Cargando…</div>';
 
-    // Cargar evaluación completa
-    const { data: ev, error: errEv } = await sb
-      .from('evaluaciones')
-      .select(`
-        *, colaborador:colaborador_id(*), ciclo:ciclo_id(*)
-      `)
-      .eq('id', evalId)
-      .single();
+    const { data: ev, error } = await sb.from('evaluaciones')
+      .select('*, colaborador:colaborador_id(*), ciclo:ciclo_id(*)')
+      .eq('id', evalId).single();
+    if (error) { c.innerHTML = `<p class="text-danger">${error.message}</p>`; return; }
 
-    if (errEv) { contenedor.innerHTML = `<p class="error">${errEv.message}</p>`; return; }
-
-    // Cargar detalle de competencias
-    const { data: detalle } = await sb
-      .from('evaluacion_detalle')
+    const { data: detalle } = await sb.from('evaluacion_detalle')
       .select('*, competencia:competencia_id(codigo, nombre, tipo, definicion)')
-      .eq('evaluacion_id', evalId)
-      .order('codigo');
+      .eq('evaluacion_id', evalId).order('codigo');
 
-    // Cargar grados de cada competencia
-    const compIds = (detalle || []).map(d => d.competencia_id);
+    const compIds = (detalle||[]).map(d => d.competencia_id);
     let gradosMap = {};
     if (compIds.length > 0) {
-      const { data: grados } = await sb
-        .from('competencia_grados')
-        .select('*')
-        .in('competencia_id', compIds)
-        .order('puntaje', { ascending: false });
-      (grados || []).forEach(g => {
+      const { data: grados } = await sb.from('competencia_grados')
+        .select('*').in('competencia_id', compIds).order('puntaje', { ascending: false });
+      (grados||[]).forEach(g => {
         if (!gradosMap[g.competencia_id]) gradosMap[g.competencia_id] = {};
         gradosMap[g.competencia_id][g.grado] = g.conducta;
       });
     }
 
-    // Cargar planes de mejora existentes
-    const { data: planes } = await sb
-      .from('planes_mejora')
-      .select('*')
-      .eq('evaluacion_id', evalId);
+    const { data: planes } = await sb.from('planes_mejora')
+      .select('*').eq('evaluacion_id', evalId);
 
     this.evaluacionActiva = ev;
-    this.detalleCache = detalle || [];
-    this.planesCache = planes || [];
+    this.detalleCache     = detalle || [];
+    this.planesCache      = planes  || [];
+    this.gradosMapCache   = gradosMap;
+    this.compActual       = 0;
 
-    // Un líder solo puede editar sus propias evaluaciones
     const u = this.usuarioActual;
-    const esEvaluadorAsignado = !u || u.rol === 'gh' ||
+    const esEvaluador = !u || u.rol==='gh' ||
       ev.evaluador_nombre?.toLowerCase() === u.nombre?.toLowerCase();
+    const editable = ['pendiente','en_diligenciamiento','devuelta'].includes(ev.estado) && esEvaluador;
 
-    const editable = ['pendiente','en_diligenciamiento','devuelta'].includes(ev.estado)
-      && esEvaluadorAsignado;
+    this._evalId   = evalId;
+    this._editable = editable;
+
+    if (editable && this.detalleCache.length > 0) {
+      // Ir a la primera competencia sin calificar, o la primera si todas ya tienen
+      const primeraSinCal = this.detalleCache.findIndex(d => !d.grado_observado);
+      this.compActual = primeraSinCal >= 0 ? primeraSinCal : 0;
+      this.renderCompetencia();
+    } else {
+      // Vista de solo lectura — mostrar resumen
+      this.renderResumenFormulario();
+    }
+  },
+
+  renderCompetencia() {
+    const c = document.getElementById('app-contenido');
+    const ev = this.evaluacionActiva;
+    const detalle = this.detalleCache;
+    const d = detalle[this.compActual];
+    const grados = this.gradosMapCache[d.competencia_id] || {};
+    const total = detalle.length;
+    const idx   = this.compActual;
     const esPrueba = ev.ciclo?.tipo === 'PRUEBA';
-    const esFirmada = ['firmada','cerrada'].includes(ev.estado);
+    const bajoPerfil = d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido];
+    const evidReq    = d.grado_observado && (d.grado_observado === 'D' || bajoPerfil);
 
-    // Cabecera
-    const fechaVenc = ev.colaborador?.fecha_ingreso && ev.colaborador?.periodo_prueba_dias
-      ? new Date(new Date(ev.colaborador.fecha_ingreso).getTime()
-          + (ev.colaborador.periodo_prueba_dias - 1) * 86400000)
-          .toISOString().split('T')[0]
-      : null;
+    // Es última competencia → mostrar botón "Revisar y enviar"
+    const esUltima = idx === total - 1;
 
-    let html = `
-      <div class="eval-form-header">
-        <button class="btn btn-sm btn-ghost" onclick="EvalMod.mostrarBandeja()">← Volver</button>
-        <div>
-          <h2>${esPrueba ? '⏱ Evaluación de Periodo de Prueba' : '📊 Evaluación de Desempeño'}</h2>
-          <p class="eval-subtitle">
-            <strong>${esc(ev.colaborador?.nombres)}</strong> ·
-            ${esc(ev.cargo_nombre)} ·
-            ${esc(ev.colaborador?.empresa || '')} ·
-            ${esc(ev.colaborador?.sede_nombre || '')}
-          </p>
-          ${esPrueba && fechaVenc ? `<p class="eval-fechas">Vencimiento periodo de prueba: <strong>${fmtDate(fechaVenc)}</strong></p>` : ''}
-          <p class="eval-fechas">Evaluador: <strong>${esc(ev.evaluador_nombre || '—')}</strong> · Estado: ${evalBadge(ev.estado)}</p>
-          ${ev.observacion_devolucion ? `<div class="alert alert-warning">📌 GH devolvió: ${esc(ev.observacion_devolucion)}</div>` : ''}
-          ${!esEvaluadorAsignado ? `<div class="alert alert-warning">👁 Solo puedes ver esta evaluación. El evaluador asignado es <strong>${esc(ev.evaluador_nombre)}</strong>.</div>` : ''}
+    c.innerHTML = `
+      <div style="max-width:540px;margin:0 auto;background:#fff;min-height:100vh;display:flex;flex-direction:column;">
+        <!-- Topbar formulario -->
+        <div class="form-topbar">
+          <button class="form-topbar-back" onclick="EvalMod.mostrarBandeja()">‹ Bandeja</button>
+          <span class="form-topbar-auto" id="autosave-label">Guardado automático</span>
         </div>
-      </div>
 
-      <form id="form-evaluacion" onsubmit="EvalMod.enviarEvaluacion(event, '${evalId}')">
-        <div class="competencias-grid">
-    `;
-
-    // Tarjetas de competencia
-    (detalle || []).forEach((d, idx) => {
-      const grados = gradosMap[d.competencia_id] || {};
-      const tieneValor = !!d.grado_observado;
-      const bajoPerfil = tieneValor && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido];
-      const evidenciaReq = tieneValor && (d.grado_observado === 'D' || bajoPerfil);
-
-      html += `
-        <div class="comp-card ${tieneValor ? (d.cumple ? 'comp-cumple' : 'comp-brecha') : ''}" id="card-${d.id}">
-          <div class="comp-card-header">
-            <span class="comp-codigo">${esc(d.codigo)}</span>
-            <span class="comp-nombre">${esc(d.nombre_comp)}</span>
-            ${tieneValor && ev.estado !== 'pendiente'
-              ? (d.cumple
-                  ? `<span class="badge badge-success">${d.es_fortaleza ? '⭐ Fortaleza' : '✓ Cumple'}</span>`
-                  : `<span class="badge badge-danger">⚠ Brecha ${d.brecha_grados} grado(s)</span>`)
-              : ''}
+        <!-- Cabecera colaborador -->
+        <div class="form-collab-header">
+          <h2>${esc(ev.colaborador?.nombres || '—')}</h2>
+          <p>${esc(ev.cargo_nombre)} · ${esPrueba ? 'Periodo de prueba' : esc(ev.ciclo?.nombre || 'Desempeño')}</p>
+          <div class="form-progress-bar">
+            <div class="form-progress-fill" style="width:${Math.round((idx+1)/total*100)}%"></div>
           </div>
+          <div class="form-progress-label">${idx+1} de ${total}</div>
+        </div>
+
+        <!-- Cuerpo competencia -->
+        <div class="form-comp-body" id="comp-body">
+          <div class="form-comp-codigo">${esc(d.codigo)} · ${esc(d.competencia?.tipo || '')}</div>
+          <div class="form-comp-nombre">${esc(d.nombre_comp)}</div>
           ${d.competencia?.definicion
-            ? `<p class="comp-definicion">${esc(d.competencia.definicion)}</p>`
+            ? `<div class="form-comp-definicion">${esc(d.competencia.definicion)}</div>`
             : ''}
-          <div class="comp-opciones">
+          <div class="form-comp-pregunta">¿Qué conducta describe mejor lo que has observado?</div>
+
+          <div class="opcion-lista" id="opciones-lista">
             ${['A','B','C','D'].map(g => `
-              <label class="comp-opcion ${!editable ? 'readonly' : ''} ${d.grado_observado === g ? 'selected' : ''}">
-                <input type="radio" name="grado_${d.id}" value="${g}"
-                  ${d.grado_observado === g ? 'checked' : ''}
-                  ${!editable ? 'disabled' : ''}
-                  onchange="EvalMod.onGradoChange('${d.id}', '${evalId}', this.value, ${PUNTAJE[d.grado_exigido]})"
-                />
-                <div class="comp-opcion-inner">
-                  <span class="grado-label">${GRADO_LABEL[g]}</span>
-                  <span class="conducta-texto">${esc(grados[g] || '')}</span>
+              <label class="opcion-item ${d.grado_observado===g?'sel':''}" id="opcion-${g}">
+                <input type="radio" name="grado_comp" value="${g}"
+                  ${d.grado_observado===g?'checked':''}
+                  onchange="EvalMod.seleccionarGrado('${d.id}', '${this._evalId}', '${g}', ${PUNTAJE[d.grado_exigido]})" />
+                <div class="opcion-letra">${g}</div>
+                <div class="opcion-texto">
+                  <strong>${GRADO_NOMBRE[g]}</strong>
+                  <span>${esc(grados[g]||'')}</span>
                 </div>
               </label>
             `).join('')}
           </div>
-          <div class="comp-evidencia" id="evidencia-wrap-${d.id}"
-               style="display:${evidenciaReq || d.evidencia ? 'block' : 'none'}">
-            <label>Evidencia <span class="req">*</span>
-              <small>(obligatoria cuando el grado está por debajo de lo exigido o es D)</small>
-            </label>
-            <textarea name="evidencia_${d.id}" rows="2" class="form-control"
-              ${!editable ? 'readonly' : ''}
-              minlength="30">${esc(d.evidencia || '')}</textarea>
+
+          <div id="evidencia-wrap" style="display:${evidReq||d.evidencia?'block':'none'}">
+            <div class="form-evidencia">
+              <label>Evidencia concreta <span style="color:#dc2626">*</span>
+                <small style="font-weight:400;color:#92400e"> — mínimo 30 caracteres</small>
+              </label>
+              <textarea id="evidencia-input" rows="3"
+                placeholder="Describe lo que observaste concretamente…">${esc(d.evidencia||'')}</textarea>
+            </div>
+          </div>
+
+          <div class="form-hint">
+            El grado exigido para el cargo se muestra al enviar, para que califiques lo observado y no lo esperado.
           </div>
         </div>
-      `;
-    });
 
-    html += `</div>`; // cierre competencias-grid
-
-    // Sección de concepto (solo periodo de prueba)
-    if (esPrueba) {
-      html += `
-        <div class="eval-seccion" id="seccion-concepto">
-          <h3>Concepto del periodo de prueba</h3>
-          <div class="concepto-opciones">
-            <label class="concepto-btn ${ev.concepto_prueba === 'CONTINUA' ? 'selected' : ''} ${!editable?'readonly':''}">
-              <input type="radio" name="concepto_prueba" value="CONTINUA"
-                ${ev.concepto_prueba === 'CONTINUA' ? 'checked' : ''}
-                ${!editable ? 'disabled' : ''}
-                onchange="EvalMod.onConcepChange(this.value)"
-              /> ✅ Continúa
-            </label>
-            <label class="concepto-btn ${ev.concepto_prueba === 'NO_CONTINUA' ? 'selected nocontinua' : ''} ${!editable?'readonly':''}">
-              <input type="radio" name="concepto_prueba" value="NO_CONTINUA"
-                ${ev.concepto_prueba === 'NO_CONTINUA' ? 'checked' : ''}
-                ${!editable ? 'disabled' : ''}
-                onchange="EvalMod.onConcepChange(this.value)"
-              /> ❌ No continúa
-            </label>
-          </div>
-          <div id="obs-nocontinua-wrap" style="display:${ev.concepto_prueba === 'NO_CONTINUA' ? 'block' : 'none'}">
-            <div class="alert alert-danger">Esta decisión activa una alerta inmediata a Gestión Humana.</div>
-          </div>
+        <!-- Navegación -->
+        <div class="form-nav">
+          <button class="btn-nav" onclick="EvalMod.navComp(-1)" ${idx===0?'disabled':''}>Anterior</button>
+          ${esUltima
+            ? `<button class="btn-nav primario" onclick="EvalMod.irARevisionEnvio()">Revisar y enviar</button>`
+            : `<button class="btn-nav primario" onclick="EvalMod.navComp(1)">Siguiente</button>`}
         </div>
-      `;
-    }
-
-    // Observaciones generales
-    html += `
-      <div class="eval-seccion">
-        <h3>Observaciones generales</h3>
-        <textarea id="obs-generales" name="observaciones_generales" rows="4" class="form-control"
-          ${!editable ? 'readonly' : ''}
-          placeholder="${esPrueba && ev.concepto_prueba === 'NO_CONTINUA' ? 'Obligatorio (mínimo 100 caracteres) cuando el concepto es No continúa' : 'Observaciones del evaluador…'}"
-        >${esc(ev.observaciones_generales || '')}</textarea>
       </div>
     `;
-
-    // Plan de mejora (prellenado con brechas)
-    const brechas = (detalle || []).filter(d => d.cumple === false);
-    if (brechas.length > 0 || (planes || []).length > 0) {
-      html += `
-        <div class="eval-seccion" id="seccion-planes">
-          <h3>📈 Plan de mejora</h3>
-          <p class="text-muted">Obligatorio para cada brecha. Acuerda acciones concretas con el colaborador.</p>
-          <div id="planes-container">
-            ${this.renderPlanesForm(brechas, planes || [], editable)}
-          </div>
-        </div>
-      `;
-    }
-
-    // Botones
-    if (editable) {
-      html += `
-        <div class="eval-actions">
-          <button type="button" class="btn btn-secondary"
-            onclick="EvalMod.guardarBorrador('${evalId}')">💾 Guardar borrador</button>
-          <button type="submit" class="btn btn-primary">📤 Enviar a Gestión Humana</button>
-        </div>
-      `;
-    } else if (ev.estado === 'socializada') {
-      html += `
-        <div class="eval-seccion">
-          <h3>✍ Firma del colaborador</h3>
-          <div class="firma-opciones">
-            <label><input type="radio" name="firma_aceptacion" value="true"> Estoy de acuerdo con la evaluación</label>
-            <label><input type="radio" name="firma_aceptacion" value="false"> Dejo constancia de mi desacuerdo</label>
-          </div>
-          <textarea id="firma-comentario" rows="3" class="form-control mt-2"
-            placeholder="Comentario o motivo de desacuerdo (opcional)"></textarea>
-          <button class="btn btn-primary mt-2" onclick="EvalMod.firmarColaborador('${evalId}')">
-            ✅ Firmar enterado
-          </button>
-        </div>
-      `;
-    }
-
-    html += `</form>`;
-
-    // Si ya está cerrada, mostrar resultado final con índice
-    if (!editable && ev.indice_ajuste != null) {
-      html += `
-        <div class="eval-resultado-box">
-          <div class="resultado-indice">${ev.indice_ajuste}%</div>
-          <div class="resultado-label">Índice de ajuste al cargo</div>
-          ${clasifBadge(ev.clasificacion)}
-        </div>
-      `;
-    }
-
-    contenedor.innerHTML = html;
   },
 
-  /* ── Render plan de mejora ─────────────────────────────── */
-  renderPlanesForm(brechas, planesExistentes, editable) {
-    // Mezclar: una fila por brecha, tomando datos existentes si ya hay plan
-    const filas = brechas.map((b, i) => {
-      const p = planesExistentes.find(pl => pl.competencia_id === b.competencia_id) || {};
+  async seleccionarGrado(detalleId, evalId, grado, puntajeExigido) {
+    // Marcar visualmente
+    document.querySelectorAll('.opcion-item').forEach(el => el.classList.remove('sel'));
+    document.getElementById(`opcion-${grado}`)?.classList.add('sel');
+
+    const puntaje    = PUNTAJE[grado];
+    const bajoPerfil = puntaje < puntajeExigido;
+    const evidWrap   = document.getElementById('evidencia-wrap');
+    if (evidWrap) evidWrap.style.display = (grado==='D'||bajoPerfil) ? 'block' : 'none';
+
+    // Actualizar cache local
+    const d = this.detalleCache.find(x => x.id === detalleId);
+    if (d) { d.grado_observado = grado; d.puntaje_observado = puntaje; }
+
+    // Guardar en BD
+    document.getElementById('autosave-label').textContent = 'Guardando…';
+    await sb.from('evaluacion_detalle')
+      .update({ grado_observado: grado, puntaje_observado: puntaje })
+      .eq('id', detalleId);
+    await sb.from('evaluaciones')
+      .update({ estado: 'en_diligenciamiento', updated_at: new Date().toISOString() })
+      .eq('id', evalId).eq('estado', 'pendiente');
+    document.getElementById('autosave-label').textContent = 'Guardado automático ✓';
+  },
+
+  async navComp(dir) {
+    // Guardar evidencia del campo actual antes de navegar
+    const d = this.detalleCache[this.compActual];
+    const evidInput = document.getElementById('evidencia-input');
+    if (evidInput && d) {
+      const val = evidInput.value.trim();
+      if (val !== (d.evidencia||'')) {
+        await sb.from('evaluacion_detalle').update({ evidencia: val }).eq('id', d.id);
+        d.evidencia = val;
+      }
+    }
+    this.compActual = Math.max(0, Math.min(this.detalleCache.length - 1, this.compActual + dir));
+    this.renderCompetencia();
+  },
+
+  /* ── REVISIÓN ANTES DE ENVIAR ─────────────────────────── */
+  async irARevisionEnvio() {
+    // Guardar evidencia de la última competencia
+    const d = this.detalleCache[this.compActual];
+    const evidInput = document.getElementById('evidencia-input');
+    if (evidInput && d) {
+      const val = evidInput.value.trim();
+      if (val !== (d.evidencia||'')) {
+        await sb.from('evaluacion_detalle').update({ evidencia: val }).eq('id', d.id);
+        d.evidencia = val;
+      }
+    }
+    this.renderResumenFormulario();
+  },
+
+  renderResumenFormulario() {
+    const c   = document.getElementById('app-contenido');
+    const ev  = this.evaluacionActiva;
+    const det = this.detalleCache;
+    const esPrueba = ev.ciclo?.tipo === 'PRUEBA';
+    const editable = this._editable;
+
+    const brechas    = det.filter(d => d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
+    const sinCal     = det.filter(d => !d.grado_observado);
+    const calificadas = det.filter(d => d.grado_observado);
+
+    // Calcular índice provisional
+    let sumMin = 0, sumEx = 0;
+    calificadas.forEach(d => {
+      sumEx  += PUNTAJE[d.grado_exigido];
+      sumMin += Math.min(PUNTAJE[d.grado_observado], PUNTAJE[d.grado_exigido]);
+    });
+    const indiceProvisional = sumEx > 0 ? Math.round(sumMin / sumEx * 100 * 10) / 10 : null;
+
+    const filaComp = det.map(d => `
+      <tr>
+        <td class="td-comp-nombre"><small>${esc(d.codigo)}</small> ${esc(d.nombre_comp)}</td>
+        <td class="td-grado">${d.grado_exigido}</td>
+        <td class="td-grado">${d.grado_observado||'<span style="color:#dc2626">—</span>'}</td>
+        <td>${!d.grado_observado
+          ? '<span class="badge badge-vencida">Sin calificar</span>'
+          : PUNTAJE[d.grado_observado] > PUNTAJE[d.grado_exigido]
+            ? '<span class="badge badge-info">Fortaleza</span>'
+            : PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]
+              ? '<span class="badge badge-brecha">Brecha</span>'
+              : '<span class="badge badge-cumple">Cumple</span>'}</td>
+      </tr>
+    `).join('');
+
+    const planFila = brechas.map(b => {
+      const p = this.planesCache.find(pl => pl.competencia_id === b.competencia_id) || {};
       return `
-        <div class="plan-fila" data-comp-id="${b.competencia_id}">
-          <div class="plan-comp-nombre">
-            <span class="badge badge-danger">Brecha ${b.brecha_grados}g</span>
-            ${esc(b.nombre_comp)} (exigido ${b.grado_exigido} · observado ${b.grado_observado || '—'})
+        <div class="plan-fila">
+          <div class="plan-fila-header">
+            <span class="badge badge-brecha">Brecha ${b.brecha_grados||PUNTAJE[b.grado_exigido]-PUNTAJE[b.grado_observado]}g</span>
+            ${esc(b.nombre_comp)}
           </div>
           <div class="plan-campos">
             <div class="plan-campo">
-              <label>Acción concreta <span class="req">*</span></label>
-              <input type="text" name="plan_accion_${b.competencia_id}"
-                class="form-control" value="${esc(p.accion || '')}"
-                ${!editable ? 'readonly' : ''} placeholder="Ej: Capacitación en servicio al cliente" />
+              <label>Acción concreta *</label>
+              <input type="text" class="form-control" id="p-accion-${b.competencia_id}"
+                value="${esc(p.accion||'')}" placeholder="Ej: Capacitación en servicio al cliente" ${!editable?'readonly':''}/>
             </div>
             <div class="plan-campo">
               <label>Responsable</label>
-              <input type="text" name="plan_resp_${b.competencia_id}"
-                class="form-control" value="${esc(p.responsable_nombre || '')}"
-                ${!editable ? 'readonly' : ''} placeholder="Nombre del responsable" />
+              <input type="text" class="form-control" id="p-resp-${b.competencia_id}"
+                value="${esc(p.responsable_nombre||'')}" placeholder="Nombre" ${!editable?'readonly':''}/>
             </div>
             <div class="plan-campo">
-              <label>Fecha compromiso <span class="req">*</span></label>
-              <input type="date" name="plan_fecha_${b.competencia_id}"
-                class="form-control" value="${p.fecha_compromiso || ''}"
-                ${!editable ? 'readonly' : ''} />
+              <label>Fecha compromiso *</label>
+              <input type="date" class="form-control" id="p-fecha-${b.competencia_id}"
+                value="${p.fecha_compromiso||''}" ${!editable?'readonly':''}/>
             </div>
             <div class="plan-campo">
               <label>Fecha seguimiento</label>
-              <input type="date" name="plan_seg_${b.competencia_id}"
-                class="form-control" value="${p.fecha_seguimiento || ''}"
-                ${!editable ? 'readonly' : ''} />
+              <input type="date" class="form-control" id="p-seg-${b.competencia_id}"
+                value="${p.fecha_seguimiento||''}" ${!editable?'readonly':''}/>
             </div>
           </div>
         </div>
       `;
-    });
-    return filas.join('') || '<p class="text-muted">Sin brechas detectadas aún.</p>';
+    }).join('');
+
+    c.innerHTML = `
+      <div style="max-width:540px;margin:0 auto;background:#fff;min-height:100vh;">
+        <div class="form-topbar">
+          <button class="form-topbar-back" onclick="EvalMod.compActual=${this.detalleCache.length-1};EvalMod.renderCompetencia()">‹ Volver</button>
+          <span class="form-topbar-auto"></span>
+        </div>
+        <div class="form-collab-header">
+          <h2>${esc(ev.colaborador?.nombres||'—')}</h2>
+          <p>${esc(ev.cargo_nombre)} · ${esPrueba?'Periodo de prueba':esc(ev.ciclo?.nombre||'')}</p>
+        </div>
+        <div style="padding:1.25rem;">
+
+          ${sinCal.length>0 ? `
+            <div class="alert alert-danger">
+              Faltan <strong>${sinCal.length}</strong> competencia(s) por calificar:
+              ${sinCal.map(d=>`<br>· ${d.codigo} ${d.nombre_comp}`).join('')}
+            </div>` : ''}
+
+          ${ev.observacion_devolucion ? `
+            <div class="alert alert-warn">
+              <strong>GH devolvió:</strong> ${esc(ev.observacion_devolucion)}
+            </div>` : ''}
+
+          <!-- Resumen índice provisional -->
+          ${indiceProvisional !== null && sinCal.length === 0 ? `
+            <div style="background:#f0f4ff;border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;">
+              <div style="font-size:2rem;font-weight:800;color:#1d3a6e;">${indiceProvisional}%</div>
+              <div>
+                <div style="font-size:.78rem;color:#64748b;">Índice provisional</div>
+                <div style="font-size:.84rem;font-weight:700;">${brechas.length} brecha(s) · ${det.filter(d=>d.grado_observado&&PUNTAJE[d.grado_observado]>PUNTAJE[d.grado_exigido]).length} fortaleza(s)</div>
+              </div>
+            </div>` : ''}
+
+          <!-- Tabla competencias -->
+          <div class="revision-tabla-wrap" style="margin-bottom:1.25rem;">
+            <table class="revision-tabla">
+              <thead><tr><th>Competencia</th><th>Exigido</th><th>Observado</th><th>Resultado</th></tr></thead>
+              <tbody>${filaComp}</tbody>
+            </table>
+          </div>
+
+          ${esPrueba && editable ? `
+            <div style="margin-bottom:1rem;">
+              <div style="font-size:.88rem;font-weight:700;margin-bottom:.5rem;">Concepto del periodo de prueba *</div>
+              <div class="concepto-wrap">
+                <button type="button" class="concepto-btn ${ev.concepto_prueba==='CONTINUA'?'sel-continua':''}"
+                  onclick="EvalMod.selConcepto('CONTINUA',this)">✅ Continúa</button>
+                <button type="button" class="concepto-btn ${ev.concepto_prueba==='NO_CONTINUA'?'sel-nocontinua':''}"
+                  onclick="EvalMod.selConcepto('NO_CONTINUA',this)">❌ No continúa</button>
+              </div>
+              <div id="alerta-no-continua" style="display:${ev.concepto_prueba==='NO_CONTINUA'?'block':'none'}">
+                <div class="alert alert-danger">Esta decisión activa una alerta inmediata a Gestión Humana.</div>
+              </div>
+            </div>` : esPrueba && ev.concepto_prueba ? `
+            <div style="margin-bottom:1rem;">
+              <div style="font-size:.88rem;font-weight:700;margin-bottom:.4rem;">Concepto:</div>
+              ${ev.concepto_prueba==='CONTINUA'
+                ? '<span class="badge badge-success" style="font-size:.88rem">✅ Continúa</span>'
+                : '<span class="badge badge-danger" style="font-size:.88rem">❌ No continúa</span>'}
+            </div>` : ''}
+
+          <!-- Observaciones generales -->
+          <div style="margin-bottom:1rem;">
+            <div style="font-size:.88rem;font-weight:700;margin-bottom:.4rem;">Observaciones generales</div>
+            <textarea id="obs-generales" rows="3" class="form-control"
+              ${!editable?'readonly':''}
+              placeholder="Observaciones del evaluador…">${esc(ev.observaciones_generales||'')}</textarea>
+          </div>
+
+          <!-- Planes de mejora -->
+          ${brechas.length > 0 ? `
+            <div style="margin-bottom:1rem;">
+              <div style="font-size:.88rem;font-weight:700;margin-bottom:.5rem;">Plan de mejora</div>
+              <div style="font-size:.8rem;color:#64748b;margin-bottom:.75rem;">Obligatorio para cada brecha.</div>
+              ${planFila}
+            </div>` : ''}
+
+          ${editable ? `
+            <div style="display:flex;gap:.75rem;padding:.75rem 0;">
+              <button class="btn-nav" style="flex:1;padding:.75rem;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;color:#1a2332;"
+                onclick="EvalMod.guardarBorrador()">Guardar borrador</button>
+              <button class="btn-nav primario" style="flex:1;padding:.75rem;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;border:none;background:#1a2332;color:#fff;"
+                onclick="EvalMod.enviarEvaluacion()">Enviar a GH</button>
+            </div>` : ''}
+
+          ${ev.estado==='socializada' ? `
+            <div style="margin-top:1rem;">
+              <div style="font-size:.88rem;font-weight:700;margin-bottom:.5rem;">¿Estás de acuerdo con tu evaluación?</div>
+              <div class="firma-opciones">
+                <button class="firma-btn" id="firma-si" onclick="EvalMod.selFirma(true,this)">Sí, estoy de acuerdo</button>
+                <button class="firma-btn peligro" id="firma-no" onclick="EvalMod.selFirma(false,this)">No estoy de acuerdo</button>
+              </div>
+              <textarea id="firma-comentario" rows="2" class="form-control"
+                placeholder="Comentario o motivo de desacuerdo (opcional)" style="display:none;margin-bottom:.5rem;"></textarea>
+              <button class="btn-firmar" id="btn-firmar" onclick="EvalMod.firmarColaborador('${this._evalId}')">
+                Firmar enterado
+              </button>
+              <div class="firma-disclaimer">Firmar significa que conoces el resultado, no que estés de acuerdo.</div>
+            </div>` : ''}
+        </div>
+      </div>
+    `;
   },
 
-  /* ── Cambio de grado en tiempo real ───────────────────── */
-  async onGradoChange(detalleId, evalId, gradoNuevo, puntajeExigido) {
-    const puntajeNuevo = PUNTAJE[gradoNuevo];
-    const bajoPerfil   = puntajeNuevo < puntajeExigido;
-    const evidWrap     = document.getElementById(`evidencia-wrap-${detalleId}`);
-    if (evidWrap) evidWrap.style.display = (gradoNuevo === 'D' || bajoPerfil) ? 'block' : 'none';
-
-    // Marcar card visualmente
-    const card = document.getElementById(`card-${detalleId}`);
-    if (card) {
-      card.classList.toggle('comp-brecha', bajoPerfil || gradoNuevo === 'D');
-      card.classList.toggle('comp-cumple', !bajoPerfil && gradoNuevo !== 'D');
-    }
-
-    // Guardar automáticamente el grado (borrador)
-    await sb.from('evaluacion_detalle')
-      .update({
-        grado_observado:   gradoNuevo,
-        puntaje_observado: puntajeNuevo
-      })
-      .eq('id', detalleId);
-
-    // Cambiar estado a en_diligenciamiento si está pendiente
-    await sb.from('evaluaciones')
-      .update({ estado: 'en_diligenciamiento', updated_at: new Date().toISOString() })
-      .eq('id', evalId)
-      .eq('estado', 'pendiente');
+  selConcepto(val, btn) {
+    document.querySelectorAll('.concepto-btn').forEach(b => { b.classList.remove('sel-continua','sel-nocontinua'); });
+    btn.classList.add(val==='CONTINUA'?'sel-continua':'sel-nocontinua');
+    if (this.evaluacionActiva) this.evaluacionActiva.concepto_prueba = val;
+    const alerta = document.getElementById('alerta-no-continua');
+    if (alerta) alerta.style.display = val==='NO_CONTINUA'?'block':'none';
   },
 
-  onConcepChange(valor) {
-    const wrap = document.getElementById('obs-nocontinua-wrap');
-    if (wrap) wrap.style.display = valor === 'NO_CONTINUA' ? 'block' : 'none';
-    const obsArea = document.getElementById('obs-generales');
-    if (obsArea) obsArea.placeholder = valor === 'NO_CONTINUA'
-      ? 'Obligatorio: explique las razones (mínimo 100 caracteres)'
-      : 'Observaciones del evaluador…';
+  selFirma(acepta, btn) {
+    document.querySelectorAll('.firma-btn').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+    this._firmaAcepta = acepta;
+    const com = document.getElementById('firma-comentario');
+    if (com) com.style.display = !acepta ? 'block' : 'none';
+    const btnF = document.getElementById('btn-firmar');
+    if (btnF) btnF.classList.add('activo');
   },
 
-  /* ── Guardar borrador ──────────────────────────────────── */
-  async guardarBorrador(evalId) {
-    const form = document.getElementById('form-evaluacion');
-    if (!form) return;
-    const fd = new FormData(form);
-
-    // Recoger planes
-    await this._guardarPlanes(evalId, fd);
-
-    // Observaciones y concepto
-    const obs     = fd.get('observaciones_generales') || '';
-    const concept = fd.get('concepto_prueba');
+  /* ── GUARDAR BORRADOR ─────────────────────────────────── */
+  async guardarBorrador() {
+    const obs     = document.getElementById('obs-generales')?.value || '';
+    const concepto = this.evaluacionActiva?.concepto_prueba;
     const upd = { observaciones_generales: obs, updated_at: new Date().toISOString() };
-    if (concept) upd.concepto_prueba = concept;
-
-    const { error } = await sb.from('evaluaciones').update(upd).eq('id', evalId);
-    if (error) { toast('Error al guardar: ' + error.message, 'error'); return; }
+    if (concepto) upd.concepto_prueba = concepto;
+    await sb.from('evaluaciones').update(upd).eq('id', this._evalId);
+    await this._guardarPlanesDesdeUI();
     toast('Borrador guardado ✓');
   },
 
-  async _guardarPlanes(evalId, fd) {
+  async _guardarPlanesDesdeUI() {
     const brechas = this.detalleCache.filter(d =>
       d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
-
     for (const b of brechas) {
-      const accion = fd.get(`plan_accion_${b.competencia_id}`) || '';
-      const resp   = fd.get(`plan_resp_${b.competencia_id}`) || '';
-      const fecha  = fd.get(`plan_fecha_${b.competencia_id}`) || null;
-      const seg    = fd.get(`plan_seg_${b.competencia_id}`) || null;
-
+      const accion = document.getElementById(`p-accion-${b.competencia_id}`)?.value||'';
+      const resp   = document.getElementById(`p-resp-${b.competencia_id}`)?.value||'';
+      const fecha  = document.getElementById(`p-fecha-${b.competencia_id}`)?.value||null;
+      const seg    = document.getElementById(`p-seg-${b.competencia_id}`)?.value||null;
       if (!accion) continue;
-
       const existing = this.planesCache.find(p => p.competencia_id === b.competencia_id);
       if (existing) {
         await sb.from('planes_mejora').update({
@@ -729,411 +796,282 @@ const EvalMod = {
           fecha_compromiso: fecha, fecha_seguimiento: seg, updated_at: new Date().toISOString()
         }).eq('id', existing.id);
       } else {
-        await sb.from('planes_mejora').insert({
-          evaluacion_id: evalId, competencia_id: b.competencia_id,
+        const { data: np } = await sb.from('planes_mejora').insert({
+          evaluacion_id: this._evalId, competencia_id: b.competencia_id,
           codigo_competencia: b.codigo, nombre_competencia: b.nombre_comp,
           accion, responsable_nombre: resp,
           fecha_compromiso: fecha, fecha_seguimiento: seg
-        });
+        }).select().single();
+        if (np) this.planesCache.push(np);
       }
     }
   },
 
-  /* ── Enviar a GH ───────────────────────────────────────── */
-  async enviarEvaluacion(e, evalId) {
-    e.preventDefault();
-    const form = document.getElementById('form-evaluacion');
-    const fd   = new FormData(form);
-    const ev   = this.evaluacionActiva;
-    const esPrueba = ev?.ciclo?.tipo === 'PRUEBA';
-
-    // ── Validaciones ────────────────────────────────────────
+  /* ── ENVIAR A GH ──────────────────────────────────────── */
+  async enviarEvaluacion() {
+    const ev      = this.evaluacionActiva;
+    const det     = this.detalleCache;
+    const esPrueba = ev.ciclo?.tipo === 'PRUEBA';
     const errores = [];
+    const minChars = parseInt(this.parametros.evidencia_min_chars||'30');
+    const obsMin   = parseInt(this.parametros.obs_no_continua_min_chars||'100');
 
-    // 1. Todas las competencias calificadas
-    const sinCalificar = this.detalleCache.filter(d => !d.grado_observado);
-    if (sinCalificar.length > 0) {
-      errores.push(`Faltan ${sinCalificar.length} competencia(s) por calificar: ${sinCalificar.map(d => d.codigo).join(', ')}`);
-    }
+    const sinCal = det.filter(d => !d.grado_observado);
+    if (sinCal.length > 0)
+      errores.push(`Faltan ${sinCal.length} competencia(s) sin calificar: ${sinCal.map(d=>d.codigo).join(', ')}`);
 
-    // 2. Evidencia en D o por debajo del exigido
-    const minChars = parseInt(this.parametros.evidencia_min_chars || '30');
-    this.detalleCache.forEach(d => {
+    det.forEach(d => {
       if (!d.grado_observado) return;
-      const bajoPerfil = PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido];
-      if (d.grado_observado === 'D' || bajoPerfil) {
-        const evidencia = (fd.get(`evidencia_${d.id}`) || '').trim();
-        if (evidencia.length < minChars) {
-          errores.push(`Evidencia insuficiente en "${d.nombre_comp}" (mínimo ${minChars} caracteres)`);
-        }
+      if (d.grado_observado === 'D' || PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]) {
+        const ev2 = document.getElementById(`p-accion-${d.competencia_id}`) ? '' :
+          (d.evidencia||'').trim();
+        const evActual = d.evidencia||'';
+        if (evActual.trim().length < minChars)
+          errores.push(`Evidencia insuficiente en "${d.nombre_comp}" (mín. ${minChars} caracteres)`);
       }
     });
 
-    // 3. Concepto obligatorio en periodo de prueba
-    const concepto = fd.get('concepto_prueba');
-    if (esPrueba && !concepto) {
-      errores.push('Debe seleccionar el concepto: Continúa o No continúa');
-    }
+    const concepto = ev.concepto_prueba;
+    if (esPrueba && !concepto)
+      errores.push('Selecciona el concepto: Continúa o No continúa');
 
-    // 4. Observaciones mínimas si No continúa
-    const obsMinChars = parseInt(this.parametros.obs_no_continua_min_chars || '100');
-    const obs = (fd.get('observaciones_generales') || '').trim();
-    if (esPrueba && concepto === 'NO_CONTINUA' && obs.length < obsMinChars) {
-      errores.push(`Las observaciones deben tener al menos ${obsMinChars} caracteres cuando el concepto es "No continúa"`);
-    }
+    const obs = (document.getElementById('obs-generales')?.value||'').trim();
+    if (esPrueba && concepto === 'NO_CONTINUA' && obs.length < obsMin)
+      errores.push(`Observaciones deben tener al menos ${obsMin} caracteres cuando el concepto es "No continúa"`);
 
-    // 5. Plan de mejora para cada brecha
-    const brechas = this.detalleCache.filter(d =>
-      d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
+    const brechas = det.filter(d => d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
     brechas.forEach(b => {
-      const accion = (fd.get(`plan_accion_${b.competencia_id}`) || '').trim();
-      const fecha  = fd.get(`plan_fecha_${b.competencia_id}`) || '';
-      if (!accion || !fecha) {
-        errores.push(`Plan de mejora incompleto para "${b.nombre_comp}" (acción y fecha requeridas)`);
-      }
+      const accion = document.getElementById(`p-accion-${b.competencia_id}`)?.value||'';
+      const fecha  = document.getElementById(`p-fecha-${b.competencia_id}`)?.value||'';
+      if (!accion||!fecha)
+        errores.push(`Plan de mejora incompleto para "${b.nombre_comp}"`);
     });
 
     if (errores.length > 0) {
-      this._mostrarErrores(errores);
+      const existing = document.getElementById('errores-envio');
+      if (existing) existing.remove();
+      const div = document.createElement('div');
+      div.id = 'errores-envio';
+      div.className = 'alert alert-danger';
+      div.style.cssText = 'position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);max-width:480px;width:90vw;z-index:999;';
+      div.innerHTML = `<strong>Corrige antes de enviar:</strong><ul>${errores.map(e=>`<li>${esc(e)}</li>`).join('')}</ul>`;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 6000);
       return;
     }
 
-    // ── Guardar datos finales ────────────────────────────────
-    // Evidencias
-    for (const d of this.detalleCache) {
-      const evidencia = fd.get(`evidencia_${d.id}`) || '';
-      if (evidencia) {
-        await sb.from('evaluacion_detalle')
-          .update({ evidencia })
-          .eq('id', d.id);
-      }
-    }
-
-    // Planes
-    await this._guardarPlanes(evalId, fd);
-
-    // Calcular índice en backend
-    await sb.rpc('fn_calcular_indice', { p_evaluacion_id: evalId });
-
-    // Actualizar estado de evaluación
+    await this._guardarPlanesDesdeUI();
+    await sb.rpc('fn_calcular_indice', { p_evaluacion_id: this._evalId });
     const updEval = {
-      estado: 'enviada_gh',
-      observaciones_generales: obs,
-      fecha_envio: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      estado: 'enviada_gh', observaciones_generales: obs,
+      fecha_envio: new Date().toISOString(), updated_at: new Date().toISOString()
     };
     if (concepto) updEval.concepto_prueba = concepto;
-
-    const { error } = await sb.from('evaluaciones').update(updEval).eq('id', evalId);
-    if (error) { toast('Error al enviar: ' + error.message, 'error'); return; }
-
-    // Auditoría
+    await sb.from('evaluaciones').update(updEval).eq('id', this._evalId);
     await sb.from('auditoria_evaluacion').insert({
-      tabla: 'evaluaciones', registro_id: evalId,
-      accion: 'cambio_estado', valor_anterior: ev.estado, valor_nuevo: 'enviada_gh',
-      usuario_nombre: 'líder'
+      tabla:'evaluaciones', registro_id: this._evalId,
+      accion:'cambio_estado', valor_anterior: ev.estado, valor_nuevo:'enviada_gh',
+      usuario_nombre: this.usuarioActual?.nombre || 'líder'
     });
-
-    toast('Evaluación enviada a Gestión Humana ✓', 'success');
+    toast('Evaluación enviada a Gestión Humana ✓');
     setTimeout(() => this.mostrarBandeja(), 1200);
   },
 
-  _mostrarErrores(errores) {
-    const existing = document.getElementById('eval-errores');
-    if (existing) existing.remove();
-    const div = document.createElement('div');
-    div.id = 'eval-errores';
-    div.className = 'alert alert-danger';
-    div.innerHTML = `<strong>Corrige antes de enviar:</strong><ul>${errores.map(e => `<li>${esc(e)}</li>`).join('')}</ul>`;
-    const form = document.getElementById('form-evaluacion');
-    form?.insertAdjacentElement('beforebegin', div);
-    div.scrollIntoView({ behavior: 'smooth' });
-  },
-
-  /* ════════════════════════════════════════════════════════
-     REVISIÓN GH
-     ════════════════════════════════════════════════════════ */
+  /* ── REVISIÓN GH ──────────────────────────────────────── */
   async abrirRevisionGH(evalId) {
-    const contenedor = document.getElementById('eval-contenido');
-    contenedor.innerHTML = '<div class="loading">Cargando revisión…</div>';
+    const c = document.getElementById('app-contenido');
+    c.innerHTML = '<div class="loading">Cargando…</div>';
 
-    const { data: ev } = await sb
-      .from('evaluaciones')
+    const { data: ev } = await sb.from('evaluaciones')
       .select('*, colaborador:colaborador_id(*), ciclo:ciclo_id(*)')
       .eq('id', evalId).single();
 
-    const { data: detalle } = await sb
-      .from('evaluacion_detalle')
+    const { data: det } = await sb.from('evaluacion_detalle')
       .select('*, competencia:competencia_id(codigo, nombre, tipo)')
-      .eq('evaluacion_id', evalId)
-      .order('codigo');
+      .eq('evaluacion_id', evalId).order('codigo');
 
-    const { data: planes } = await sb
-      .from('planes_mejora').select('*').eq('evaluacion_id', evalId);
+    const { data: planes } = await sb.from('planes_mejora')
+      .select('*').eq('evaluacion_id', evalId);
 
-    const { data: firmas } = await sb
-      .from('evaluacion_firmas').select('*').eq('evaluacion_id', evalId);
-
-    // Buscar autoevaluación del colaborador (si existe)
-    let autoEval = null;
+    // Buscar autoevaluación
+    let autoMap = {};
     if (ev?.ciclo?.incluye_autoevaluacion) {
-      const { data: ae } = await sb
-        .from('evaluaciones')
-        .select('*, evaluacion_detalle(*)')
-        .eq('colaborador_id', ev.colaborador_id)
-        .eq('ciclo_id', ev.ciclo_id)
-        .eq('rol_evaluador', 'AUTO')
-        .single();
-      autoEval = ae;
+      const { data: ae } = await sb.from('evaluaciones')
+        .select('id').eq('colaborador_id', ev.colaborador_id)
+        .eq('ciclo_id', ev.ciclo_id).eq('rol_evaluador','AUTO').single();
+      if (ae) {
+        const { data: aeDet } = await sb.from('evaluacion_detalle')
+          .select('competencia_id, grado_observado').eq('evaluacion_id', ae.id);
+        (aeDet||[]).forEach(x => { autoMap[x.competencia_id] = x.grado_observado; });
+      }
     }
 
-    // Tabla de competencias con comparación
-    const filas = (detalle || []).map(d => {
-      let autoGrado = '—';
-      if (autoEval?.evaluacion_detalle) {
-        const ad = autoEval.evaluacion_detalle.find(x => x.competencia_id === d.competencia_id);
-        if (ad) {
-          autoGrado = ad.grado_observado || '—';
-          const diff = Math.abs((PUNTAJE[d.grado_observado] || 0) - (PUNTAJE[ad.grado_observado] || 0));
-          if (diff >= 2) autoGrado = `<span class="badge badge-danger">⚠ ${autoGrado}</span>`;
-        }
-      }
+    this._evalId = evalId;
+    const brechas    = (det||[]).filter(d => d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
+    const fortalezas = (det||[]).filter(d => d.grado_observado && PUNTAJE[d.grado_observado] > PUNTAJE[d.grado_exigido]);
+    const alertasDif = (det||[]).filter(d => {
+      const ag = autoMap[d.competencia_id];
+      return ag && d.grado_observado && Math.abs(PUNTAJE[d.grado_observado] - PUNTAJE[ag]) >= 2;
+    });
+
+    const filas = (det||[]).map(d => {
+      const ag   = autoMap[d.competencia_id];
+      const diff = ag && d.grado_observado && Math.abs(PUNTAJE[d.grado_observado] - PUNTAJE[ag]) >= 2;
       return `
-        <tr class="${d.cumple === false ? 'fila-brecha' : ''}">
-          <td>${esc(d.codigo)}</td>
-          <td>${esc(d.nombre_comp)}</td>
-          <td class="text-center">${esc(d.grado_exigido)}</td>
-          <td class="text-center"><strong>${esc(d.grado_observado || '—')}</strong></td>
-          <td class="text-center">${autoGrado}</td>
-          <td class="text-center">
-            ${d.cumple === true
-              ? (d.es_fortaleza ? '⭐' : '✓')
-              : d.cumple === false ? `<span class="text-danger">▼${d.brecha_grados}g</span>` : ''}
-          </td>
-          <td><small>${esc(d.evidencia || '')}</small></td>
+        <tr>
+          <td class="td-comp-nombre"><small>${esc(d.codigo)}</small> ${esc(d.nombre_comp)}</td>
+          <td class="td-grado">${d.grado_exigido}</td>
+          <td class="td-grado">${d.grado_observado||'—'}</td>
+          <td class="td-grado">${ag ? (diff ? `<span class="td-auto-warn">${ag}</span>` : ag) : '—'}</td>
+          <td>${!d.grado_observado ? '—'
+            : PUNTAJE[d.grado_observado] > PUNTAJE[d.grado_exigido]
+              ? '<span class="badge badge-fortaleza">Fortaleza</span>'
+              : PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]
+                ? '<span class="badge badge-brecha">Brecha</span>'
+                : '<span class="badge badge-cumple">Cumple</span>'}</td>
         </tr>
       `;
     }).join('');
 
-    const html = `
-      <div class="eval-form-header">
-        <button class="btn btn-sm btn-ghost" onclick="EvalMod.mostrarBandeja()">← Volver</button>
-        <div>
-          <h2>🔍 Revisión GH — ${esc(ev?.colaborador?.nombres)}</h2>
-          <p>${esc(ev?.cargo_nombre)} · ${evalBadge(ev?.estado)}</p>
-        </div>
+    const planItems = (planes||[]).map(p => `
+      <div class="plan-item">
+        <strong>${esc(p.nombre_competencia)}</strong>
+        <span>${esc(p.accion)} · Responsable: ${esc(p.responsable_nombre||'—')}</span>
+        <span>Seguimiento: ${p.fecha_seguimiento ? fmtDate(p.fecha_seguimiento) : 'en el siguiente ciclo'}</span>
       </div>
-
-      ${ev?.indice_ajuste != null ? `
-        <div class="eval-resultado-box">
-          <div class="resultado-indice">${ev.indice_ajuste}%</div>
-          <div class="resultado-label">Índice de ajuste al cargo</div>
-          ${clasifBadge(ev.clasificacion)}
-          ${ev.concepto_prueba ? `<div class="mt-1">${ev.concepto_prueba === 'CONTINUA'
-            ? '<span class="badge badge-success badge-lg">✅ Continúa</span>'
-            : '<span class="badge badge-danger badge-lg">❌ No continúa</span>'}</div>` : ''}
-        </div>
-      ` : ''}
-
-      <div class="table-responsive">
-        <table class="tabla-gh tabla-revision">
-          <thead>
-            <tr>
-              <th>Código</th><th>Competencia</th><th>Exigido</th>
-              <th>Jefe</th><th>Auto</th><th>Resultado</th><th>Evidencia</th>
-            </tr>
-          </thead>
-          <tbody>${filas}</tbody>
-        </table>
-      </div>
-
-      ${(planes || []).length > 0 ? `
-        <div class="eval-seccion">
-          <h3>Plan de mejora</h3>
-          <table class="tabla-gh">
-            <thead><tr><th>Competencia</th><th>Acción</th><th>Responsable</th><th>Fecha compromiso</th><th>Seguimiento</th></tr></thead>
-            <tbody>
-              ${planes.map(p => `
-                <tr>
-                  <td>${esc(p.nombre_competencia)}</td>
-                  <td>${esc(p.accion)}</td>
-                  <td>${esc(p.responsable_nombre || '—')}</td>
-                  <td>${fmtDate(p.fecha_compromiso)}</td>
-                  <td>${fmtDate(p.fecha_seguimiento)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      ` : ''}
-
-      <div class="eval-seccion">
-        <h3>Observaciones generales del evaluador</h3>
-        <p>${esc(ev?.observaciones_generales || '(sin observaciones)')}</p>
-      </div>
-
-      ${ev?.estado === 'enviada_gh' ? `
-        <div class="eval-actions eval-gh-actions">
-          <div class="gh-aprobar">
-            <button class="btn btn-success btn-lg"
-              onclick="EvalMod.aprobarEvaluacion('${evalId}')">✅ Aprobar y socializar</button>
-          </div>
-          <div class="gh-devolver">
-            <textarea id="obs-devolucion" rows="3" class="form-control"
-              placeholder="Motivo de devolución (obligatorio)"></textarea>
-            <button class="btn btn-danger mt-1"
-              onclick="EvalMod.devolverEvaluacion('${evalId}')">↩ Devolver al líder</button>
-          </div>
-        </div>
-      ` : ''}
-    `;
-
-    contenedor.innerHTML = html;
-  },
-
-  async aprobarEvaluacion(evalId) {
-    const { error } = await sb.from('evaluaciones').update({
-      estado: 'socializada',
-      updated_at: new Date().toISOString()
-    }).eq('id', evalId);
-    if (error) { toast('Error: ' + error.message, 'error'); return; }
-
-    await sb.from('auditoria_evaluacion').insert({
-      tabla: 'evaluaciones', registro_id: evalId,
-      accion: 'cambio_estado', valor_anterior: 'enviada_gh', valor_nuevo: 'socializada',
-      usuario_nombre: 'GH'
-    });
-    await sb.from('evaluacion_firmas').insert({
-      evaluacion_id: evalId, rol: 'GH',
-      usuario_nombre: 'Gestión Humana', aceptacion: true
-    });
-
-    toast('Evaluación socializada ✓', 'success');
-    setTimeout(() => this.mostrarBandeja(), 1200);
-  },
-
-  async devolverEvaluacion(evalId) {
-    const obs = (document.getElementById('obs-devolucion')?.value || '').trim();
-    if (!obs) { toast('Escribe el motivo de devolución', 'warning'); return; }
-
-    const { error } = await sb.from('evaluaciones').update({
-      estado: 'devuelta',
-      observacion_devolucion: obs,
-      updated_at: new Date().toISOString()
-    }).eq('id', evalId);
-    if (error) { toast('Error: ' + error.message, 'error'); return; }
-
-    await sb.from('auditoria_evaluacion').insert({
-      tabla: 'evaluaciones', registro_id: evalId,
-      accion: 'cambio_estado', valor_anterior: 'enviada_gh', valor_nuevo: 'devuelta',
-      campo: 'observacion_devolucion', valor_nuevo: obs, usuario_nombre: 'GH'
-    });
-
-    toast('Evaluación devuelta al líder ✓', 'success');
-    setTimeout(() => this.mostrarBandeja(), 1200);
-  },
-
-  /* ════════════════════════════════════════════════════════
-     FIRMA DEL COLABORADOR
-     ════════════════════════════════════════════════════════ */
-  async firmarColaborador(evalId) {
-    const aceptacion = document.querySelector('input[name="firma_aceptacion"]:checked')?.value;
-    const comentario = (document.getElementById('firma-comentario')?.value || '').trim();
-
-    if (aceptacion === undefined) { toast('Selecciona si estás de acuerdo o no', 'warning'); return; }
-
-    await sb.from('evaluacion_firmas').insert({
-      evaluacion_id: evalId, rol: 'COLABORADOR',
-      usuario_nombre: 'Colaborador',
-      aceptacion: aceptacion === 'true',
-      comentario: comentario || null
-    });
-
-    await sb.from('evaluaciones').update({
-      estado: 'firmada', updated_at: new Date().toISOString()
-    }).eq('id', evalId);
-
-    await sb.from('auditoria_evaluacion').insert({
-      tabla: 'evaluaciones', registro_id: evalId,
-      accion: 'cambio_estado', valor_anterior: 'socializada', valor_nuevo: 'firmada',
-      usuario_nombre: 'colaborador'
-    });
-
-    toast('Evaluación firmada ✓', 'success');
-    setTimeout(() => this.mostrarBandeja(), 1200);
-  },
-
-  /* ════════════════════════════════════════════════════════
-     CREAR EVALUACIÓN DE PRUEBA DESDE CONTRATACIÓN
-     Llamar cuando se aprueba una orden de contratación
-     ════════════════════════════════════════════════════════ */
-  async crearEvaluacionPruebaDesdeOrden(ordenId) {
-    const { data, error } = await sb.rpc('fn_crear_evaluacion_prueba', {
-      p_orden_id: ordenId
-    });
-    if (error) {
-      console.error('Error al crear evaluación de periodo de prueba:', error.message);
-      return null;
-    }
-    return data; // UUID de la evaluación creada
-  },
-
-  /* ════════════════════════════════════════════════════════
-     PARÁMETROS
-     ════════════════════════════════════════════════════════ */
-  async mostrarParametros() {
-    const contenedor = document.getElementById('eval-contenido');
-    contenedor.innerHTML = '<div class="loading">Cargando parámetros…</div>';
-
-    const { data, error } = await sb
-      .from('parametros_evaluacion').select('*').order('clave');
-    if (error) { contenedor.innerHTML = `<p class="error">${error.message}</p>`; return; }
-
-    const filas = (data || []).map(p => `
-      <tr>
-        <td><code>${esc(p.clave)}</code></td>
-        <td><small class="text-muted">${esc(p.descripcion || '')}</small></td>
-        <td>
-          <input type="text" class="form-control form-control-sm"
-            id="param-${esc(p.clave)}" value="${esc(p.valor)}"
-            onchange="EvalMod.guardarParametro('${esc(p.clave)}', this.value)" />
-        </td>
-      </tr>
     `).join('');
 
-    contenedor.innerHTML = `
-      <div class="eval-toolbar">
-        <h2>⚙ Parámetros del módulo</h2>
-        <button class="btn btn-sm btn-ghost" onclick="EvalMod.mostrarBandeja()">← Volver</button>
+    c.innerHTML = `
+      <div class="main">
+        <div class="revision-header">
+          <div class="breadcrumb">${esc(ev.ciclo?.nombre||'')} · Enviada por ${esc(ev.evaluador_nombre||'')}</div>
+          <h1>${esc(ev.colaborador?.nombres||'—')} · ${esc(ev.cargo_nombre)}</h1>
+        </div>
+
+        <div class="revision-layout">
+          <!-- Columna izquierda -->
+          <div>
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <label>Índice de ajuste</label>
+                <div class="kpi-num">${ev.indice_ajuste != null ? ev.indice_ajuste+'%' : '—'}</div>
+                <div class="kpi-sub">${ev.indice_ajuste != null ? `${Math.round(ev.indice_ajuste/100 * this._sumEx(det))} de ${this._sumEx(det)} puntos` : ''}</div>
+              </div>
+              <div class="kpi-card">
+                <label>Clasificación</label>
+                <div class="kpi-clasif">${CLASIF_LABEL[ev.clasificacion]||'—'}</div>
+              </div>
+              <div class="kpi-card">
+                <label>Brechas</label>
+                <div class="kpi-num" style="color:#dc2626">${brechas.length}</div>
+                <div class="kpi-sub">con plan de mejora</div>
+              </div>
+              <div class="kpi-card">
+                <label>Fortalezas</label>
+                <div class="kpi-num" style="color:#0369a1">${fortalezas.length}</div>
+                <div class="kpi-sub">por encima de lo exigido</div>
+              </div>
+            </div>
+
+            <div class="revision-tabla-wrap">
+              <table class="revision-tabla">
+                <thead><tr>
+                  <th>Competencia</th><th>Exigido</th><th>Jefe</th><th>Auto</th><th>Resultado</th>
+                </tr></thead>
+                <tbody>${filas}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Panel derecho -->
+          <div class="revision-panel">
+            ${alertasDif.length > 0 ? `
+              <div class="panel-card alerta-revision">
+                <h3>⚠ Revisar evidencias</h3>
+                ${alertasDif.map(d => {
+                  const ag = autoMap[d.competencia_id];
+                  return `<p style="font-size:.82rem;margin-bottom:.4rem;">
+                    <strong>${esc(d.codigo)} ${esc(d.nombre_comp)}</strong>: el jefe calificó ${d.grado_observado} y el colaborador se autoevaluó en ${ag}. Hay ${Math.abs(PUNTAJE[d.grado_observado]-PUNTAJE[ag])} grados de diferencia.
+                  </p>`;
+                }).join('')}
+              </div>` : ''}
+
+            ${planItems ? `
+              <div class="panel-card">
+                <h3>Plan de mejora propuesto por el líder</h3>
+                ${planItems}
+              </div>` : ''}
+
+            <div class="panel-card">
+              <h3>Observaciones del líder</h3>
+              <p style="font-size:.84rem;color:#64748b;">${esc(ev.observaciones_generales||'Sin observaciones')}</p>
+            </div>
+
+            ${ev.estado === 'enviada_gh' ? `
+              <div class="panel-card">
+                <h3>Decisión de Gestión Humana</h3>
+                <textarea class="obs-textarea" id="obs-gh"
+                  placeholder="Obligatoria si la devuelves al líder"></textarea>
+                <button class="btn-aprobar" onclick="EvalMod.aprobarEval('${evalId}')">
+                  Aprobar y pasar a socialización
+                </button>
+                <button class="btn-devolver" onclick="EvalMod.devolverEval('${evalId}')">
+                  Devolver al líder
+                </button>
+              </div>` : `
+              <div class="panel-card">
+                <p style="font-size:.84rem;color:#64748b;">Estado: ${estadoBadge(ev.estado)}</p>
+                <button class="btn-accion secundario" style="width:100%;margin-top:.5rem"
+                  onclick="EvalMod.mostrarBandeja()">← Volver a la bandeja</button>
+              </div>`}
+          </div>
+        </div>
       </div>
-      <p class="text-muted">Los cambios se guardan automáticamente al modificar cada valor.</p>
-      <table class="tabla-gh">
-        <thead><tr><th>Parámetro</th><th>Descripción</th><th>Valor</th></tr></thead>
-        <tbody>${filas}</tbody>
-      </table>
     `;
   },
 
+  _sumEx(det) {
+    return (det||[]).reduce((s,d) => s + (PUNTAJE[d.grado_exigido]||0), 0);
+  },
+
+  async aprobarEval(evalId) {
+    await sb.from('evaluaciones').update({ estado:'socializada', updated_at: new Date().toISOString() }).eq('id', evalId);
+    await sb.from('evaluacion_firmas').insert({ evaluacion_id: evalId, rol:'GH', usuario_nombre:'Gestión Humana', aceptacion: true });
+    await sb.from('auditoria_evaluacion').insert({ tabla:'evaluaciones', registro_id: evalId, accion:'cambio_estado', valor_anterior:'enviada_gh', valor_nuevo:'socializada', usuario_nombre: this.usuarioActual?.nombre||'GH' });
+    toast('Evaluación aprobada y socializada ✓');
+    setTimeout(() => this.mostrarBandeja(), 1200);
+  },
+
+  async devolverEval(evalId) {
+    const obs = (document.getElementById('obs-gh')?.value||'').trim();
+    if (!obs) { toast('Escribe el motivo de devolución', 'warning'); return; }
+    await sb.from('evaluaciones').update({ estado:'devuelta', observacion_devolucion: obs, updated_at: new Date().toISOString() }).eq('id', evalId);
+    await sb.from('auditoria_evaluacion').insert({ tabla:'evaluaciones', registro_id: evalId, accion:'cambio_estado', valor_anterior:'enviada_gh', valor_nuevo:'devuelta', usuario_nombre: this.usuarioActual?.nombre||'GH' });
+    toast('Evaluación devuelta al líder ✓');
+    setTimeout(() => this.mostrarBandeja(), 1200);
+  },
+
+  /* ── FIRMA COLABORADOR ────────────────────────────────── */
+  async firmarColaborador(evalId) {
+    if (this._firmaAcepta === undefined) { toast('Selecciona si estás de acuerdo o no', 'warning'); return; }
+    const comentario = document.getElementById('firma-comentario')?.value||'';
+    await sb.from('evaluacion_firmas').insert({ evaluacion_id: evalId, rol:'COLABORADOR', usuario_nombre: this.usuarioActual?.nombre||'Colaborador', aceptacion: this._firmaAcepta, comentario: comentario||null });
+    await sb.from('evaluaciones').update({ estado:'firmada', updated_at: new Date().toISOString() }).eq('id', evalId);
+    await sb.from('auditoria_evaluacion').insert({ tabla:'evaluaciones', registro_id: evalId, accion:'cambio_estado', valor_anterior:'socializada', valor_nuevo:'firmada', usuario_nombre: this.usuarioActual?.nombre||'colaborador' });
+    toast('Evaluación firmada ✓');
+    setTimeout(() => this.mostrarBandeja(), 1200);
+  },
+
+  /* ── PARÁMETROS ───────────────────────────────────────── */
   async guardarParametro(clave, valor) {
-    const { error } = await sb.from('parametros_evaluacion')
-      .update({ valor })
-      .eq('clave', clave);
-    if (error) toast('Error al guardar: ' + error.message, 'error');
-    else {
-      this.parametros[clave] = valor;
-      toast(`Parámetro "${clave}" actualizado ✓`);
-    }
+    await sb.from('parametros_evaluacion').update({ valor }).eq('clave', clave);
+    this.parametros[clave] = valor;
+    toast(`Parámetro "${clave}" actualizado ✓`);
   }
 };
 
-/* ════════════════════════════════════════════════════════════
-   HOOK DE INTEGRACIÓN CON CONTRATACIÓN
-   Llama esto desde contratacion-app.js cuando una orden
-   pasa a estado 'aprobada' o 'contrato_generado'
-   ════════════════════════════════════════════════════════════ */
+/* Hook de integración con contratación */
 async function onOrdenAprobada(ordenId) {
-  const evalId = await EvalMod.crearEvaluacionPruebaDesdeOrden(ordenId);
-  if (evalId) {
-    console.log(`✅ Evaluación de periodo de prueba creada: ${evalId}`);
-  }
+  const { data, error } = await sb.rpc('fn_crear_evaluacion_prueba', { p_orden_id: ordenId });
+  if (!error && data) console.log('✅ Evaluación de periodo de prueba creada:', data);
 }
