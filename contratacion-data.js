@@ -350,17 +350,14 @@ const OrdenContratacion = {
       toast('La orden ya fue procesada.', 'warning');
       return false;
     }
-    await Aprobaciones.registrar('orden_contratacion', id, rol, nombre, decision, comentario);
-    if (rol === 'gerencia') {
-      const nuevoEstado = decision === 'aprobado' ? 'aprobada' : 'rechazada';
-      await this.update(id, { estado: nuevoEstado, motivo_rechazo: decision === 'rechazado' ? comentario : null }, nombre);
-      // Si aprobada: marcar candidato como seleccionado y requisición
-      if (decision === 'aprobado' && oc.candidato_id) {
-        await Candidatos.update(oc.candidato_id, { estado: 'seleccionado' });
-      }
-      if (decision === 'aprobado' && oc.requisicion_id) {
-        await _actualizarEstadoRequisicion(oc.requisicion_id);
-      }
+    await Aprobaciones.registrar('orden_contratacion', id, 'gh', nombre, decision, comentario);
+    const nuevoEstado = decision === 'aprobado' ? 'aprobada' : 'rechazada';
+    await this.update(id, { estado: nuevoEstado, motivo_rechazo: decision === 'rechazado' ? comentario : null }, nombre);
+    if (decision === 'aprobado' && oc.candidato_id) {
+      await Candidatos.update(oc.candidato_id, { estado: 'seleccionado' });
+    }
+    if (decision === 'aprobado' && oc.requisicion_id) {
+      await _actualizarEstadoRequisicion(oc.requisicion_id);
     }
     return true;
   },

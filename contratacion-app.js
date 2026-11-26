@@ -1033,9 +1033,11 @@ async function actualizarResultadoEntrevista(entId, resultado, reqId) {
    VER REQUISICIÓN (detalle completo + candidatos)
    ════════════════════════════════════════════════════════════ */
 async function verRequisicion(reqId) {
-  const [req, candidatos] = await Promise.all([
+  const [req, candidatos, entrevistas, todasOrdenes] = await Promise.all([
     Requisicion.getById(reqId),
     Candidatos.getByRequisicion(reqId),
+    Entrevistas.getByRequisicion(reqId),
+    OrdenContratacion.getAll(),
   ]);
   if (!req) return;
 
@@ -1149,18 +1151,31 @@ async function verRequisicion(reqId) {
           <table>
             <thead><tr><th>Nombre</th><th>Documento</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              ${candidatos.map(c=>`
+              ${candidatos.map(c=>{
+                const ent = entrevistas ? entrevistas.find(e => e.candidato_nombre === c.nombre) : null;
+                const pasoEnt = ent?.estado === 'asistio';
+                const noPasoEnt = ent?.estado === 'no_paso' || ent?.estado === 'no_asistio';
+                const ordenExistente = todasOrdenes.find(o => o.candidato_id === c.id && o.estado !== 'anulada');
+                return `
               <tr>
                 <td>${c.nombre}</td>
                 <td style="font-family:monospace">${c.tipo_id} ${c.numero_id}</td>
                 <td><span class="badge ${c.estado==='seleccionado'?'badge-success':c.estado==='descartado'?'badge-danger':'badge-neutral'}">${c.estado}</span></td>
                 <td>
-                  <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px"
-                          onclick="abrirModalVR('${c.id}','${req.id}','${c.nombre}','${req.cargo_nombre}','${req.numero}')">🔍 Referencias</button>
-                  <button class="btn btn-secondary" style="padding:4px 8px;font-size:11px"
-                          onclick="crearOrdenDesdeCandidato('${req.id}','${c.id}')">📋 Orden</button>
+                  ${noPasoEnt
+                    ? `<span style="font-size:11px;color:var(--danger);font-weight:600">✘ No pasó entrevista</span>`
+                    : pasoEnt
+                      ? `<button class="btn btn-secondary" style="padding:4px 8px;font-size:11px"
+                              onclick="abrirModalVR('${c.id}','${req.id}','${c.nombre}','${req.cargo_nombre}','${req.numero}')">🔍 Referencias</button>
+                         ${ordenExistente
+                           ? `<span style="font-size:11px;color:var(--success);font-weight:600;padding:4px 8px">✅ Orden ${ordenExistente.numero}</span>`
+                           : `<button class="btn btn-secondary" style="padding:4px 8px;font-size:11px"
+                              onclick="crearOrdenDesdeCandidato('${req.id}','${c.id}')">📋 Orden</button>`
+                         }`
+                      : `<span style="font-size:11px;color:var(--text-muted)">⏳ Pendiente entrevista</span>`
+                  }
                 </td>
-              </tr>`).join('')}
+              </tr>`;}).join('')}
             </tbody>
           </table>
         </div>`:`<div class="empty-state" style="padding:20px"><div class="empty-state-icon">👤</div><div class="empty-state-text">Sin candidatos registrados</div></div>`}
@@ -1344,7 +1359,14 @@ async function renderValidaciones() {
    MODAL NUEVA VALIDACIÓN DE REFERENCIAS
    ════════════════════════════════════════════════════════════ */
 async function abrirModalVR(candidatoId, reqId, candidatoNombre, cargo, reqNum) {
-  // Verificar autorización de datos del candidato
+  // Verificar que el candidato haya pasado la entrevista
+  const entrevistas = await Entrevistas.getByRequisicion(reqId);
+  const ent = entrevistas.find(e => e.candidato_nombre === candidatoNombre);
+  if (!ent || ent.estado !== 'asistio') {
+    toast('El candidato debe pasar la entrevista antes de verificar referencias.', 'warning');
+    return;
+  }
+
   const candidato = (await Candidatos.getByRequisicion(reqId)).find(c => c.id === candidatoId);
 
   // ¿Ya existe una validación para este candidato?
@@ -1994,6 +2016,21 @@ async function marcarContratoGenerado(ocId) {
 let _ocEditId = null;
 
 async function crearOrdenDesdeCandidato(reqId, candidatoId) {
+  // Verificar que el candidato haya pasado la entrevista
+  const entrevistas = await Entrevistas.getByRequisicion(reqId);
+  const candidato = await Candidatos.getByRequisicion(reqId).then(list => list.find(c => c.id === candidatoId));
+  const ent = entrevistas.find(e => e.candidato_nombre === candidato?.nombre);
+  if (!ent || ent.estado !== 'asistio') {
+    toast('El candidato debe pasar la entrevista antes de crear una orden de contratación.', 'warning');
+    return;
+  }
+  // Verificar que no exista ya una orden para este candidato
+  const ordenes = await OrdenContratacion.getAll();
+  const ordenExistente = ordenes.find(o => o.candidato_id === candidatoId && o.estado !== 'anulada');
+  if (ordenExistente) {
+    toast(`Ya existe una orden (${ordenExistente.numero}) para este candidato.`, 'warning');
+    return;
+  }
   cerrar('modalVerReq');
   await abrirModalOrden(null, reqId, candidatoId);
 }
@@ -2676,9 +2713,7 @@ async function verOrden(ocId) {
           <table>
             <thead><tr><th>Rol</th><th>Nombre</th><th>Fecha</th><th>Decisión</th></tr></thead>
             <tbody>
-              ${aprolHtml('gh','Jefe de Gestión Humana')}
-              ${aprolHtml('jefe_inmediato','Jefe inmediato')}
-              ${aprolHtml('gerencia','Gerente General')}
+              ${aprolHtml('gh','Gestión Humana')}
             </tbody>
           </table>
         </div>
@@ -2775,16 +2810,8 @@ async function abrirModalAprobacionOC(ocId) {
       </div>
       <div class="modal-body">
         <div style="margin-bottom:14px;font-size:13px;color:var(--text-secondary)">${oc.nombres} · ${oc.cargo} · ${oc.empresa}</div>
-        ${rolHtml('gh','Jefe de Gestión Humana')}
-        ${rolHtml('jefe_inmediato','Jefe inmediato')}
-        ${rolHtml('gerencia','Gerente General')}
+        ${rolHtml('gh','Gestión Humana')}
         <div class="form-section-title" style="margin-top:18px">Registrar aprobación</div>
-        <div class="form-group"><label class="form-label">Rol <span class="req-star">*</span></label>
-          <select class="form-select" id="ocAprobRol">
-            <option value="gh">Jefe de Gestión Humana</option>
-            <option value="jefe_inmediato">Jefe inmediato</option>
-            <option value="gerencia">Gerente General</option>
-          </select></div>
         <div class="form-group"><label class="form-label">Nombre <span class="req-star">*</span></label>
           <input type="text" class="form-input" id="ocAprobNombre"></div>
         <div class="form-group"><label class="form-label">Decisión</label>
@@ -2809,7 +2836,7 @@ async function abrirModalAprobacionOC(ocId) {
 }
 
 async function registrarAprobacionOC(ocId) {
-  const rol    = fv('ocAprobRol');
+  const rol    = 'gh';
   const nombre = fv('ocAprobNombre').trim();
   const dec    = fv('ocAprobDecision');
   const coment = fv('ocAprobComentario').trim();

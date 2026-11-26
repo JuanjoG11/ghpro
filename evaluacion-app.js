@@ -171,6 +171,16 @@ const EvalMod = {
     await this.cargarParametros();
     const guardado = sessionStorage.getItem('eval_usuario');
     if (guardado) { try { this.usuarioActual = JSON.parse(guardado); } catch(e){} }
+
+    // Link directo a brechas enviado al jefe por GH
+    const params = new URLSearchParams(window.location.search);
+    const brechasId = params.get('brechas');
+    if (brechasId) {
+      this.renderTopbar();
+      await this.mostrarBrechasJefe(brechasId);
+      return;
+    }
+
     if (!this.usuarioActual) { this.renderLogin(); return; }
     this.renderTopbar();
     await this.mostrarBandeja();
@@ -788,16 +798,7 @@ const EvalMod = {
               <strong>GH devolvió:</strong> ${esc(ev.observacion_devolucion)}
             </div>` : ''}
 
-          <!-- Resumen índice provisional -->
-          ${indiceProvisional !== null && sinCal.length === 0 ? `
-            <div style="background:#f0f4ff;border-radius:10px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;">
-              <div style="font-size:2rem;font-weight:800;color:#1d3a6e;">${indiceProvisional}%</div>
-              <div>
-                <div style="font-size:.78rem;color:#64748b;">Índice provisional · ${(this.parametros.modo_ponderacion||'POR_PUNTOS')==='POR_GRUPO'?'Ponderado por grupo':'Por puntos'}</div>
-                <div style="font-size:.84rem;font-weight:700;">${CLASIF_LABEL[resultado?.clasif]||''}</div>
-                <div style="font-size:.8rem;color:#64748b;margin-top:.2rem;">${brechasCalc.length} brecha(s) · ${fortalezasCalc.length} fortaleza(s) · ${resultado?.sumValidos||0} de ${resultado?.sumReq||0} puntos</div>
-              </div>
-            </div>` : ''}
+          <!-- Resumen índice provisional — solo visible para GH, no para el jefe -->
 
           <!-- Tabla competencias -->
           <div class="revision-tabla-wrap" style="margin-bottom:1.25rem;">
@@ -835,13 +836,7 @@ const EvalMod = {
               placeholder="Observaciones del evaluador…">${esc(ev.observaciones_generales||'')}</textarea>
           </div>
 
-          <!-- Planes de mejora -->
-          ${brechas.length > 0 ? `
-            <div style="margin-bottom:1rem;">
-              <div style="font-size:.88rem;font-weight:700;margin-bottom:.5rem;">Plan de mejora</div>
-              <div style="font-size:.8rem;color:#64748b;margin-bottom:.75rem;">Obligatorio para cada brecha.</div>
-              ${planFila}
-            </div>` : ''}
+          <!-- Planes de mejora — solo GH los llena, el jefe solo califica -->
 
           ${editable ? `
             <div style="display:flex;gap:.75rem;padding:.75rem 0;">
@@ -959,12 +954,6 @@ const EvalMod = {
       errores.push(`Observaciones deben tener al menos ${obsMin} caracteres cuando el concepto es "No continúa"`);
 
     const brechas = det.filter(d => d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
-    brechas.forEach(b => {
-      const accion = document.getElementById(`p-accion-${b.competencia_id}`)?.value||'';
-      const fecha  = document.getElementById(`p-fecha-${b.competencia_id}`)?.value||'';
-      if (!accion||!fecha)
-        errores.push(`Plan de mejora incompleto para "${b.nombre_comp}"`);
-    });
 
     if (errores.length > 0) {
       const existing = document.getElementById('errores-envio');
@@ -1136,11 +1125,49 @@ const EvalMod = {
 
             ${ev.estado === 'enviada_gh' ? `
               <div class="panel-card">
+                <h3>📋 Planes de mejora (GH)</h3>
+                <div style="font-size:.8rem;color:#64748b;margin-bottom:.75rem;">Completa los planes antes de aprobar.</div>
+                ${brechas.length === 0
+                  ? `<p style="font-size:.84rem;color:#16a34a;">✅ Sin brechas — no se requieren planes.</p>`
+                  : brechas.map(b => {
+                      const p = (planes||[]).find(pl => pl.competencia_id === b.competencia_id) || {};
+                      return `
+                      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:.75rem;margin-bottom:.75rem;">
+                        <div style="font-size:.82rem;font-weight:700;margin-bottom:.5rem;color:#dc2626">⚡ ${esc(b.nombre_comp)}</div>
+                        <div style="display:grid;gap:.5rem;">
+                          <div>
+                            <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.2rem">Acción concreta *</label>
+                            <input type="text" class="form-control" style="font-size:.82rem" id="ghp-accion-${b.competencia_id}"
+                              value="${esc(p.accion||'')}" placeholder="Ej: Capacitación en servicio al cliente" />
+                          </div>
+                          <div>
+                            <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.2rem">Responsable</label>
+                            <input type="text" class="form-control" style="font-size:.82rem" id="ghp-resp-${b.competencia_id}"
+                              value="${esc(p.responsable_nombre||'')}" placeholder="Nombre" />
+                          </div>
+                          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+                            <div>
+                              <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.2rem">Fecha compromiso *</label>
+                              <input type="date" class="form-control" style="font-size:.82rem" id="ghp-fecha-${b.competencia_id}"
+                                value="${p.fecha_compromiso||''}" />
+                            </div>
+                            <div>
+                              <label style="font-size:.78rem;font-weight:700;display:block;margin-bottom:.2rem">Fecha seguimiento</label>
+                              <input type="date" class="form-control" style="font-size:.82rem" id="ghp-seg-${b.competencia_id}"
+                                value="${p.fecha_seguimiento||''}" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>`;
+                    }).join('')
+                }
+              </div>
+              <div class="panel-card">
                 <h3>Decisión de Gestión Humana</h3>
                 <textarea class="obs-textarea" id="obs-gh"
                   placeholder="Obligatoria si la devuelves al líder"></textarea>
                 <button class="btn-aprobar" onclick="EvalMod.aprobarEval('${evalId}')">
-                  Aprobar y pasar a socialización
+                  ✅ Aprobar y notificar
                 </button>
                 <button class="btn-devolver" onclick="EvalMod.devolverEval('${evalId}')">
                   Devolver al líder
@@ -1148,10 +1175,84 @@ const EvalMod = {
               </div>` : `
               <div class="panel-card">
                 <p style="font-size:.84rem;color:#64748b;">Estado: ${estadoBadge(ev.estado)}</p>
+                ${ev.estado === 'socializada' || ev.estado === 'firmada' || ev.estado === 'cerrada' ? `
+                <div style="margin-top:1rem;display:flex;flex-direction:column;gap:.5rem">
+                  <button class="btn-accion" onclick="EvalMod.enviarWhatsAppTrabajador('${evalId}')">
+                    💬 WhatsApp al trabajador
+                  </button>
+                  <button class="btn-accion secundario" onclick="EvalMod.copiarLinkBrechas('${evalId}')">
+                    🔗 Copiar link brechas para el jefe
+                  </button>
+                </div>` : ''}
                 <button class="btn-accion secundario" style="width:100%;margin-top:.5rem"
                   onclick="EvalMod.mostrarBandeja()">← Volver a la bandeja</button>
               </div>`}
           </div>
+        </div>
+      </div>
+    `;
+  },
+
+  /* ── VISTA BRECHAS PARA EL JEFE (link externo de GH) ─── */
+  async mostrarBrechasJefe(evalId) {
+    const c = document.getElementById('app-contenido');
+    c.innerHTML = '<div class="loading">Cargando resultados…</div>';
+
+    const { data: ev } = await sb.from('evaluaciones')
+      .select('*, colaborador:colaborador_id(*), trabajador:trabajador_id(*), ciclo:ciclo_id(*)')
+      .eq('id', evalId).single();
+    if (!ev) { c.innerHTML = '<div class="loading">Evaluación no encontrada.</div>'; return; }
+    if (!ev.colaborador && ev.trabajador) {
+      ev.colaborador = { nombres: ev.trabajador.nombre, numero_id: ev.trabajador.cedula };
+    }
+
+    const { data: det } = await sb.from('evaluacion_detalle')
+      .select('*, competencia:competencia_id(codigo, nombre, tipo)')
+      .eq('evaluacion_id', evalId).order('codigo');
+
+    const { data: planes } = await sb.from('planes_mejora')
+      .select('*').eq('evaluacion_id', evalId);
+
+    const brechas = (det||[]).filter(d => d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
+
+    const planItems = (planes||[]).map(p => `
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:.75rem;margin-bottom:.75rem;">
+        <div style="font-weight:700;font-size:.88rem;margin-bottom:.4rem;">⚡ ${esc(p.nombre_competencia)}</div>
+        <div style="font-size:.82rem;color:#1a2332;margin-bottom:.2rem;"><strong>Acción:</strong> ${esc(p.accion)}</div>
+        ${p.responsable_nombre ? `<div style="font-size:.82rem;color:#64748b;"><strong>Responsable:</strong> ${esc(p.responsable_nombre)}</div>` : ''}
+        ${p.fecha_compromiso   ? `<div style="font-size:.82rem;color:#64748b;"><strong>Fecha compromiso:</strong> ${fmtDate(p.fecha_compromiso)}</div>` : ''}
+        ${p.fecha_seguimiento  ? `<div style="font-size:.82rem;color:#64748b;"><strong>Fecha seguimiento:</strong> ${fmtDate(p.fecha_seguimiento)}</div>` : ''}
+      </div>
+    `).join('');
+
+    c.innerHTML = `
+      <div style="max-width:600px;margin:0 auto;padding:1.5rem;">
+        <div style="text-align:center;margin-bottom:1.5rem;">
+          <div style="font-size:1.5rem;font-weight:800;color:#1a2332;">📊 Resultados Periodo de Prueba</div>
+          <div style="font-size:1rem;color:#64748b;margin-top:.4rem;">${esc(ev.colaborador?.nombres||'—')} · ${esc(ev.cargo_nombre)}</div>
+        </div>
+
+        ${brechas.length === 0 ? `
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1rem;text-align:center;margin-bottom:1rem;">
+            <div style="font-size:1.1rem;font-weight:700;color:#16a34a;">✅ Sin brechas identificadas</div>
+            <div style="font-size:.84rem;color:#15803d;margin-top:.3rem;">El colaborador cumple con el perfil de competencias exigido.</div>
+          </div>` : `
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1rem;margin-bottom:1rem;">
+            <div style="font-size:.88rem;font-weight:700;color:#dc2626;margin-bottom:.5rem;">
+              Se identificaron ${brechas.length} brecha(s) con planes de mejora:
+            </div>
+            ${brechas.map(b => `
+              <div style="font-size:.82rem;padding:.3rem 0;border-bottom:1px solid #fecaca;">
+                <strong>${esc(b.codigo)}</strong> ${esc(b.nombre_comp)} —
+                Exigido: <strong>${b.grado_exigido}</strong> · Observado: <strong>${b.grado_observado}</strong>
+              </div>`).join('')}
+          </div>
+          <div style="font-size:.88rem;font-weight:700;margin-bottom:.75rem;">📋 Planes de acción a seguir:</div>
+          ${planItems || '<p style="color:#64748b;font-size:.84rem">Los planes aún no han sido registrados por GH.</p>'}
+        `}
+
+        <div style="background:#f8fafc;border-radius:10px;padding:1rem;margin-top:1.5rem;font-size:.82rem;color:#64748b;text-align:center;">
+          Este reporte fue generado por Gestión Humana · TYM / TAT Distribuciones del Eje Cafetero
         </div>
       </div>
     `;
@@ -1162,11 +1263,81 @@ const EvalMod = {
   },
 
   async aprobarEval(evalId) {
+    // Guardar planes de mejora llenados por GH
+    const { data: ev } = await sb.from('evaluaciones')
+      .select('*, colaborador:colaborador_id(*), trabajador:trabajador_id(*), ciclo:ciclo_id(*)')
+      .eq('id', evalId).single();
+    if (!ev.colaborador && ev.trabajador) {
+      ev.colaborador = { nombres: ev.trabajador.nombre, numero_id: ev.trabajador.cedula };
+    }
+    const { data: det } = await sb.from('evaluacion_detalle')
+      .select('competencia_id, nombre_comp, codigo, grado_observado, grado_exigido')
+      .eq('evaluacion_id', evalId);
+    const { data: planesExist } = await sb.from('planes_mejora').select('*').eq('evaluacion_id', evalId);
+    const brechas = (det||[]).filter(d => d.grado_observado && PUNTAJE[d.grado_observado] < PUNTAJE[d.grado_exigido]);
+
+    for (const b of brechas) {
+      const accion = document.getElementById(`ghp-accion-${b.competencia_id}`)?.value?.trim() || '';
+      const resp   = document.getElementById(`ghp-resp-${b.competencia_id}`)?.value?.trim() || '';
+      const fecha  = document.getElementById(`ghp-fecha-${b.competencia_id}`)?.value || null;
+      const seg    = document.getElementById(`ghp-seg-${b.competencia_id}`)?.value || null;
+      if (!accion) { toast(`Completa la acción para "${b.nombre_comp}"`, 'warning'); return; }
+      if (!fecha)  { toast(`Completa la fecha de compromiso para "${b.nombre_comp}"`, 'warning'); return; }
+      const existing = (planesExist||[]).find(p => p.competencia_id === b.competencia_id);
+      if (existing) {
+        await sb.from('planes_mejora').update({
+          accion, responsable_nombre: resp, fecha_compromiso: fecha, fecha_seguimiento: seg,
+          updated_at: new Date().toISOString()
+        }).eq('id', existing.id);
+      } else {
+        await sb.from('planes_mejora').insert({
+          evaluacion_id: evalId, competencia_id: b.competencia_id,
+          codigo_competencia: b.codigo, nombre_competencia: b.nombre_comp,
+          accion, responsable_nombre: resp, fecha_compromiso: fecha, fecha_seguimiento: seg
+        });
+      }
+    }
+
     await sb.from('evaluaciones').update({ estado:'socializada', updated_at: new Date().toISOString() }).eq('id', evalId);
-    await sb.from('evaluacion_firmas').insert({ evaluacion_id: evalId, rol:'GH', usuario_nombre:'Gestión Humana', aceptacion: true });
+    await sb.from('evaluacion_firmas').insert({ evaluacion_id: evalId, rol:'GH', usuario_nombre: this.usuarioActual?.nombre||'Gestión Humana', aceptacion: true });
     await sb.from('auditoria_evaluacion').insert({ tabla:'evaluaciones', registro_id: evalId, accion:'cambio_estado', valor_anterior:'enviada_gh', valor_nuevo:'socializada', usuario_nombre: this.usuarioActual?.nombre||'GH' });
-    toast('Evaluación aprobada y socializada ✓');
+    toast('Evaluación aprobada ✓');
     setTimeout(() => this.mostrarBandeja(), 1200);
+  },
+
+  async enviarWhatsAppTrabajador(evalId) {
+    const { data: ev } = await sb.from('evaluaciones')
+      .select('*, trabajador:trabajador_id(*), colaborador:colaborador_id(*)')
+      .eq('id', evalId).single();
+    const nombre = ev.colaborador?.nombres || ev.trabajador?.nombre || 'Colaborador';
+    const tel    = ev.trabajador?.telefono || ev.colaborador?.telefono || '';
+
+    if (!tel) {
+      toast('El trabajador no tiene número de celular registrado.', 'warning');
+      return;
+    }
+
+    const telLimpio = tel.replace(/\D/g,'');
+    const telFinal  = telLimpio.startsWith('57') ? telLimpio : '57' + telLimpio;
+    const msg = encodeURIComponent(
+      `Hola ${nombre.split(' ')[0]}, te informamos que tu evaluación de periodo de prueba ya fue procesada.\n\n` +
+      `Por favor acércate a Gestión Humana para conocer tus resultados. 📋\n\n` +
+      `TYM / TAT Distribuciones del Eje Cafetero`
+    );
+    window.open(`https://wa.me/${telFinal}?text=${msg}`, '_blank');
+  },
+
+  async copiarLinkBrechas(evalId) {
+    const base = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'https://ghprotym.vercel.app'
+      : window.location.origin;
+    const link = `${base}/evaluacion.html?brechas=${evalId}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast('Link copiado — envíalo al jefe inmediato por WhatsApp o correo ✓');
+    } catch(e) {
+      prompt('Copia este link y envíalo al jefe:', link);
+    }
   },
 
   async devolverEval(evalId) {
