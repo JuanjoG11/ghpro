@@ -2198,7 +2198,15 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
           <div class="form-group"><label class="form-label">Cargo <span class="req-star">*</span></label>
             <input type="text" class="form-input" id="ocCargo" value="${d.cargo||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Área <span class="req-star">*</span></label>
-            <input type="text" class="form-input" id="ocArea" value="${d.area||''}" ${isReadOnly?'readonly':''}></div>
+            ${isReadOnly
+              ? `<input type="text" class="form-input" id="ocArea" value="${d.area||''}" readonly>`
+              : `<select class="form-select" id="ocArea">
+                  <option value="">Seleccione...</option>
+                  <option value="Ventas"        ${d.area==='Ventas'?'selected':''}>Ventas</option>
+                  <option value="Operativa"     ${d.area==='Operativa'?'selected':''}>Operativa</option>
+                  <option value="Administrativa"${d.area==='Administrativa'?'selected':''}>Administrativa</option>
+                </select>`
+            }</div>
           <div class="form-group"><label class="form-label">Jefe inmediato <span class="req-star">*</span></label>
             <input type="text" class="form-input" id="ocJefe" value="${d.jefe_inmediato||''}" ${isReadOnly?'readonly':''}></div>
           <div class="form-group"><label class="form-label">Tipo de contrato <span class="req-star">*</span></label>
