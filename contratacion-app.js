@@ -1625,11 +1625,27 @@ function abrirFormRefPersonal(vrId) {
           <input type="text" class="form-input" id="rpNombre"></div>
         <div class="form-group"><label class="form-label">Teléfono</label>
           <input type="text" class="form-input" id="rpTelefono"></div>
-        <div class="form-group"><label class="form-label">Relación</label>
+        <div class="form-group"><label class="form-label">Parentesco / Relación</label>
           <select class="form-select" id="rpRelacion">
-            <option value="">—</option><option value="amigo">Amigo</option>
-            <option value="vecino">Vecino</option><option value="excompanero">Ex compañero</option>
-            <option value="otro">Otro</option></select></div>
+            <option value="">Seleccione...</option>
+            <option value="Cónyuge">Cónyuge</option>
+            <option value="Compañero(a) permanente">Compañero(a) permanente</option>
+            <option value="Hijo(a)">Hijo(a)</option>
+            <option value="Padre">Padre</option>
+            <option value="Madre">Madre</option>
+            <option value="Hermano(a)">Hermano(a)</option>
+            <option value="Abuelo(a)">Abuelo(a)</option>
+            <option value="Nieto(a)">Nieto(a)</option>
+            <option value="Tío(a)">Tío(a)</option>
+            <option value="Sobrino(a)">Sobrino(a)</option>
+            <option value="Primo(a)">Primo(a)</option>
+            <option value="Suegro(a)">Suegro(a)</option>
+            <option value="Cuñado(a)">Cuñado(a)</option>
+            <option value="Amigo(a)">Amigo(a)</option>
+            <option value="Vecino(a)">Vecino(a)</option>
+            <option value="Ex compañero(a)">Ex compañero(a)</option>
+            <option value="Otro">Otro</option>
+          </select></div>
         <div class="form-group"><label class="form-label">¿Hace cuánto lo conoce?</label>
           <input type="text" class="form-input" id="rpTiempoConoce"></div>
         <div class="form-group"><label class="form-label">¿Lo recomendaría?</label>
