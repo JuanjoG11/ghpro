@@ -366,7 +366,7 @@
       .from('checklist_documentos')
       .select('*')
       .eq('orden_id', tokenRow.orden_id)
-      .order('item_key');
+      .order('sort_order');
 
     showLoader(false);
 
