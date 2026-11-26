@@ -2093,16 +2093,23 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
     { key:'hv',              label:'Hoja de Vida' },
     { key:'cedula',          label:'Fotocopia de la Cédula' },
     { key:'acta_grado',      label:'Fotocopia Acta de Grado y Diplomas' },
-    { key:'antecedentes',    label:'Antecedentes Contraloría, Procuraduría y Policía' },
+    { key:'ant_contraloria', label:'Antecedentes Contraloría' },
+    { key:'ant_procuraduria',label:'Antecedentes Procuraduría' },
+    { key:'ant_policia',     label:'Antecedentes Policía' },
     { key:'eps',             label:'Certificado de E.P.S.' },
-    { key:'afp',             label:'Certificado de A.F.P.' },
-    { key:'ref_laborales',   label:'2 - Referencias Laborales' },
-    { key:'ref_personales',  label:'2 - Referencias Personales' },
+    { key:'afp',             label:'Certificado Fondo de Pensiones' },
+    { key:'cert_laboral_1',  label:'Certificado Laboral 1' },
+    { key:'cert_laboral_2',  label:'Certificado Laboral 2' },
+    { key:'ref_personal_1',  label:'Referencia Personal 1' },
+    { key:'ref_personal_2',  label:'Referencia Personal 2' },
     { key:'foto',            label:'Foto fondo blanco' },
     { key:'carnet_covid',    label:'Carnet COVID - 19' },
     { key:'carnet_alimentos',label:'Carnet de Manipulación de Alimentos (vigencia mayor a 6 meses)' },
     { key:'cuenta_bancaria', label:'Constancia de Apertura de Cuenta' },
-    { key:'soat',            label:'Copia Soat, Tecnomecánica, Licencia de Conducción y Tarjeta de Propiedad' },
+    { key:'soat',            label:'SOAT' },
+    { key:'tecnomecanica',   label:'Tecnomecánica' },
+    { key:'tarjeta_prop',    label:'Tarjeta de Propiedad' },
+    { key:'licencia_cond',   label:'Licencia de Conducción' },
     { key:'funeraria',       label:'Certificado Funerario' },
   ];
   const checklist = d.checklist || {};
@@ -2254,7 +2261,7 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
               ${selectOptsArr(sedes,'id','nombre',d.sede_id)}</select></div>
           <div class="form-group"><label class="form-label">Forma de pago <span class="req-star">*</span></label>
             <select class="form-select" id="ocFormaPago" ${isReadOnly?'disabled':''}>
-              ${selectOpts(LBL.forma_pago, d.forma_pago)}</select></div>
+              ${selectOpts(LBL.forma_pago, d.forma_pago||'quincenal')}</select></div>
           <div class="form-group"><label class="form-label">Banco para nómina <span class="req-star">*</span></label>
             <select class="form-select" id="ocBanco" ${isReadOnly?'disabled':''}>
               ${selectOptsArr(bancos,'id','nombre',d.banco_id)}</select></div>
@@ -2278,7 +2285,7 @@ async function abrirModalOrden(ocId = null, reqIdPre = null, candidatoIdPre = nu
               ${selectOptsArr(cesantias,'id','nombre',d.cesantias_id)}</select></div>
           <div class="form-group"><label class="form-label">ARL <span class="req-star">*</span></label>
             <select class="form-select" id="ocARL" ${isReadOnly?'disabled':''}>
-              ${selectOptsArr(arl,'id','nombre',d.arl_id)}</select></div>
+              ${selectOptsArr(arl,'id','nombre', d.arl_id || (arl.find(a=>a.nombre.toLowerCase().includes('sura'))||{}).id ||'')}</select></div>
           <div class="form-group"><label class="form-label">Clase de riesgo ARL</label>
             <select class="form-select" id="ocClaseRiesgo" ${isReadOnly?'disabled':''}>
               ${selectOpts(LBL.nivel_riesgo, d.clase_riesgo)}</select></div>
@@ -2564,7 +2571,10 @@ async function verOrden(ocId) {
     { key:'hv', label:'Hoja de vida' }, { key:'id', label:'Cédula al 150%' },
     { key:'estudios', label:'Estudios' }, { key:'laborales', label:'Certif. laborales' },
     { key:'vr', label:'Validación referencias' }, { key:'examen', label:'Examen médico' },
-    { key:'antecedentes', label:'Antecedentes' }, { key:'afiliaciones', label:'Afiliaciones' },
+    { key:'ant_contraloria', label:'Ant. Contraloría' },
+    { key:'ant_procuraduria', label:'Ant. Procuraduría' },
+    { key:'ant_policia', label:'Ant. Policía' },
+    { key:'afiliaciones', label:'Afiliaciones' },
     { key:'cert_bancaria', label:'Certif. bancaria' }, { key:'licencia', label:'Licencia/Montacargas' },
     { key:'autorizacion', label:'Autorización datos' }, { key:'foto', label:'Fotografía' },
   ];
@@ -3063,11 +3073,11 @@ function compartirPorWhatsApp(tel, nombre, portalUrl, ocId) {
     `• Fotocopia cédula al 150%\n` +
     `• Certificados de estudio\n` +
     `• Certificados laborales\n` +
-    `• Examen médico de ingreso\n` +
     `• Antecedentes (Policía, Procuraduría, Contraloría)\n` +
     `• Certificación bancaria\n` +
-    `• Autorización tratamiento de datos\n` +
     `• Fotografía para carné\n\n` +
+    `• Anexar beneficiarios\n` +
+    `• Documentos del vehículo (si aplica)\n\n` +
     `Por favor cárgalos antes de tu fecha de ingreso. ¡Éxitos! 🎉`
   );
   window.open(`https://wa.me/${telFinal}?text=${msg}`, '_blank');
