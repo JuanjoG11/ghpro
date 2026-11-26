@@ -1509,8 +1509,8 @@ async function verValidacion(vrId) {
 
         <!-- REFERENCIAS PERSONALES -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div class="form-section-title" style="margin:0">👥 Referencias personales (${refPers.length}/mín.2)</div>
-          ${!isCerrada?`<button class="btn btn-secondary" style="padding:5px 10px;font-size:12px"
+          <div class="form-section-title" style="margin:0">👥 Referencias personales (${refPers.length}/1)</div>
+          ${!isCerrada&&refPers.length<1?`<button class="btn btn-secondary" style="padding:5px 10px;font-size:12px"
                   onclick="abrirFormRefPersonal('${vrId}')">➕ Agregar</button>`:''}
         </div>
         <div id="listRefPers">
@@ -1520,8 +1520,8 @@ async function verValidacion(vrId) {
 
         <!-- REFERENCIAS LABORALES -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;margin-top:20px">
-          <div class="form-section-title" style="margin:0">🏢 Referencias laborales (${refLab.length})</div>
-          ${!isCerrada?`<button class="btn btn-secondary" style="padding:5px 10px;font-size:12px"
+          <div class="form-section-title" style="margin:0">🏢 Referencias laborales (${refLab.length}/2)</div>
+          ${!isCerrada&&refLab.length<2?`<button class="btn btn-secondary" style="padding:5px 10px;font-size:12px"
                   onclick="abrirFormRefLaboral('${vrId}')">➕ Agregar</button>`:''}
         </div>
         <div id="listRefLab">
@@ -1595,9 +1595,11 @@ async function cerrarValidacion(vrId) {
 
   if (!concepto) { toast('Seleccione un concepto final', 'warning'); return; }
 
-  // Validar mínimo 2 referencias personales
+  // Validar referencias mínimas requeridas
   const refPers = await ValidacionReferencias.getPersonales(vrId);
-  if (refPers.length < 2) { toast('Se requieren al menos 2 referencias personales para cerrar', 'warning'); return; }
+  if (refPers.length < 1) { toast('Se requiere al menos 1 referencia personal para cerrar.', 'warning'); return; }
+  const refLab = await ValidacionReferencias.getLaborales(vrId);
+  if (refLab.length < 2) { toast('Se requieren al menos 2 referencias laborales para cerrar.', 'warning'); return; }
 
   showLoading(true);
   const ok = await ValidacionReferencias.cerrar(vrId, concepto, inconsist, obs, obsGH, responsable);
