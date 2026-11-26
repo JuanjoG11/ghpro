@@ -1,4 +1,4 @@
-﻿﻿﻿/* ============================================================
+﻿﻿/* ============================================================
    GH PRO — app.js
    Lógica principal — usa Supabase como backend
    ============================================================ */
@@ -244,25 +244,61 @@ async function renderDashboard() {
         <div class="stat-label">${s.label}</div>
       </div>`).join('');
 
-    // Recent alerts panel
-    const recent = alertas.filter(a => a.days !== null && a.days <= 30).slice(0, 4);
-    document.getElementById('dashAlerts').innerHTML = recent.length
-      ? recent.map(alertCard).join('')
-      : '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Sin alertas pendientes</div></div>';
-
-    // Recent entregas timeline
-    const lastE = [...entregas].slice(0, 5);
-    document.getElementById('dashEntregas').innerHTML = lastE.length
-      ? '<div class="timeline">' + lastE.map(e => `
-          <div class="timeline-item">
-            <div class="timeline-date">${fmtDate(e.fecha)}</div>
-            <div class="timeline-content">
-              <div class="timeline-title">${e.trabajador_nombre}</div>
-              <div class="timeline-desc">${e.cantidad}× ${e.articulo_nombre}${e.talla ? ' · ' + e.talla : ''}</div>
+    // Últimos ingresos — 5 trabajadores más recientes
+    const ultimos = [...trabajadores]
+      .filter(t => t.fecha_ingreso)
+      .sort((a, b) => new Date(b.fecha_ingreso) - new Date(a.fecha_ingreso))
+      .slice(0, 5);
+    const colores = ['#2563eb','#7c3aed','#0ea5e9','#16a34a','#d97706'];
+    document.getElementById('dashIngresos').innerHTML = ultimos.length
+      ? '<div style="display:flex;flex-direction:column;gap:10px">' + ultimos.map((t, i) => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8edf4">
+            <div style="width:38px;height:38px;border-radius:50%;background:${colores[i%colores.length]};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">
+              ${(t.nombre||'?')[0].toUpperCase()}
             </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.nombre}</div>
+              <div style="font-size:11.5px;color:#64748b;margin-top:1px">${t.cargo||'—'} · ${t.ciudad||'—'}</div>
+            </div>
+            <div style="font-size:11px;color:#94a3b8;white-space:nowrap">${fmtDate(t.fecha_ingreso)}</div>
           </div>`).join('') + '</div>'
-      : '<div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">Sin entregas</div></div>';
+      : '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">Sin ingresos registrados</div></div>';
 
+    // Periodos de prueba próximos a vencer (≤ 30 días)
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const conPrueba = trabajadores
+      .filter(t => t.estado === 'activo' && t.fecha_ingreso && t.periodo_prueba_dias > 0)
+      .map(t => {
+        const ingreso = new Date(t.fecha_ingreso);
+        const vence   = new Date(ingreso);
+        vence.setDate(vence.getDate() + (t.periodo_prueba_dias - 1));
+        const diasRestantes = Math.ceil((vence - hoy) / 86400000);
+        return { ...t, diasRestantes, vence };
+      })
+      .filter(t => t.diasRestantes >= 0 && t.diasRestantes <= 30)
+      .sort((a, b) => a.diasRestantes - b.diasRestantes);
+    document.getElementById('dashPeriodos').innerHTML = conPrueba.length
+      ? '<div style="display:flex;flex-direction:column;gap:10px">' + conPrueba.map(t => {
+          const urgente = t.diasRestantes <= 7;
+          const pronto  = t.diasRestantes <= 15;
+          const color   = urgente ? '#dc2626' : pronto ? '#d97706' : '#2563eb';
+          const bg      = urgente ? 'rgba(220,38,38,0.05)' : pronto ? 'rgba(217,119,6,0.05)' : '#f8fafc';
+          const border  = urgente ? 'rgba(220,38,38,0.2)' : pronto ? 'rgba(217,119,6,0.2)' : '#e8edf4';
+          return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:${bg};border-radius:8px;border:1px solid ${border}">
+            <div style="width:38px;height:38px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">
+              ${(t.nombre||'?')[0].toUpperCase()}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.nombre}</div>
+              <div style="font-size:11.5px;color:#64748b;margin-top:1px">${t.cargo||'—'}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:13px;font-weight:800;color:${color}">${t.diasRestantes}d</div>
+              <div style="font-size:10.5px;color:#94a3b8">${fmtDate(t.vence.toISOString().split('T')[0])}</div>
+            </div>
+          </div>`;
+        }).join('') + '</div>'
+      : '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Sin periodos de prueba próximos</div></div>';
     if (window.innerWidth <= 768)
       document.getElementById('dashCards').style.gridTemplateColumns = '1fr';
 
