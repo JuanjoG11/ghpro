@@ -1274,10 +1274,6 @@ async function renderValidaciones() {
 async function abrirModalVR(candidatoId, reqId, candidatoNombre, cargo, reqNum) {
   // Verificar autorización de datos del candidato
   const candidato = (await Candidatos.getByRequisicion(reqId)).find(c => c.id === candidatoId);
-  if (candidato && !candidato.autorizacion_datos) {
-    if (!confirm('⚠️ El candidato no tiene autorización de tratamiento de datos registrada.\n\n' +
-                 'Según la Ley 1581/2012, debe obtenerse antes de verificar referencias.\n\n¿Continuar de todas formas?')) return;
-  }
 
   // ¿Ya existe una validación para este candidato?
   const existentes = await ValidacionReferencias.getAll({ candidato_id: candidatoId });

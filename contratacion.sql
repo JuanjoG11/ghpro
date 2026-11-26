@@ -30,10 +30,10 @@ create table if not exists sedes (
   activo boolean default true
 );
 insert into sedes (nombre, ciudad) values
-  ('Pereira Centro', 'Pereira'),
+  ('Dosquebradas', 'Dosquebradas'),
   ('Manizales', 'Manizales'),
   ('Armenia', 'Armenia'),
-  ('Bodega Principal', 'Pereira')
+  ('Bodega Principal', 'Dosquebradas')
 on conflict do nothing;
 
 -- Cargos
