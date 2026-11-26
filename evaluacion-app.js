@@ -1310,11 +1310,17 @@ const EvalMod = {
       .select('*, trabajador:trabajador_id(*), colaborador:colaborador_id(*)')
       .eq('id', evalId).single();
     const nombre = ev.colaborador?.nombres || ev.trabajador?.nombre || 'Colaborador';
-    const tel    = ev.trabajador?.telefono || ev.colaborador?.telefono || '';
+    let tel = ev.trabajador?.telefono || ev.colaborador?.telefono || '';
 
+    // Si no tiene teléfono, pedirlo en ese momento
     if (!tel) {
-      toast('El trabajador no tiene número de celular registrado.', 'warning');
-      return;
+      tel = prompt(`El trabajador no tiene número registrado.\nIngresa el número de WhatsApp de ${nombre.split(' ')[0]}:`);
+      if (!tel || !tel.trim()) return;
+      tel = tel.trim();
+      // Guardarlo en la tabla para no pedirlo de nuevo
+      if (ev.trabajador_id) {
+        await sb.from('trabajadores').update({ telefono: tel }).eq('id', ev.trabajador_id);
+      }
     }
 
     const telLimpio = tel.replace(/\D/g,'');
