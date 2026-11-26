@@ -358,6 +358,8 @@ function renderRequisicionesFiltered() {
                   ${r.estado==='aprobada'?`
                   <button class="btn" style="padding:5px 8px;font-size:11px;background:rgba(58,130,200,0.2);color:var(--accent)"
                           onclick="abrirModalAprobacionReq('${r.id}')">🗓 Entrevista</button>`:''}
+                  <button class="btn" style="padding:5px 8px;font-size:11px;background:rgba(220,53,69,0.15);color:var(--danger)"
+                          onclick="eliminarRequisicion('${r.id}','${r.numero}')">🗑</button>
 
               </td>
             </tr>`).join('')}
@@ -365,6 +367,18 @@ function renderRequisicionesFiltered() {
       </table>
     </div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:8px">${filtrado.length} registros</div>`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ELIMINAR REQUISICIÓN
+   ════════════════════════════════════════════════════════════ */
+async function eliminarRequisicion(id, numero) {
+  if (!confirm(`¿Eliminar la requisición ${numero}?\n\nEsta acción no se puede deshacer. Se eliminarán también las aprobaciones e historial asociados.`)) return;
+  const ok = await Requisicion.delete(id);
+  if (ok) {
+    toast('Requisición eliminada.', 'success');
+    renderRequisiciones();
+  }
 }
 
 /* ════════════════════════════════════════════════════════════

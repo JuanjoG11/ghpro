@@ -101,6 +101,45 @@ const Requisicion = {
     return data;
   },
 
+  async delete(id) {
+    const req = await this.getById(id);
+    if (!req) return false;
+
+    // 1. Órdenes de contratación ligadas a esta requisición
+    //    (sus hijos: beneficiarios_orden, checklist_documentos, portal_candidato_tokens
+    //     se eliminan por ON DELETE CASCADE automáticamente)
+    const { data: ocs } = await sb.from('orden_contratacion')
+      .select('id').eq('requisicion_id', id);
+    if (ocs && ocs.length) {
+      const ocIds = ocs.map(o => o.id);
+      // Aprobaciones e historial de cada OC (tablas polimórficas, sin FK real)
+      await sb.from('aprobaciones_contratacion')
+        .delete().eq('tabla_origen', 'orden_contratacion').in('registro_id', ocIds);
+      await sb.from('historial_contratacion')
+        .delete().eq('tabla_origen', 'orden_contratacion').in('registro_id', ocIds);
+      // Borrar las órdenes (cascade elimina beneficiarios, checklist y tokens)
+      await sb.from('orden_contratacion').delete().in('id', ocIds);
+    }
+
+    // 2. Validaciones de referencias (sus hijos referencias_personales y referencias_laborales
+    //    se eliminan por ON DELETE CASCADE)
+    await sb.from('validacion_referencias').delete().eq('requisicion_id', id);
+
+    // 3. Candidatos (tienen ON DELETE CASCADE pero los eliminamos explícitamente
+    //    para asegurarnos de que no queden huérfanos)
+    await sb.from('candidatos').delete().eq('requisicion_id', id);
+
+    // 4. Aprobaciones e historial de la propia requisición
+    await sb.from('aprobaciones_contratacion')
+      .delete().eq('tabla_origen', 'requisicion_personal').eq('registro_id', id);
+    await sb.from('historial_contratacion')
+      .delete().eq('tabla_origen', 'requisicion_personal').eq('registro_id', id);
+
+    // 5. Finalmente, la requisición
+    const { error } = await sb.from('requisicion_personal').delete().eq('id', id);
+    return !sbErr(error, 'requisicion.delete');
+  },
+
   async aprobar(id, rol, nombre, decision, comentario = '') {
     const req = await this.getById(id);
     if (!req) return false;
