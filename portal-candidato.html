@@ -464,7 +464,7 @@
     // Bloque especial del certificado funerario
     const funerariaExtra = doc.item_key === 'funeraria' ? renderFunerariaExtra(doc) : '';
 
-    const botonSubir = !esFinal
+    const botonSubir = !esFinal && !(doc.item_key === 'funeraria' && doc.funeraria_acepta === true)
       ? `<button class="btn btn-primary" onclick="elegirArchivo('${doc.id}')">
            📎 ${doc.archivo_url ? 'Reemplazar' : 'Subir documento'}
          </button>
@@ -493,17 +493,20 @@
 
   // ── Bloque especial funeraria ──────────────────────────────
   function renderFunerariaExtra(doc) {
-    // Si ya fue guardada la opción, mostrar el estado guardado
-    if (doc.funeraria_acepta !== null && doc.funeraria_acepta !== undefined) {
-      const txt = doc.funeraria_acepta
-        ? '✅ Afiliación Los Olivos aceptada — se descontará $11.500 de nómina'
-        : '✅ Presentará certificado funerario propio';
-      return `<div style="margin-top:10px;padding:10px 12px;background:rgba(58,170,128,0.1);border:1px solid rgba(58,170,128,0.3);border-radius:8px;font-size:13px;color:var(--success)">${txt}</div>`;
+    // Si ya eligió afiliación Los Olivos (acepta = true): mostrar confirmación sin uploader
+    if (doc.funeraria_acepta === true) {
+      return `<div style="margin-top:10px;padding:10px 12px;background:rgba(58,170,128,0.1);border:1px solid rgba(58,170,128,0.3);border-radius:8px;font-size:13px;color:var(--success)">✅ Afiliación Los Olivos aceptada — se descontará $11.500 de nómina</div>`;
     }
 
-    // Si tiene archivo subido, no necesita la opción de afiliación
+    // Si ya eligió certificado propio (acepta = false): mostrar mensaje y dejar subir el doc
+    if (doc.funeraria_acepta === false) {
+      return `<div style="margin-top:10px;padding:10px 12px;background:rgba(58,130,200,0.1);border:1px solid rgba(58,130,200,0.3);border-radius:8px;font-size:13px;color:var(--accent)">📄 Certificado funerario propio — sube el documento a continuación.</div>`;
+    }
+
+    // Si tiene archivo subido sin haber pasado por el flujo funeraria, no mostrar nada extra
     if (doc.archivo_url) return '';
 
+    // Sin selección aún: mostrar el selector
     return `
       <div class="funeraria-card" id="funerariaCard_${doc.id}">
         <h4>🕊️ ¿Tienes certificado funerario vigente?</h4>
@@ -554,7 +557,7 @@
     const { error } = await sb.from('checklist_documentos')
       .update({
         funeraria_acepta: acepta,
-        estado: 'pendiente_revision',
+        estado: acepta ? 'pendiente_revision' : 'pendiente',
         obs_gh: acepta ? 'Candidato solicitó afiliación Los Olivos ($11.500/mes)' : null,
         updated_at: new Date().toISOString(),
       })
