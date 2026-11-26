@@ -1056,6 +1056,8 @@ async function verRequisicion(reqId) {
           <span class="chip">${req.area}</span>
           <span class="chip">${LBL.tipo_contrato[req.tipo_contrato]||req.tipo_contrato}</span>
         </div>
+
+        <!-- Datos de solo lectura del jefe -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
           ${row('Solicitante', `${req.nombre_solicitante} (${req.cargo_solicitante})`)}
           ${row('Sede', req.sede_nombre)}
@@ -1065,15 +1067,65 @@ async function verRequisicion(reqId) {
           ${row('N° vacantes', `${req.vacantes_cubiertas||0} cubiertas / ${req.num_vacantes} solicitadas`)}
           ${row('Motivo', LBL.motivo_req[req.motivo]||req.motivo)}
           ${row('Persona a reemplazar', req.persona_reemplazar)}
-          ${row('Salario', fmtCOP(req.salario))}
-          ${row('Aux. transporte', req.auxilio_transporte?'Sí':'No')}
-          ${row('Riesgo ARL', req.nivel_riesgo_arl)}
-          ${row('Nivel educativo', LBL.nivel_educativo[req.nivel_educativo]||req.nivel_educativo)}
-          ${row('Experiencia', `${req.experiencia_meses} mes(es)`)}
         </div>
         ${req.justificacion?`<div style="margin-top:12px"><div class="detail-label">Justificación</div><div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${req.justificacion}</div></div>`:''}
         ${req.funciones?`<div style="margin-top:12px"><div class="detail-label">Funciones principales</div><div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${req.funciones}</div></div>`:''}
         ${req.motivo_rechazo?`<div style="margin-top:12px;padding:10px;background:rgba(224,85,85,0.1);border-radius:8px;border:1px solid rgba(224,85,85,0.3)"><div style="font-size:12px;font-weight:700;color:var(--danger)">Motivo de rechazo</div><div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${req.motivo_rechazo}</div></div>`:''}
+
+        <!-- Campos editables por GH -->
+        <div class="form-section-title" style="margin-top:20px">✏️ Datos completados por GH</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Salario</label>
+            <input type="number" class="form-input" id="vrSalario" value="${req.salario||0}" min="0" step="1000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo de contrato</label>
+            <select class="form-select" id="vrTipoContrato">
+              ${selectOpts(LBL.tipo_contrato, req.tipo_contrato)}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Aux. transporte</label>
+            <select class="form-select" id="vrAuxTransporte">
+              <option value="false" ${!req.auxilio_transporte?'selected':''}>No</option>
+              <option value="true"  ${req.auxilio_transporte?'selected':''}>Sí</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Riesgo ARL</label>
+            <select class="form-select" id="vrRiesgoArl">
+              ${selectOpts(LBL.nivel_riesgo, req.nivel_riesgo_arl)}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nivel educativo</label>
+            <select class="form-select" id="vrNivelEdu">
+              ${selectOpts(LBL.nivel_educativo, req.nivel_educativo)}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Experiencia (meses)</label>
+            <input type="number" class="form-input" id="vrExperiencia" value="${req.experiencia_meses||0}" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° vacantes</label>
+            <input type="number" class="form-input" id="vrVacantes" value="${req.num_vacantes||1}" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Horario</label>
+            <select class="form-select" id="vrHorario">
+              ${selectOpts(LBL.horario, req.horario)}
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:4px">
+          <label class="form-label">Jefe inmediato</label>
+          <input type="text" class="form-input" id="vrJefeInmediato" value="${req.jefe_inmediato||''}">
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-primary" onclick="guardarCamposGH('${reqId}')">💾 Guardar cambios</button>
+        </div>
 
         ${(req.hv_candidato_nombre||req.hv_candidato_url)?`
         <div style="margin-top:16px;padding:14px;background:rgba(58,130,200,0.08);border-radius:10px;border:1px solid rgba(58,130,200,0.25)">
@@ -1126,6 +1178,26 @@ async function verRequisicion(reqId) {
   if (prev) prev.remove();
   document.body.insertAdjacentHTML('beforeend', html);
   document.body.style.overflow = 'hidden';
+}
+
+async function guardarCamposGH(reqId) {
+  const payload = {
+    salario:           parseFloat(document.getElementById('vrSalario').value) || 0,
+    tipo_contrato:     document.getElementById('vrTipoContrato').value,
+    auxilio_transporte: document.getElementById('vrAuxTransporte').value === 'true',
+    nivel_riesgo_arl:  document.getElementById('vrRiesgoArl').value,
+    nivel_educativo:   document.getElementById('vrNivelEdu').value,
+    experiencia_meses: parseInt(document.getElementById('vrExperiencia').value) || 0,
+    num_vacantes:      parseInt(document.getElementById('vrVacantes').value) || 1,
+    horario:           document.getElementById('vrHorario').value,
+    jefe_inmediato:    document.getElementById('vrJefeInmediato').value.trim(),
+  };
+  const result = await Requisicion.update(reqId, payload, 'GH');
+  if (result) {
+    toast('Cambios guardados.', 'success');
+    cerrar('modalVerReq');
+    renderRequisiciones();
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1312,7 +1384,12 @@ async function abrirModalVR(candidatoId, reqId, candidatoNombre, cargo, reqNum) 
           </div>
           <div class="form-group">
             <label class="form-label">Responsable de la verificación <span class="req-star">*</span></label>
-            <input type="text" class="form-input" id="vrResponsable" placeholder="Nombre del verificador">
+            <select class="form-select" id="vrResponsable">
+              <option value="">Seleccione...</option>
+              <option value="Erika Valencia">Erika Valencia</option>
+              <option value="Karina Taba">Karina Taba</option>
+              <option value="Maria Jose Franco">Maria Jose Franco</option>
+            </select>
           </div>
         </div>
         <div class="form-group">
@@ -1338,8 +1415,9 @@ async function abrirModalVR(candidatoId, reqId, candidatoNombre, cargo, reqNum) 
 async function crearValidacion(candidatoId, reqId, candidatoNombre, cargo, reqNum) {
   const numId       = fv('vrNumId').trim();
   const fecha       = fv('vrFecha');
-  const responsable = fv('vrResponsable').trim();
+  const responsable = fv('vrResponsable');
   if (!numId||!fecha||!responsable) { toast('Complete los campos obligatorios', 'warning'); return; }
+  if (!fc('vrAutorizacion')) { toast('El candidato debe tener la autorización de tratamiento de datos firmada para continuar.', 'warning'); return; }
 
   showLoading(true);
   const vr = await ValidacionReferencias.insert({
