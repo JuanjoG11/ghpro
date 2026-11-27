@@ -247,14 +247,17 @@ const EvalMod = {
   renderTopbar(tab='evaluaciones') {
     const u = this.usuarioActual;
     if (!u) return;
-    const esGH = u.rol === 'gh' || u.rol === 'gerencia';
+    const esGH       = u.rol === 'gh';
+    const esGerencia = u.rol === 'gerencia';
 
     document.getElementById('topbar-nav').innerHTML = `
       <button class="topbar-nav-btn ${tab==='evaluaciones'?'active':''}"
         onclick="EvalMod.mostrarBandeja()">Evaluaciones</button>
-      ${esGH ? `
+      ${(esGH || esGerencia) ? `
         <button class="topbar-nav-btn ${tab==='periodos'?'active':''}"
           onclick="EvalMod.mostrarPeriodosPrueba()">Periodos de prueba</button>
+      ` : ''}
+      ${esGH ? `
         <button class="topbar-nav-btn ${tab==='ciclos'?'active':''}"
           onclick="EvalAdmin.mostrarCiclos()">Ciclos</button>
         <button class="topbar-nav-btn ${tab==='reportes'?'active':''}"
@@ -286,7 +289,9 @@ const EvalMod = {
     c.innerHTML = '<div class="loading">Cargando…</div>';
 
     const u = this.usuarioActual;
-    const esGH = u.rol === 'gh' || u.rol === 'gerencia';
+    const esGH        = u.rol === 'gh';        // GH puro: ve todo y tiene tabs de admin
+    const esGerencia  = u.rol === 'gerencia';  // Gerente: ve solo sus evaluaciones asignadas
+    const esEvalAdmin = esGH;                  // Solo GH puede aprobar/devolver
 
     // Cargar evaluaciones
     let q = sb.from('evaluaciones').select(`
@@ -298,7 +303,15 @@ const EvalMod = {
       ciclo:ciclo_id (tipo, nombre)
     `).order('created_at', { ascending: false });
 
-    if (u.rol === 'lider' || u.rol === 'gerencia') q = q.eq('evaluador_nombre', u.nombre);
+    // GH ve todo; cualquier otro rol (lider, gerencia) solo ve las suyas
+    if (!esGH) {
+      if (u.id) {
+        q = q.eq('evaluador_usuario_id', u.id);
+      } else {
+        // Fallback: filtrar por nombre si aún no tiene id vinculado
+        q = q.eq('evaluador_nombre', u.nombre);
+      }
+    }
 
     const { data: evals } = await q;
     const todos = (evals || []).map(e => {
@@ -383,7 +396,7 @@ const EvalMod = {
           <td>${esc(tipo)}</td>
           <td class="${dl.cls}">${dl.html}</td>
           <td>${estadoBadge(e.estado)}</td>
-          <td>${btnAccion(e.estado, e.id, esGH)}</td>
+          <td>${btnAccion(e.estado, e.id, esGH || esGerencia)}</td>
         </tr>
       `;
     }).join('');
