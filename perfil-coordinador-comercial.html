@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfiles de cargo — Coordinador comercial · GH PRO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --navy: #1a2332; --blue: #1d3a6e; --accent: #2563eb; --ok: #16a34a; --warn: #d97706; --danger: #dc2626; --bg: #f4f6f9; --border: #e2e8f0; --muted: #64748b; --radius: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--navy); font-size: 14px; line-height: 1.6; }
+    .topbar { background: var(--navy); color: #fff; padding: .85rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .topbar-logo { font-weight: 800; } .topbar-title { font-size: .88rem; color: rgba(255,255,255,.65); }
+    .topbar-badge { background: rgba(255,255,255,.15); color: #fff; font-size: .75rem; padding: .2em .8em; border-radius: 99px; font-weight: 600; }
+    .topbar-back { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,.3); color: rgba(255,255,255,.8); font-size: .78rem; padding: .3rem .8rem; border-radius: 6px; text-decoration: none; }
+    .topbar-back:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .hero { background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%); color: #fff; padding: 2rem 2rem 1.5rem; }
+    .hero-sup { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.55); margin-bottom: .3rem; }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .3rem; }
+    .hero p { color: rgba(255,255,255,.7); font-size: .9rem; max-width: 600px; }
+    .hero-meta { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .hero-meta span { font-size: .82rem; color: rgba(255,255,255,.65); }
+    .hero-meta strong { color: #fff; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .tabs { display: flex; gap: .4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: .45rem 1.1rem; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: .84rem; font-weight: 500; cursor: pointer; color: var(--navy); transition: all .15s; }
+    .tab:hover { border-color: var(--navy); }
+    .tab.active { background: #9a3412; color: #fff; border-color: #9a3412; font-weight: 600; }
+    .cargo-section { display: none; } .cargo-section.visible { display: block; }
+    .cargo-header { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .cargo-nombre { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+    .cargo-obj { font-size: .88rem; color: var(--muted); line-height: 1.5; max-width: 600px; }
+    .cargo-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+    .tag-pill { padding: .2em .75em; border-radius: 99px; font-size: .75rem; font-weight: 600; }
+    .tag-area { background: #fee2e2; color: #991b1b; } .tag-nivel { background: #f1f5f9; color: #475569; } .tag-perfil { background: #fef9c3; color: #854d0e; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    @media(max-width:700px){ .grid2 { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.1rem 1.25rem; }
+    .card h3 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .75rem; }
+    .card ul { margin: 0 0 0 1.1rem; } .card li { font-size: .88rem; margin-bottom: .3rem; color: #374151; }
+    .comp-tabla { width: 100%; border-collapse: collapse; }
+    .comp-tabla th { background: #f8fafc; padding: .5rem .85rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+    .comp-tabla td { padding: .6rem .85rem; border-bottom: 1px solid #f1f5f9; font-size: .86rem; vertical-align: middle; }
+    .comp-tabla tr:last-child td { border-bottom: none; }
+    .grado { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: .85rem; }
+    .g-A { background: #dcfce7; color: #15803d; } .g-B { background: #dbeafe; color: #1d4ed8; }
+    .tipo-badge { font-size: .72rem; font-weight: 600; padding: .15em .6em; border-radius: 99px; }
+    .tipo-T { background: #f1f5f9; color: #475569; } .tipo-L { background: #ede9fe; color: #5b21b6; }
+    .tipo-F { background: #e0f2fe; color: #0369a1; } .tipo-C { background: #fce7f3; color: #9d174d; }
+    .alert-tip { background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 8px; padding: .85rem 1rem; font-size: .86rem; color: #7c2d12; margin-bottom: 1.25rem; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-logo">GH PRO</div>
+  <div class="topbar-title">Perfiles de cargo</div>
+  <div class="topbar-badge">Coordinador comercial</div>
+  <a class="topbar-back" href="manual-periodo-prueba.html">← Manual</a>
+</div>
+<div class="hero">
+  <div class="hero-sup">Guía de evaluación · Personal a cargo</div>
+  <h1>Perfiles de competencias</h1>
+  <p>Las competencias exigidas para el Supervisor comercial que evalúas, con los comportamientos concretos que debes observar durante el periodo de prueba.</p>
+  <div class="hero-meta">
+    <span><strong>1 cargo</strong> bajo tu evaluación directa</span>
+    <span><strong>Versión:</strong> Diccionario v2 · Nov 2026</span>
+  </div>
+</div>
+<div class="main">
+  <div class="alert-tip">
+    💡 <strong>Como Coordinador comercial</strong> evalúas directamente al <strong>Supervisor comercial</strong>. Los Asesores, Supernumerarios y Mercaderistas los evalúa el Supervisor. Fíjate especialmente en su capacidad de <strong>liderar el equipo y leer indicadores</strong> desde el primer mes.
+  </div>
+
+  <div class="cargo-section visible" id="c-supervisor">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Supervisor comercial</div>
+        <div class="cargo-obj">Garantiza el cumplimiento de indicadores comerciales, logísticos y financieros liderando el equipo de ventas.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Comercial</span>
+          <span class="tag-pill tag-nivel">Liderazgo</span>
+          <span class="tag-pill tag-perfil">Técnico · Técnicas de venta · Liderazgo · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Garantiza confiabilidad de la maestra de clientes</li>
+          <li>Hace seguimiento diario a indicadores de los asesores</li>
+          <li>Genera planes tácticos de ventas por zona</li>
+          <li>Cubre vacantes y acompaña al asesor nuevo en campo</li>
+          <li>Realiza reuniones de equipo semanales</li>
+          <li>Valida liquidación de nómina de asesores</li>
+          <li>Presenta plan comercial mensual al Coordinador</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Lee los indicadores con autonomía o espera a que tú se los señales?</li>
+          <li>¿El equipo de asesores mejora bajo su liderazgo en el primer mes?</li>
+          <li>¿Las reuniones de equipo salen sin que tú se las recuerdes?</li>
+          <li>¿Detecta problemas de la maestra de clientes antes de que generen errores?</li>
+          <li>¿Tiene autoridad natural sobre el equipo o lo evaden?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Defiende los resultados del equipo como propios. Trabaja más cuando hay una meta en riesgo.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Acompaña a los asesores en campo y los entrena en servicio al cliente.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los indicadores del equipo muestran mejora continua. Tiene planes de acción claros cuando hay desviaciones.</td></tr>
+          <tr><td><strong>Trabajo en equipo</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los asesores lo perciben como apoyo, no como controlador. Resuelve conflictos internos con madurez.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Cuando un indicador falla, lo reporta con análisis de causa, no con excusas.</td></tr>
+          <tr><td><strong>Liderazgo</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-B">B</span></td><td>Los asesores saben qué se espera de ellos. El supervisor da retroalimentación directa y constructiva.</td></tr>
+          <tr><td><strong>Toma de decisiones</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-B">B</span></td><td>Resuelve situaciones de campo sin escalar todo al Coordinador. Decisiones coherentes con la estrategia.</td></tr>
+          <tr><td><strong>Planificación</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-B">B</span></td><td>El plan comercial mensual llega antes de que comience el mes, no el día 5.</td></tr>
+          <tr><td><strong>Orientación comercial</strong></td><td><span class="tipo-badge tipo-C">Comercial</span></td><td><span class="grado g-A">A</span></td><td>Conoce el portafolio, los márgenes y los indicadores clave. Habla con datos en las reuniones.</td></tr>
+          <tr><td><strong>Técnica de ventas</strong></td><td><span class="tipo-badge tipo-C">Comercial</span></td><td><span class="grado g-A">A</span></td><td>Cuando acompaña a un asesor en campo, demuestra cómo se hace.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  function verCargo(id, btn) {
+    document.querySelectorAll('.cargo-section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('c-' + id).classList.add('visible');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

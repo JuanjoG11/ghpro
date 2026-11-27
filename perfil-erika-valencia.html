@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfiles de cargo — Coordinadora GGHH/SST · GH PRO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #1a2332; --blue: #1d3a6e; --accent: #2563eb;
+      --ok: #16a34a; --warn: #d97706; --danger: #dc2626;
+      --bg: #f4f6f9; --border: #e2e8f0; --muted: #64748b;
+      --radius: 10px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--navy); font-size: 14px; line-height: 1.6; }
+
+    .topbar { background: var(--navy); color: #fff; padding: .85rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .topbar-logo { font-weight: 800; font-size: 1rem; }
+    .topbar-title { font-size: .88rem; color: rgba(255,255,255,.65); }
+    .topbar-badge { background: rgba(255,255,255,.15); color: #fff; font-size: .75rem; padding: .2em .8em; border-radius: 99px; font-weight: 600; }
+    .topbar-back { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,.3); color: rgba(255,255,255,.8); font-size: .78rem; padding: .3rem .8rem; border-radius: 6px; cursor: pointer; text-decoration: none; }
+    .topbar-back:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+    .hero { background: linear-gradient(135deg, #1a2332 0%, #1d3a6e 100%); color: #fff; padding: 2rem 2rem 1.5rem; }
+    .hero-sup { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.55); margin-bottom: .3rem; }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .3rem; }
+    .hero p { color: rgba(255,255,255,.7); font-size: .9rem; max-width: 600px; }
+    .hero-meta { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .hero-meta span { font-size: .82rem; color: rgba(255,255,255,.65); }
+    .hero-meta strong { color: #fff; }
+
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .tabs { display: flex; gap: .4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: .45rem 1.1rem; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: .84rem; font-weight: 500; cursor: pointer; color: var(--navy); transition: all .15s; }
+    .tab:hover { border-color: var(--navy); }
+    .tab.active { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 600; }
+
+    .cargo-section { display: none; }
+    .cargo-section.visible { display: block; }
+
+    .cargo-header { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start; }
+    .cargo-nombre { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+    .cargo-obj { font-size: .88rem; color: var(--muted); line-height: 1.5; max-width: 600px; }
+    .cargo-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+    .tag-pill { padding: .2em .75em; border-radius: 99px; font-size: .75rem; font-weight: 600; }
+    .tag-area  { background: #e0e7ff; color: #3730a3; }
+    .tag-nivel { background: #f1f5f9; color: #475569; }
+    .tag-perfil { background: #fef9c3; color: #854d0e; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    @media(max-width:700px){ .grid2 { grid-template-columns: 1fr; } }
+
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.1rem 1.25rem; }
+    .card h3 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .75rem; }
+    .card ul { margin: 0 0 0 1.1rem; }
+    .card li { font-size: .88rem; margin-bottom: .3rem; color: #374151; }
+    .card li strong { color: var(--navy); }
+
+    .comp-tabla { width: 100%; border-collapse: collapse; }
+    .comp-tabla th { background: #f8fafc; padding: .5rem .85rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+    .comp-tabla td { padding: .6rem .85rem; border-bottom: 1px solid #f1f5f9; font-size: .86rem; vertical-align: middle; }
+    .comp-tabla tr:last-child td { border-bottom: none; }
+    .comp-tabla tr:hover td { background: #fafbfc; }
+
+    .grado { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: .85rem; }
+    .g-A { background: #dcfce7; color: #15803d; }
+    .g-B { background: #dbeafe; color: #1d4ed8; }
+    .g-C { background: #fef9c3; color: #b45309; }
+    .g-D { background: #fee2e2; color: #b91c1c; }
+
+    .tipo-badge { font-size: .72rem; font-weight: 600; padding: .15em .6em; border-radius: 99px; }
+    .tipo-T { background: #f1f5f9; color: #475569; }
+    .tipo-L { background: #ede9fe; color: #5b21b6; }
+    .tipo-F { background: #e0f2fe; color: #0369a1; }
+    .tipo-C { background: #fce7f3; color: #9d174d; }
+    .tipo-LOG { background: #ecfdf5; color: #065f46; }
+
+    .conducta-box { background: #f8fafc; border-radius: 7px; padding: .6rem .85rem; font-size: .82rem; color: #374151; line-height: 1.5; margin-top: .3rem; }
+    .conducta-label { font-size: .72rem; font-weight: 700; color: var(--muted); margin-bottom: .2rem; text-transform: uppercase; letter-spacing: .04em; }
+
+    .alert-tip { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: .85rem 1rem; font-size: .86rem; color: #92400e; margin-bottom: 1.25rem; }
+    .alert-tip strong { color: #78350f; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">GH PRO</div>
+  <div class="topbar-title">Perfiles de cargo</div>
+  <div class="topbar-badge">Coordinadora GGHH/SST — Erika Lorena Valencia</div>
+  <a class="topbar-back" href="manual-periodo-prueba.html">← Manual</a>
+</div>
+
+<div class="hero">
+  <div class="hero-sup">Guía de evaluación · Personal a cargo</div>
+  <h1>Perfiles de competencias</h1>
+  <p>Aquí encuentras las competencias exigidas para cada cargo que evalúas, con los comportamientos concretos que debes observar en el periodo de prueba.</p>
+  <div class="hero-meta">
+    <span><strong>7 cargos</strong> bajo tu evaluación</span>
+    <span><strong>Versión:</strong> Diccionario v2 · Nov 2026</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="tabs">
+    <button class="tab active" onclick="verCargo('gh', this)">Analista de GH</button>
+    <button class="tab" onclick="verCargo('sst', this)">Auxiliar de SST</button>
+    <button class="tab" onclick="verCargo('inventarios', this)">Analista de inventarios</button>
+    <button class="tab" onclick="verCargo('desarrollo', this)">Analista de desarrollo</button>
+    <button class="tab" onclick="verCargo('facturacion', this)">Auxiliar de facturación</button>
+    <button class="tab" onclick="verCargo('separacion', this)">Auxiliar de separación</button>
+    <button class="tab" onclick="verCargo('servicios', this)">Aux. servicios generales</button>
+  </div>
+
+  <div class="alert-tip">
+    💡 <strong>Cómo usar esta guía:</strong> Antes de evaluar, lee las conductas del grado exigido para el cargo. Durante el periodo de prueba, observa si el colaborador las demuestra de forma consistente. Al calificar, selecciona el grado que mejor describe lo que <em>viste</em>, no lo que esperas.
+  </div>
+
+  <!-- ANALISTA GH -->
+  <div class="cargo-section visible" id="c-gh">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Analista de Gestión Humana</div>
+        <div class="cargo-obj">Ejecuta los procesos operativos de selección, contratación, nómina, novedades de personal y administración del talento humano.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Profesional / Analista</span>
+          <span class="tag-pill tag-perfil">Tecnólogo GH / Administración · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Gestiona requisiciones y aplica pruebas en <strong>GH PRO</strong></li>
+          <li>Elabora contratos y afiliaciones a seguridad social</li>
+          <li>Registra novedades de nómina y prepara planillas SS</li>
+          <li>Radica incapacidades ante EPS/ARL y concilia con contabilidad</li>
+          <li>Expide certificaciones laborales con oportunidad</li>
+          <li>Mantiene actualizado el software <strong>MANGO</strong></li>
+          <li>Apoya inducción y capacitación del personal</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Maneja la información con <strong>discreción y confidencialidad</strong>?</li>
+          <li>¿Los documentos y registros que genera son <strong>exactos y completos</strong>?</li>
+          <li>¿Cumple los plazos de nómina y seguridad social sin recordatorios?</li>
+          <li>¿Aprende rápido los sistemas (GH PRO, MANGO)?</li>
+          <li>¿Responde las solicitudes de los trabajadores con amabilidad y oportunidad?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado exigido</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida los recursos de la empresa, habla bien de la organización, se compromete más allá de lo mínimo.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Atiende solicitudes de los trabajadores con actitud de solución, da respuesta oportuna.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cumple los plazos de nómina y SS sin que se lo recuerden constantemente.</td></tr>
+          <tr><td><strong>Trabajo en equipo</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Comparte información con GH, apoya a sus compañeros cuando hay carga alta.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Llega a tiempo, avisa con anticipación cuando hay un imprevisto, cumple lo prometido.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Usa los EPP cuando corresponde, reporta condiciones inseguras.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Los documentos que genera no tienen errores. Detecta inconsistencias antes de que generen problemas.</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>No comenta información de salarios, procesos disciplinarios ni datos personales con personas no autorizadas.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Maneja con seguridad los sistemas y la normatividad laboral básica.</td></tr>
+          <tr><td><strong>Análisis de información</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Identifica errores en planillas, cruza datos entre sistemas y presenta inconsistencias con contexto.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AUXILIAR SST -->
+  <div class="cargo-section" id="c-sst">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de SST</div>
+        <div class="cargo-obj">Ejecuta el SG-SST y el PESV para prevenir accidentes, enfermedades laborales y siniestros viales.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Tecnólogo SST con licencia · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Ejecuta el plan anual de trabajo SG-SST</li>
+          <li>Mantiene actualizada la matriz de peligros</li>
+          <li>Realiza inspecciones de seguridad y controla EPP</li>
+          <li>Reporta accidentes a ARL y hace seguimiento</li>
+          <li>Coordina COPASST y Comité de Convivencia</li>
+          <li>Lleva indicadores de accidentalidad y ausentismo</li>
+          <li>Gestiona documentación del PESV (conductores y vehículos)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Tiene la <strong>licencia en SST vigente</strong>?</li>
+          <li>¿Las inspecciones las realiza con rigor o son un trámite?</li>
+          <li>¿Los reportes a la ARL los hace en los tiempos legales?</li>
+          <li>¿Lleva los registros al día y sin que se le recuerde?</li>
+          <li>¿Tiene actitud proactiva frente a las condiciones de riesgo?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado exigido</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Se preocupa genuinamente por la seguridad de los compañeros, no solo cumple el formato.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Atiende las solicitudes de los trabajadores con actitud de servicio.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cumple con el plan anual de trabajo en los tiempos establecidos.</td></tr>
+          <tr><td><strong>Trabajo en equipo</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Coordina bien con las áreas para ejecutar capacitaciones e inspecciones.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Reporta novedades de accidentalidad en el tiempo legal sin que se lo exijan.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Es el primero en usar EPP y en predicar con el ejemplo en SST. No puede haber brecha aquí.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Los registros de inspección y los formatos no tienen datos incompletos.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Conoce la normatividad (Res. 0312, Res. 1843, Res. 40595) y la aplica correctamente.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ANALISTA INVENTARIOS -->
+  <div class="cargo-section" id="c-inventarios">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Analista de inventarios</div>
+        <div class="cargo-obj">Garantiza la exactitud y trazabilidad del inventario de TYM y TAT mediante conteos, control de recibo/compras y soporte a información de compra-venta.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Liderazgo</span>
+          <span class="tag-pill tag-perfil">Tecnólogo · Excel avanzado · SYT · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Programa y ejecuta conteos cíclicos, periódicos y totales</li>
+          <li>Analiza diferencias físico vs. sistema y presenta ajustes a Gerencia</li>
+          <li>Carga compras con XML de factura electrónica</li>
+          <li>Actualiza listas de precios con 24 h de anticipación</li>
+          <li>Gestiona notas crédito, notas de valor y notas de cambio</li>
+          <li>Revisa picking antes de facturación</li>
+          <li>Coordina y supervisa al Auxiliar de facturación</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Envía la programación de conteos <strong>cada viernes</strong> sin falta?</li>
+          <li>¿Las diferencias de inventario las detecta <strong>él</strong> o las descubren otros?</li>
+          <li>¿Maneja Excel con tablas dinámicas y BUSCARV con fluidez?</li>
+          <li>¿Coordina bien al Auxiliar de facturación?</li>
+          <li>¿El cierre de mes de TYM y TAT sale sin reprocesos?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado exigido</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Identifica problemas de inventario antes de que se lo pidan. Propone mejoras al proceso.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los conteos y cierres salen en las fechas programadas sin justificaciones recurrentes.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Asume los errores de inventario, los documenta y propone corrección sin que se lo exijan.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Aplica normas de seguridad en bodega durante los conteos físicos.</td></tr>
+          <tr><td><strong>Planificación / Supervisión</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Organiza la programación semanal de conteos y coordina al Auxiliar de facturación con claridad.</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>No comparte información de costos, ajustes o diferencias con personas fuera del proceso.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Los archivos de conteo y los ajustes no tienen errores numéricos. Detecta inconsistencias mínimas.</td></tr>
+          <tr><td><strong>Análisis de información</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Cruza físico vs. sistema, identifica la causa de las diferencias y la explica con datos.</td></tr>
+          <tr><td><strong>Precisión en manejo de mercancía</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>Los conteos no tienen errores de digitación ni de clasificación por proveedor.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ANALISTA DESARROLLO -->
+  <div class="cargo-section" id="c-desarrollo">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Analista de desarrollo</div>
+        <div class="cargo-obj">Desarrolla aplicaciones internas y garantiza el funcionamiento, seguridad y disponibilidad de sistemas, equipos, red y respaldos.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Profesional / Analista</span>
+          <span class="tag-pill tag-perfil">Tecnólogo o profesional en Sistemas · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Desarrolla y mantiene aplicaciones internas (GH PRO, etc.)</li>
+          <li>Brinda soporte en SYT, SIDIS, AMOVIL, SODISTEC, GH PRO</li>
+          <li>Administra la base de datos SYT y gestiona usuarios/permisos</li>
+          <li>Gestiona backups y medidas de seguridad de la información</li>
+          <li>Realiza mantenimiento preventivo y correctivo de equipos</li>
+          <li>Documenta desarrollos y capacita a usuarios</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Resuelve los problemas técnicos con <strong>autonomía</strong> o siempre consulta?</li>
+          <li>¿Los backups se ejecutan sin fallas en las fechas programadas?</li>
+          <li>¿Documenta lo que desarrolla o solo lo deja en su cabeza?</li>
+          <li>¿Explica los sistemas a los usuarios con paciencia y claridad?</li>
+          <li>¿Detecta vulnerabilidades de seguridad de forma proactiva?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado exigido</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Se preocupa por la estabilidad de los sistemas más allá de su horario.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Entrega los desarrollos en los tiempos acordados sin reprocesos frecuentes.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuando un sistema falla por algo de su responsabilidad, lo comunica de inmediato y busca solución.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>El código y las configuraciones no generan errores en producción por descuido.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Domina los sistemas de la empresa y resuelve problemas técnicos con seguridad.</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>No comparte accesos, contraseñas ni información de la base de datos con terceros.</td></tr>
+          <tr><td><strong>Análisis de información</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Diagnostica la causa raíz de los problemas técnicos, no solo los síntomas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AUXILIAR FACTURACION -->
+  <div class="cargo-section" id="c-facturacion">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de facturación</div>
+        <div class="cargo-obj">Asegura la facturación velando por la integridad del Sell In y Sell Out.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Técnico o tecnólogo · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Garantiza el 100% de pedidos facturados en el día</li>
+          <li>Revisa pedidos del proveedor y audita el proceso</li>
+          <li>Verifica FELAM y SYT e informa anomalías</li>
+          <li>Factura todas las rutas del día siguiente</li>
+          <li>Genera informes de devoluciones y cambios</li>
+          <li>Remite planillas a bodegas satélite</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Las facturas salen sin errores que generen reprocesos?</li>
+          <li>¿Detecta anomalías en FELAM o SYT antes de que causen problemas?</li>
+          <li>¿Cumple el cierre del día sin demoras recurrentes?</li>
+          <li>¿Coordina bien con el Analista de inventarios?</li>
+          <li>¿Maneja la información con cuidado y no comete errores por descuido?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado exigido</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Alerta al Analista de inventarios cuando detecta algo inusual, aunque no sea su responsabilidad directa.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>El 100% de las rutas facturadas en el tiempo establecido, sin excepciones recurrentes.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuando hay un error de facturación, lo reporta de inmediato sin esperar a que lo descubran.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Las facturas no tienen errores de precio, cantidad o cliente. Verifica antes de enviar.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Maneja FELAM y SYT con fluidez desde las primeras semanas.</td></tr>
+          <tr><td><strong>Precisión logística</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>Las planillas a bodegas satélite no tienen inconsistencias con lo facturado.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AUXILIAR SEPARACION -->
+  <div class="cargo-section" id="c-separacion">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de separación</div>
+        <div class="cargo-obj">Separa por zonas los pedidos asignados, garantizando exactitud y orden en la bodega.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Logística y bodega</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · BPM · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Recibe planillas de zonas y separa productos por proveedor</li>
+          <li>Alista pedidos según facturas con exactitud</li>
+          <li>Separa y organiza pedidos devueltos</li>
+          <li>Mantiene limpio y ordenado su pasillo asignado</li>
+          <li>Rotula la mercancía correctamente</li>
+          <li>Participa en el inventario mensual del portafolio asignado</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Los pedidos que separa coinciden exactamente con las facturas?</li>
+          <li>¿Su área de trabajo está siempre ordenada y limpia?</li>
+          <li>¿Usa los EPP sin que se lo recuerden?</li>
+          <li>¿Cumple los tiempos de separación para no retrasar el despacho?</li>
+          <li>¿Aplica BPM en el manejo de los productos alimenticios?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado exigido</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida la mercancía como si fuera propia, reporta daños que detecta aunque no los causó.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Entiende que un error de separación llega al cliente final. Verifica antes de entregar.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Llega a tiempo, cumple su turno completo, avisa con anticipación si tiene un imprevisto.</td></tr>
+          <tr><td><strong>Trabajo en equipo</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Apoya a sus compañeros en picos de trabajo sin que se lo pidan.</td></tr>
+          <tr><td><strong>Autocuidado y seguridad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Usa EPP siempre, aplica técnicas de levantamiento de cargas, reporta condiciones de riesgo. No puede haber brecha aquí.</td></tr>
+          <tr><td><strong>Precisión en manejo de mercancía</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>Los pedidos separados no tienen faltantes, sobrantes ni referencias equivocadas.</td></tr>
+          <tr><td><strong>Cumplimiento de tiempos</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>Termina la separación antes de la hora de cargue sin que el Jefe logístico tenga que presionarlo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AUXILIAR SERVICIOS GENERALES -->
+  <div class="cargo-section" id="c-servicios">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de servicios generales</div>
+        <div class="cargo-obj">Garantiza el orden, aseo y limpieza de las instalaciones y atiende las actividades de café.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · BPM · Manejo de químicos · 6 meses exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Mantiene áreas limpias, ordenadas e higiénicas</li>
+          <li>Limpieza de baños, oficinas, bodega y pasillos</li>
+          <li>Recolección y disposición correcta de residuos</li>
+          <li>Prepara y mantiene el café disponible en los horarios establecidos</li>
+          <li>Revisa baños periódicamente e informa daños o falta de insumos</li>
+          <li>Horario: lunes a sábado, 6:30 a.m. – 2:30 p.m.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Las áreas están limpias en cada franja del día sin que se le recuerde?</li>
+          <li>¿Maneja los químicos de limpieza con seguridad y los almacena correctamente?</li>
+          <li>¿Avisa oportunamente cuando falta algún insumo?</li>
+          <li>¿Tiene buena actitud con todos los compañeros que atiende?</li>
+          <li>¿Cumple el horario de forma consistente?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado exigido</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida los insumos de limpieza, no los desperdicia. Reporta daños en las instalaciones.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cumple la rutina diaria completa sin que se lo supervisen constantemente.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Usa guantes y elementos de protección al manipular químicos. Lee las fichas de seguridad.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-C">C</span></td><td>Atiende con amabilidad las solicitudes de café u otros requerimientos básicos.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Los baños y áreas comunes no tienen zonas descuidadas. La limpieza es completa, no superficial.</td></tr>
+          <tr><td><strong>Orden y organización</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>Los productos de limpieza están siempre en su lugar. El cuarto de aseo está organizado.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function verCargo(id, btn) {
+    document.querySelectorAll('.cargo-section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('c-' + id).classList.add('visible');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

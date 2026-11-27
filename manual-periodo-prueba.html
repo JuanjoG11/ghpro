@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual — Evaluación de Periodo de Prueba · GH PRO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #1a2332; --blue: #1d3a6e; --accent: #2563eb;
+      --ok: #16a34a; --warn: #d97706; --danger: #dc2626;
+      --bg: #f4f6f9; --border: #e2e8f0; --muted: #64748b;
+      --radius: 10px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--navy); font-size: 15px; line-height: 1.6; }
+
+    /* TOP */
+    .topbar { background: var(--navy); color: #fff; padding: .9rem 2rem; display: flex; align-items: center; gap: 1rem; position: sticky; top: 0; z-index: 100; }
+    .topbar-logo { font-weight: 800; font-size: 1rem; }
+    .topbar-title { font-size: .88rem; color: rgba(255,255,255,.65); }
+    .topbar-badge { background: rgba(255,255,255,.15); color: #fff; font-size: .75rem; padding: .2em .7em; border-radius: 99px; font-weight: 600; }
+
+    /* LAYOUT */
+    .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 52px); }
+    @media(max-width:768px){ .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+    /* SIDEBAR */
+    .sidebar { background: #fff; border-right: 1.5px solid var(--border); padding: 1.5rem 1rem; position: sticky; top: 52px; height: calc(100vh - 52px); overflow-y: auto; }
+    .sidebar h3 { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: .75rem; padding-left: .5rem; }
+    .nav-item { display: block; padding: .45rem .75rem; border-radius: 7px; color: var(--navy); text-decoration: none; font-size: .86rem; cursor: pointer; transition: all .15s; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: #f1f5f9; }
+    .nav-item.active { background: var(--navy); color: #fff; font-weight: 600; }
+    .nav-sep { height: 1px; background: var(--border); margin: .75rem 0; }
+
+    /* CONTENT */
+    .content { padding: 2.5rem 2rem; max-width: 820px; }
+
+    /* SECTION */
+    .section { display: none; }
+    .section.visible { display: block; }
+
+    .section-header { margin-bottom: 2rem; }
+    .section-header .tag { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--accent); margin-bottom: .4rem; }
+    .section-header h1 { font-size: 1.8rem; font-weight: 800; line-height: 1.2; }
+    .section-header p { color: var(--muted); margin-top: .5rem; font-size: .95rem; }
+
+    h2 { font-size: 1.2rem; font-weight: 800; margin: 2rem 0 .75rem; padding-bottom: .4rem; border-bottom: 2px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 .5rem; color: var(--blue); }
+    p { margin-bottom: .9rem; }
+    ul, ol { margin: .5rem 0 1rem 1.4rem; }
+    li { margin-bottom: .35rem; }
+    strong { font-weight: 700; }
+
+    /* CARDS */
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .card.alerta { border-color: #fde68a; background: #fffbeb; }
+    .card.peligro { border-color: #fca5a5; background: #fff5f5; }
+    .card.exito   { border-color: #bbf7d0; background: #f0fdf4; }
+    .card.info    { border-color: #bfdbfe; background: #eff6ff; }
+    .card-title { font-size: .88rem; font-weight: 700; margin-bottom: .5rem; display: flex; align-items: center; gap: .4rem; }
+
+    /* TIMELINE */
+    .timeline { position: relative; padding-left: 2rem; }
+    .timeline::before { content:''; position:absolute; left:.7rem; top:0; bottom:0; width:2px; background: var(--border); }
+    .tl-item { position: relative; margin-bottom: 1.5rem; }
+    .tl-dot { position: absolute; left: -1.65rem; top: .2rem; width: 14px; height: 14px; border-radius: 50%; background: var(--navy); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--navy); }
+    .tl-dot.warn   { background: var(--warn); box-shadow: 0 0 0 2px var(--warn); }
+    .tl-dot.danger { background: var(--danger); box-shadow: 0 0 0 2px var(--danger); }
+    .tl-dot.ok     { background: var(--ok); box-shadow: 0 0 0 2px var(--ok); }
+    .tl-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .tl-title { font-weight: 700; font-size: 1rem; margin: .15rem 0 .3rem; }
+    .tl-desc  { font-size: .88rem; color: #374151; }
+
+    /* BADGE */
+    .badge { display: inline-flex; align-items: center; padding: .2em .75em; border-radius: 99px; font-size: .78rem; font-weight: 600; }
+    .badge-navy    { background: #e0e7ff; color: #1e40af; }
+    .badge-ok      { background: #dcfce7; color: #166534; }
+    .badge-warn    { background: #fef9c3; color: #854d0e; }
+    .badge-danger  { background: #fee2e2; color: #991b1b; }
+    .badge-muted   { background: #f1f5f9; color: #475569; }
+
+    /* TABLE */
+    .tabla-wrap { background:#fff; border-radius: var(--radius); border: 1.5px solid var(--border); overflow: hidden; margin-bottom: 1.25rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th { background: #f8fafc; padding: .55rem 1rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+    td { padding: .7rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+
+    /* EJEMPLO */
+    .ejemplo { background: #f8fafc; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: .9rem 1.1rem; margin: .75rem 0 1.25rem; font-size: .88rem; font-style: italic; color: #374151; }
+    .ejemplo strong { font-style: normal; color: var(--navy); }
+
+    /* GRADOS */
+    .grados-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: .75rem; margin: .75rem 0 1.25rem; }
+    @media(max-width:600px){ .grados-grid { grid-template-columns: repeat(2,1fr); } }
+    .grado-card { border-radius: 8px; padding: .75rem; text-align: center; border: 1.5px solid var(--border); }
+    .grado-letra { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+    .grado-nombre { font-size: .78rem; font-weight: 700; margin: .2rem 0; }
+    .grado-desc  { font-size: .75rem; color: var(--muted); line-height: 1.4; }
+    .grado-A { background: #f0fdf4; border-color: #bbf7d0; } .grado-A .grado-letra { color: #15803d; }
+    .grado-B { background: #eff6ff; border-color: #bfdbfe; } .grado-B .grado-letra { color: #1d4ed8; }
+    .grado-C { background: #fffbeb; border-color: #fde68a; } .grado-C .grado-letra { color: #b45309; }
+    .grado-D { background: #fff5f5; border-color: #fca5a5; } .grado-D .grado-letra { color: #b91c1c; }
+
+    /* CLASIF */
+    .clasif-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: .75rem 0 1.25rem; }
+    @media(max-width:600px){ .clasif-grid { grid-template-columns: 1fr; } }
+    .clasif-card { border-radius: 8px; padding: .9rem 1rem; border: 1.5px solid var(--border); }
+    .clasif-pct  { font-size: 1.3rem; font-weight: 800; }
+    .clasif-nombre { font-size: .88rem; font-weight: 700; margin: .15rem 0; }
+    .clasif-desc   { font-size: .8rem; color: var(--muted); line-height: 1.4; }
+
+    /* STEPS */
+    .steps { counter-reset: step; }
+    .step { display: flex; gap: 1rem; margin-bottom: 1.25rem; }
+    .step-num { counter-increment: step; min-width: 32px; height: 32px; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 800; font-size: .9rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-body h4 { font-weight: 700; margin-bottom: .3rem; }
+    .step-body p  { font-size: .88rem; color: #374151; margin: 0; }
+
+    /* FAQ */
+    .faq-item { border: 1.5px solid var(--border); border-radius: 8px; margin-bottom: .6rem; overflow: hidden; }
+    .faq-q { padding: .85rem 1rem; font-weight: 700; font-size: .9rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+    .faq-q:hover { background: #f8fafc; }
+    .faq-q .arrow { transition: transform .2s; font-size: .8rem; }
+    .faq-item.open .faq-q .arrow { transform: rotate(180deg); }
+    .faq-a { display: none; padding: 0 1rem .85rem; font-size: .88rem; color: #374151; line-height: 1.6; }
+    .faq-item.open .faq-a { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">GH PRO</div>
+  <div class="topbar-title">Manual de uso</div>
+  <div class="topbar-badge">Evaluación de Periodo de Prueba</div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <h3>Contenido</h3>
+    <button class="nav-item active" onclick="ir('intro')">¿Qué es el periodo de prueba?</button>
+    <button class="nav-item" onclick="ir('quien')">¿A quién le corresponde?</button>
+    <button class="nav-item" onclick="ir('fechas')">Fechas y plazos</button>
+    <button class="nav-item" onclick="ir('como')">Cómo diligenciar paso a paso</button>
+    <button class="nav-item" onclick="ir('grados')">Entender los grados (A B C D)</button>
+    <button class="nav-item" onclick="ir('resultados')">Qué significa cada resultado</button>
+    <button class="nav-item" onclick="ir('concepto')">Continúa o No continúa</button>
+    <button class="nav-item" onclick="ir('errores')">Errores frecuentes</button>
+    <button class="nav-item" onclick="ir('faq')">Preguntas frecuentes</button>
+
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- 1. INTRO -->
+    <section class="section visible" id="s-intro">
+      <div class="section-header">
+        <div class="tag">Introducción</div>
+        <h1>¿Qué es el periodo de prueba?</h1>
+        <p>Una guía práctica para líderes de TYM y TAT Distribuciones del Eje Cafetero.</p>
+      </div>
+
+      <div class="card info">
+        <div class="card-title">📌 Definición legal</div>
+        <p style="margin:0;font-size:.9rem;">El periodo de prueba es un lapso pactado al inicio del contrato (máximo 2 meses para contratos indefinidos) durante el cual tanto el trabajador como la empresa pueden terminar la relación laboral sin preaviso ni indemnización. <strong>Al finalizar este periodo, el jefe inmediato debe evaluar el desempeño del colaborador.</strong></p>
+      </div>
+
+      <h2>¿Para qué sirve la evaluación?</h2>
+      <p>No es un trámite. Es la herramienta con la que tú, como líder, le comunicas a Gestión Humana si el colaborador cumple el perfil del cargo o si se identificaron brechas que deben trabajarse.</p>
+
+      <div class="card">
+        <div class="card-title">✅ Lo que GH hace con el resultado</div>
+        <ul style="margin:0;font-size:.9rem;">
+          <li><strong>Continúa y cumple perfil:</strong> se archiva la evaluación y sigue el contrato normal.</li>
+          <li><strong>Continúa con oportunidades:</strong> GH genera un plan de mejora con fechas de seguimiento.</li>
+          <li><strong>No continúa:</strong> GH activa el proceso de retiro con el respaldo documentado de la evaluación.</li>
+        </ul>
+      </div>
+
+      <h2>¿Qué evalúa?</h2>
+      <p>El sistema evalúa <strong>competencias</strong> — no tareas ni resultados numéricos. Una competencia es un conjunto de conductas observables. Por ejemplo, "Responsabilidad" se traduce en conductas concretas como llegar a tiempo, cumplir lo prometido, avisar cuando hay un imprevisto.</p>
+
+      <div class="ejemplo">
+        <strong>Ejemplo:</strong> "Orientación al cliente" no pregunta si el colaborador vendió más o menos. Pregunta qué conductas concretas has observado: ¿atiende los reclamos con actitud de solución? ¿va más allá de lo que se le pide? ¿o simplemente cumple lo mínimo?
+      </div>
+    </section>
+
+    <!-- 2. QUIEN -->
+    <section class="section" id="s-quien">
+      <div class="section-header">
+        <div class="tag">Responsabilidades</div>
+        <h1>¿A quién le corresponde evaluar?</h1>
+        <p>Cada evaluación tiene un responsable asignado según el cargo del colaborador.</p>
+      </div>
+
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Cargo del colaborador</th><th>Quién evalúa</th></tr></thead>
+          <tbody>
+            <tr><td>Analista de Gestión Humana, Auxiliar de SST, Analista de desarrollo, Auxiliar de servicios generales, Auxiliar de separación, Analista de inventarios, Jefe logístico, Auxiliar de facturación</td><td><strong>Coordinadora GGHH/SST</strong></td></tr>
+            <tr><td>Auxiliar de bodega, Auxiliar de despacho, Auxiliar de recibo, Auxiliar de devoluciones, Auxiliar logístico de entrega</td><td><strong>Jefe logístico</strong></td></tr>
+            <tr><td>Supervisor comercial</td><td><strong>Coordinador comercial</strong></td></tr>
+            <tr><td>Asesor comercial, Supernumerario, Mercaderista</td><td><strong>Supervisor comercial</strong></td></tr>
+            <tr><td>Coordinador comercial, Jefe logístico, Coordinadora GGHH/SST</td><td><strong>Gerente General</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card alerta">
+        <div class="card-title">⚠ Importante</div>
+        <p style="margin:0;font-size:.9rem;">Si el colaborador te reporta a ti, <strong>tú eres el responsable de evaluar</strong>. GH no puede diligenciar la evaluación por ti — solo la revisa y aprueba. Si tienes dudas sobre a quién evaluar, llama a GH antes de la fecha límite.</p>
+      </div>
+    </section>
+
+    <!-- 3. FECHAS -->
+    <section class="section" id="s-fechas">
+      <div class="section-header">
+        <div class="tag">Plazos</div>
+        <h1>Fechas y plazos</h1>
+        <p>El sistema calcula las fechas automáticamente. Aquí entiendes qué significa cada una.</p>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-label">Día 1</div>
+          <div class="tl-title">Ingreso del colaborador</div>
+          <div class="tl-desc">Comienza el conteo del periodo de prueba. Para contratos indefinidos es de <strong>60 días calendario</strong>.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-label">Día 40 aprox.</div>
+          <div class="tl-title">La evaluación aparece en tu bandeja</div>
+          <div class="tl-desc">GH PRO crea la evaluación automáticamente 20 días antes del vencimiento. Aparece en tu bandeja con estado <span class="badge badge-muted">Pendiente</span>.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot warn"></div>
+          <div class="tl-label">Día 50 (fecha límite del líder)</div>
+          <div class="tl-title">⏰ Debes enviar la evaluación a GH</div>
+          <div class="tl-desc">Tienes hasta 10 días antes del vencimiento para enviar tu evaluación a Gestión Humana. Si no lo haces, el sistema la marca como <span class="badge badge-danger">Vencida</span> y GH recibe una alerta.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-label">Días 50–58</div>
+          <div class="tl-title">GH revisa y aprueba</div>
+          <div class="tl-desc">GH revisa la evaluación, puede aprobarla o devolvértela para correcciones. Si la devuelve, tendrás poco tiempo — actúa de inmediato.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot ok"></div>
+          <div class="tl-label">Día 58–60</div>
+          <div class="tl-title">Socialización con el colaborador</div>
+          <div class="tl-desc">GH comparte el resultado con el colaborador, quien firma la evaluación (de acuerdo o en desacuerdo). Esto cierra el proceso.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot danger"></div>
+          <div class="tl-label">Día 60</div>
+          <div class="tl-title">Vencimiento del periodo de prueba</div>
+          <div class="tl-desc">Si el proceso no se completó antes de este día, se pierde el respaldo legal para terminar el contrato sin indemnización.</div>
+        </div>
+      </div>
+
+      <div class="card peligro">
+        <div class="card-title">🚨 Si no evalúas a tiempo</div>
+        <p style="margin:0;font-size:.9rem;">La empresa pierde el respaldo legal del periodo de prueba. Si después se requiere terminar el contrato, puede generar una obligación de indemnización. <strong>Nunca dejes pasar la fecha límite.</strong></p>
+      </div>
+    </section>
+
+    <!-- 4. COMO -->
+    <section class="section" id="s-como">
+      <div class="section-header">
+        <div class="tag">Paso a paso</div>
+        <h1>Cómo diligenciar la evaluación</h1>
+        <p>El formulario te guía competencia por competencia. Aquí te explicamos cada pantalla.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Ingresa a GH PRO → Evaluación de Desempeño</h4>
+            <p>Usa tu cédula y PIN. Si no tienes PIN, pídelo a Gestión Humana.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Busca la evaluación en "Pendientes"</h4>
+            <p>Verás el nombre del colaborador, su cargo y los días que faltan. Haz clic en <strong>Evaluar</strong>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Califica cada competencia</h4>
+            <p>El sistema te muestra una competencia a la vez con 4 opciones (A, B, C, D). Lee las conductas descritas y selecciona la que mejor describe lo que <em>has observado</em> en el colaborador durante el periodo. No la que esperas o deseas — lo que realmente viste.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Escribe evidencia cuando hay brecha</h4>
+            <p>Si seleccionas una calificación por debajo de lo exigido para el cargo, el sistema te pedirá una evidencia concreta (mínimo 30 caracteres). No escribas opiniones — escribe hechos. <strong>Ejemplo correcto:</strong> "El día 12/11 llegó 40 minutos tarde sin avisar, y el 18/11 no entregó el informe acordado."</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h4>Define el concepto: Continúa o No continúa</h4>
+            <p>Al final del formulario debes indicar tu decisión. Si es "No continúa", las observaciones deben tener al menos 100 caracteres justificando la decisión.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <h4>Revisa el resumen y envía a GH</h4>
+            <p>Verás la tabla completa con todas las competencias, brechas y fortalezas. Si todo está bien, haz clic en <strong>Enviar a GH</strong>. Puedes guardar borrador si necesitas retomar después.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card alerta">
+        <div class="card-title">💾 Guardado automático</div>
+        <p style="margin:0;font-size:.9rem;">Cada vez que seleccionas un grado, se guarda automáticamente. Si cierras el navegador, al volver encontrarás el formulario donde lo dejaste. Solo el botón <strong>Enviar a GH</strong> hace el envío oficial.</p>
+      </div>
+    </section>
+
+    <!-- 5. GRADOS -->
+    <section class="section" id="s-grados">
+      <div class="section-header">
+        <div class="tag">Escala de calificación</div>
+        <h1>Entender los grados A, B, C y D</h1>
+        <p>Cada competencia se califica con uno de estos cuatro grados. No son notas escolares — son niveles de conducta observable.</p>
+      </div>
+
+      <div class="grados-grid">
+        <div class="grado-card grado-A">
+          <div class="grado-letra">A</div>
+          <div class="grado-nombre">Alto</div>
+          <div class="grado-desc">Supera consistentemente lo esperado. Sirve como referente para los demás.</div>
+        </div>
+        <div class="grado-card grado-B">
+          <div class="grado-letra">B</div>
+          <div class="grado-nombre">Bueno</div>
+          <div class="grado-desc">Cumple con lo esperado. Desempeño sólido y confiable.</div>
+        </div>
+        <div class="grado-card grado-C">
+          <div class="grado-letra">C</div>
+          <div class="grado-nombre">Mínimo</div>
+          <div class="grado-desc">Cumple lo básico pero con oportunidades claras de mejora.</div>
+        </div>
+        <div class="grado-card grado-D">
+          <div class="grado-letra">D</div>
+          <div class="grado-nombre">Insuficiente</div>
+          <div class="grado-desc">Por debajo de lo esperado. Requiere acción inmediata.</div>
+        </div>
+      </div>
+
+      <h2>¿Qué significa "grado exigido"?</h2>
+      <p>Cada cargo tiene un perfil de competencias con un grado mínimo requerido. Por ejemplo, un <strong>Jefe logístico</strong> debe tener Liderazgo en grado A. Un <strong>Auxiliar de separación</strong> solo necesita Autocuidado en grado A — las demás competencias en B son suficientes.</p>
+
+      <div class="ejemplo">
+        <strong>Ejemplo práctico:</strong> Si el cargo exige "Responsabilidad" en grado B, y el colaborador muestra conductas de grado B, <strong>cumple</strong>. Si muestra grado C, hay una <strong>brecha de 1 grado</strong>. Si muestra grado A, es una <strong>fortaleza</strong>.
+      </div>
+
+      <div class="card info">
+        <div class="card-title">ℹ El sistema oculta el grado exigido mientras calificas</div>
+        <p style="margin:0;font-size:.9rem;">Esto es intencional. El propósito es que calificques lo que <em>observaste</em>, no que trates de adivinar qué grado "necesita" el cargo para pasar. Al revisar el resumen final sí verás el grado exigido y la comparación.</p>
+      </div>
+    </section>
+
+    <!-- 6. RESULTADOS -->
+    <section class="section" id="s-resultados">
+      <div class="section-header">
+        <div class="tag">Resultados</div>
+        <h1>Qué significa cada resultado</h1>
+        <p>El sistema calcula un índice de ajuste al perfil y lo clasifica automáticamente.</p>
+      </div>
+
+      <h2>El índice de ajuste</h2>
+      <p>Es el porcentaje de cumplimiento del perfil. Se calcula comparando los puntos observados vs. los puntos exigidos en cada competencia. Un colaborador que cumple exactamente todo lo exigido obtiene <strong>100%</strong>.</p>
+
+      <div class="clasif-grid">
+        <div class="clasif-card" style="border-color:#bbf7d0;background:#f0fdf4">
+          <div class="clasif-pct" style="color:#15803d">≥ 100%</div>
+          <div class="clasif-nombre" style="color:#15803d">Cumple el perfil</div>
+          <div class="clasif-desc">Cumple o supera todas las competencias exigidas. Sin plan de mejora obligatorio.</div>
+        </div>
+        <div class="clasif-card" style="border-color:#bfdbfe;background:#eff6ff">
+          <div class="clasif-pct" style="color:#1d4ed8">85% – 99%</div>
+          <div class="clasif-nombre" style="color:#1d4ed8">Cumple con oportunidades</div>
+          <div class="clasif-desc">Desempeño sólido con algunas competencias por desarrollar. Plan de mejora.</div>
+        </div>
+        <div class="clasif-card" style="border-color:#fde68a;background:#fffbeb">
+          <div class="clasif-pct" style="color:#b45309">70% – 84%</div>
+          <div class="clasif-nombre" style="color:#b45309">Cumple parcialmente</div>
+          <div class="clasif-desc">Varias brechas relevantes. Requiere plan de mejora y seguimiento cercano.</div>
+        </div>
+        <div class="clasif-card" style="border-color:#fca5a5;background:#fff5f5">
+          <div class="clasif-pct" style="color:#b91c1c">&lt; 70%</div>
+          <div class="clasif-nombre" style="color:#b91c1c">No cumple</div>
+          <div class="clasif-desc">No cumple el perfil del cargo. Base objetiva para decidir la no continuidad.</div>
+        </div>
+      </div>
+
+      <div class="card alerta">
+        <div class="card-title">⚠ El índice lo calcula GH, no el jefe</div>
+        <p style="margin:0;font-size:.9rem;">Como jefe no verás el índice calculado en tu formulario — solo ves las competencias y tu concepto. GH calcula el índice al revisar, para evitar que el resultado influya en la calificación.</p>
+      </div>
+    </section>
+
+    <!-- 7. CONCEPTO -->
+    <section class="section" id="s-concepto">
+      <div class="section-header">
+        <div class="tag">Decisión final</div>
+        <h1>Continúa o No continúa</h1>
+        <p>Esta es la decisión más importante del proceso. Tiene implicaciones legales y humanas.</p>
+      </div>
+
+      <div class="card exito">
+        <div class="card-title">✅ Continúa</div>
+        <p style="margin:0;font-size:.9rem;">El colaborador superó el periodo de prueba. El contrato sigue. Si hay brechas, GH genera un plan de mejora para trabajarlas durante los próximos meses.</p>
+      </div>
+
+      <div class="card peligro" style="margin-top:.75rem">
+        <div class="card-title">❌ No continúa</div>
+        <p style="margin:.0;font-size:.9rem;">La empresa decide no continuar la relación laboral al finalizar el periodo de prueba. <strong>Esta decisión activa una alerta inmediata a GH</strong>, quien gestiona el proceso de retiro. Debes justificarlo con al menos 100 caracteres en las observaciones.</p>
+      </div>
+
+      <h2>¿Puedo decir "Continúa" aunque el índice sea bajo?</h2>
+      <p>Sí. El concepto es tuyo como líder y está basado en tu criterio profesional, no solo en el número. Puede que el colaborador haya mejorado significativamente, tenga potencial claro o circunstancias que justifiquen darle más tiempo. Lo importante es que lo documentes bien.</p>
+
+      <div class="ejemplo">
+        <strong>Ejemplo de observación válida para "No continúa":</strong> "Durante los 60 días el colaborador presentó dificultades reiteradas para manejar la información de inventario con exactitud, generando diferencias en tres conteos cíclicos. Se hicieron dos acompañamientos y una retroalimentación formal el 30/10, sin mejora observable. El cargo requiere precisión desde el inicio."
+      </div>
+
+      <div class="card alerta">
+        <div class="card-title">⚠ No uses esta decisión para conflictos personales</div>
+        <p style="margin:0;font-size:.9rem;">La evaluación debe reflejar hechos observables del desempeño en el cargo. GH revisa la coherencia entre las calificaciones, las evidencias y el concepto antes de aprobar.</p>
+      </div>
+    </section>
+
+    <!-- 8. ERRORES -->
+    <section class="section" id="s-errores">
+      <div class="section-header">
+        <div class="tag">Errores comunes</div>
+        <h1>Errores frecuentes y cómo evitarlos</h1>
+      </div>
+
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Error</th><th>Por qué es un problema</th><th>Cómo evitarlo</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Calificar todo en B "para no tener problemas"</strong></td>
+              <td>Oculta brechas reales. Si después hay un problema de desempeño, no hay historial.</td>
+              <td>Califica lo que realmente observaste. Las brechas generan planes de mejora, no sanciones al jefe.</td>
+            </tr>
+            <tr>
+              <td><strong>Esperar el último día para diligenciar</strong></td>
+              <td>GH no tiene tiempo de revisar. Si hay correcciones, no alcanza.</td>
+              <td>Hazlo con al menos 15 días de anticipación al vencimiento.</td>
+            </tr>
+            <tr>
+              <td><strong>Escribir evidencias genéricas</strong></td>
+              <td>"No es responsable" no sirve como evidencia. No tiene fecha, hecho ni contexto.</td>
+              <td>Escribe: qué pasó, cuándo, cuántas veces, con qué consecuencia.</td>
+            </tr>
+            <tr>
+              <td><strong>Poner "No continúa" sin justificación suficiente</strong></td>
+              <td>GH puede devolver la evaluación. Sin respaldo, hay riesgo legal.</td>
+              <td>Mínimo 100 caracteres con hechos concretos y fechas.</td>
+            </tr>
+            <tr>
+              <td><strong>Confundir el cargo con la persona</strong></td>
+              <td>Evalúas conductas en el cargo, no simpatía personal.</td>
+              <td>Pregúntate: "¿Esto que observé afecta el resultado del cargo?" Si no, no es relevante.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 9. FAQ -->
+    <section class="section" id="s-faq">
+      <div class="section-header">
+        <div class="tag">Preguntas frecuentes</div>
+        <h1>Dudas comunes</h1>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">¿Qué pasa si no evalúo antes de la fecha límite? <span class="arrow">▼</span></div>
+        <div class="faq-a">La evaluación pasa a estado "Vencida" y GH recibe una alerta. Puedes seguir diligenciándola, pero la empresa pierde el respaldo legal del periodo de prueba para terminar el contrato sin indemnización si fuera necesario.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">¿Puedo modificar la evaluación después de enviarla? <span class="arrow">▼</span></div>
+        <div class="faq-a">No directamente. GH puede devolvértela para correcciones si detecta inconsistencias. Una vez que GH la aprueba, queda bloqueada.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">¿El colaborador ve lo que escribí? <span class="arrow">▼</span></div>
+        <div class="faq-a">Solo después de que GH aprueba y socializa la evaluación. El colaborador ve el resultado y las brechas, pero no las evidencias internas escritas por el jefe.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">¿Qué es un plan de mejora y quién lo hace? <span class="arrow">▼</span></div>
+        <div class="faq-a">Es un compromiso concreto para cerrar una brecha: qué acción se va a tomar, quién es responsable y en qué fecha. GH lo construye basándose en las brechas que identificaste. Tú como jefe participas en el seguimiento.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">¿Puedo evaluar a alguien que lleva menos de 60 días? <span class="arrow">▼</span></div>
+        <div class="faq-a">Sí, si el sistema ya generó la evaluación. El periodo de prueba puede ser menor a 60 días según el contrato. El sistema calcula las fechas automáticamente según lo pactado.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">¿Qué hago si no conozco bien al colaborador todavía? <span class="arrow">▼</span></div>
+        <div class="faq-a">Evalúa con lo que has podido observar. Si hay competencias en las que genuinamente no tienes información, califícalas en C (mínimo) y explícalo en la evidencia. No dejes competencias sin calificar — el sistema no te dejará enviar.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">¿Puedo hablar con el colaborador antes de evaluar? <span class="arrow">▼</span></div>
+        <div class="faq-a">Sí, es recomendable hacer un seguimiento informal a mitad del periodo. Sin embargo, la evaluación formal la diligencias solo tú en el sistema — el colaborador no participa en la calificación.</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  function ir(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('s-' + id).classList.add('visible');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.querySelector('.content').scrollTop = 0;
+    window.scrollTo(0,0);
+  }
+  function toggleFaq(el) {
+    el.closest('.faq-item').classList.toggle('open');
+  }
+</script>
+</body>
+</html>

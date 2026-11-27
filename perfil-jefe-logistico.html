@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfiles de cargo — Jefe logístico · GH PRO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --navy: #1a2332; --blue: #1d3a6e; --accent: #2563eb; --ok: #16a34a; --warn: #d97706; --danger: #dc2626; --bg: #f4f6f9; --border: #e2e8f0; --muted: #64748b; --radius: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--navy); font-size: 14px; line-height: 1.6; }
+    .topbar { background: var(--navy); color: #fff; padding: .85rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .topbar-logo { font-weight: 800; font-size: 1rem; }
+    .topbar-title { font-size: .88rem; color: rgba(255,255,255,.65); }
+    .topbar-badge { background: rgba(255,255,255,.15); color: #fff; font-size: .75rem; padding: .2em .8em; border-radius: 99px; font-weight: 600; }
+    .topbar-back { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,.3); color: rgba(255,255,255,.8); font-size: .78rem; padding: .3rem .8rem; border-radius: 6px; cursor: pointer; text-decoration: none; }
+    .topbar-back:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .hero { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); color: #fff; padding: 2rem 2rem 1.5rem; }
+    .hero-sup { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.55); margin-bottom: .3rem; }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .3rem; }
+    .hero p { color: rgba(255,255,255,.7); font-size: .9rem; max-width: 600px; }
+    .hero-meta { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .hero-meta span { font-size: .82rem; color: rgba(255,255,255,.65); }
+    .hero-meta strong { color: #fff; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .tabs { display: flex; gap: .4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: .45rem 1.1rem; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: .84rem; font-weight: 500; cursor: pointer; color: var(--navy); transition: all .15s; }
+    .tab:hover { border-color: var(--navy); }
+    .tab.active { background: #065f46; color: #fff; border-color: #065f46; font-weight: 600; }
+    .cargo-section { display: none; }
+    .cargo-section.visible { display: block; }
+    .cargo-header { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .cargo-nombre { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+    .cargo-obj { font-size: .88rem; color: var(--muted); line-height: 1.5; max-width: 600px; }
+    .cargo-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+    .tag-pill { padding: .2em .75em; border-radius: 99px; font-size: .75rem; font-weight: 600; }
+    .tag-area { background: #d1fae5; color: #065f46; }
+    .tag-nivel { background: #f1f5f9; color: #475569; }
+    .tag-perfil { background: #fef9c3; color: #854d0e; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    @media(max-width:700px){ .grid2 { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.1rem 1.25rem; }
+    .card h3 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .75rem; }
+    .card ul { margin: 0 0 0 1.1rem; }
+    .card li { font-size: .88rem; margin-bottom: .3rem; color: #374151; }
+    .comp-tabla { width: 100%; border-collapse: collapse; }
+    .comp-tabla th { background: #f8fafc; padding: .5rem .85rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+    .comp-tabla td { padding: .6rem .85rem; border-bottom: 1px solid #f1f5f9; font-size: .86rem; vertical-align: middle; }
+    .comp-tabla tr:last-child td { border-bottom: none; }
+    .comp-tabla tr:hover td { background: #fafbfc; }
+    .grado { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: .85rem; }
+    .g-A { background: #dcfce7; color: #15803d; } .g-B { background: #dbeafe; color: #1d4ed8; }
+    .tipo-badge { font-size: .72rem; font-weight: 600; padding: .15em .6em; border-radius: 99px; }
+    .tipo-T { background: #f1f5f9; color: #475569; } .tipo-L { background: #ede9fe; color: #5b21b6; }
+    .tipo-F { background: #e0f2fe; color: #0369a1; } .tipo-LOG { background: #ecfdf5; color: #065f46; }
+    .alert-tip { background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: .85rem 1rem; font-size: .86rem; color: #064e3b; margin-bottom: 1.25rem; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">GH PRO</div>
+  <div class="topbar-title">Perfiles de cargo</div>
+  <div class="topbar-badge">Jefe logístico</div>
+  <a class="topbar-back" href="manual-periodo-prueba.html">← Manual</a>
+</div>
+
+<div class="hero">
+  <div class="hero-sup">Guía de evaluación · Personal a cargo</div>
+  <h1>Perfiles de competencias</h1>
+  <p>Las competencias exigidas para cada cargo que evalúas, con los comportamientos concretos que debes observar durante el periodo de prueba.</p>
+  <div class="hero-meta">
+    <span><strong>5 cargos</strong> bajo tu evaluación</span>
+    <span><strong>Versión:</strong> Diccionario v2 · Nov 2026</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="verCargo('bodega',this)">Aux. de bodega</button>
+    <button class="tab" onclick="verCargo('despacho',this)">Aux. de despacho</button>
+    <button class="tab" onclick="verCargo('recibo',this)">Aux. de recibo</button>
+    <button class="tab" onclick="verCargo('devoluciones',this)">Aux. de devoluciones</button>
+    <button class="tab" onclick="verCargo('entrega',this)">Aux. logístico de entrega</button>
+  </div>
+
+  <div class="alert-tip">
+    💡 <strong>Tu equipo opera en cadena.</strong> Un error de uno afecta al siguiente. Al evaluar, fíjate especialmente en <strong>precisión, autocuidado y cumplimiento de tiempos</strong> — son las tres competencias críticas para la operación logística.
+  </div>
+
+  <!-- BODEGA -->
+  <div class="cargo-section visible" id="c-bodega">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de bodega (cargue y descargue)</div>
+        <div class="cargo-obj">Recibe, descarga, organiza y mantiene en buen estado la mercancía y la bodega, incluida la bodega de fríos.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Logística y bodega</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · BPM · Manejo de cargas · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Recibe y descarga mercancía contra archivo ciego</li>
+          <li>Inventario diario de productos de baja rotación</li>
+          <li>Revisa vencimientos y organiza por referencia</li>
+          <li>Mantiene el cuarto frío y la bodega en condiciones óptimas</li>
+          <li>Diligencia formatos de calidad y bajas</li>
+          <li>Autoriza ingreso de tractomulas y verifica canastillas para devolución</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Valida el recibo contra el archivo ciego o solo cuenta bultos?</li>
+          <li>¿Detecta faltantes y averías al momento del recibo?</li>
+          <li>¿Aplica rotación PEPS (primeros en entrar, primeros en salir)?</li>
+          <li>¿El cuarto frío lo mantiene organizado y en temperatura?</li>
+          <li>¿Usa cinturón de seguridad y técnicas correctas de carga?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida la mercancía como si fuera propia. Reporta daños que detecta aunque no los causó.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Llega antes de la hora de ingreso de tractomulas. Avisa si tiene un imprevisto.</td></tr>
+          <tr><td><strong>Trabajo en equipo</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Apoya al Auxiliar de separación en picos de trabajo sin que se lo pidas.</td></tr>
+          <tr><td><strong>Autocuidado y seguridad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Usa cinturón de seguridad, guantes y calzado de seguridad siempre. Técnica correcta de levantamiento. No puede haber brecha aquí.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Entiende que el recibo correcto impacta directamente la entrega al cliente.</td></tr>
+          <tr><td><strong>Precisión en manejo de mercancía</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>Los conteos de recibo coinciden con el archivo ciego. No hay diferencias por error de conteo.</td></tr>
+          <tr><td><strong>Orden y organización</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>Cada referencia en su posición. El cuarto frío organizado por proveedor y fecha.</td></tr>
+          <tr><td><strong>Cumplimiento de tiempos</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>El recibo no retrasa la separación ni el despacho del día.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DESPACHO -->
+  <div class="cargo-section" id="c-despacho">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de despacho</div>
+        <div class="cargo-obj">Verifica que lo cargado en cada vehículo corresponda exactamente a lo programado: mercancía, canastillas, bajas, promociones y pedidos adicionales.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Logística y bodega</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · BPM · Manejo de cargas · 6 meses exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Recibe programación de despacho y chequea contra facturas</li>
+          <li>Cuenta y registra canastillas por ruta</li>
+          <li>Verifica bajas, cambios y promociones por ruta</li>
+          <li>Reporta faltantes y sobrantes al Jefe logístico</li>
+          <li>Firma soporte de salida con el Auxiliar logístico</li>
+          <li>Organiza averías de devoluciones y separación</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El cargue sale sin faltantes ni sobrantes por ruta?</li>
+          <li>¿Termina el chequeo antes de las 7:00 a.m. de forma consistente?</li>
+          <li>¿Reporta diferencias de inmediato o espera a que las descubras tú?</li>
+          <li>¿El soporte de salida está siempre firmado por ambas partes?</li>
+          <li>¿Las averías las organiza correctamente o las mezcla?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuando hay una diferencia en el cargue, la reporta antes de que salga el vehículo.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Usa EPP en el cargue. Aplica técnicas seguras de manipulación de mercancía.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Detecta que falta una referencia o que el conteo de canastillas no coincide antes de firmar el soporte.</td></tr>
+          <tr><td><strong>Orden y organización</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>Las averías clasificadas correctamente. El área de despacho siempre lista para el siguiente día.</td></tr>
+          <tr><td><strong>Precisión en manejo de mercancía</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>Los vehículos salen con exactamente lo que dice la programación. Cero diferencias por error de chequeo.</td></tr>
+          <tr><td><strong>Cumplimiento de tiempos</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>El cargue termina antes de las 7:00 a.m. todos los días. No retrasa la salida de rutas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RECIBO -->
+  <div class="cargo-section" id="c-recibo">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de recibo</div>
+        <div class="cargo-obj">Recibe los vehículos que regresan de ruta en turno tarde; verifica canastillas, averías y devoluciones antes del cuadre en caja.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Logística y bodega</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · BPM · Manejo de cargas · 6 meses exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Recibe vehículos por orden de llegada</li>
+          <li>Cuenta canastillas contra las despachadas en la mañana</li>
+          <li>Verifica devoluciones contra facturas y motivo</li>
+          <li>Separa averías para el Auxiliar de despacho</li>
+          <li>Entrega soporte de conteo al Auxiliar logístico para cuadre en caja</li>
+          <li>Reporta diferencias al Jefe logístico y al Analista de inventarios</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El soporte de conteo que entrega es exacto o tiene correcciones frecuentes?</li>
+          <li>¿Separa correctamente las averías sin mezclarlas con devoluciones en buen estado?</li>
+          <li>¿Reporta diferencias de inmediato o espera al día siguiente?</li>
+          <li>¿Atiende los vehículos por orden de llegada sin favoritismos?</li>
+          <li>¿El área de recibo queda ordenada al finalizar el turno?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Reporta diferencias el mismo día, no al día siguiente.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Usa EPP al manipular mercancía. Aplica técnicas seguras de levantamiento.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>El conteo de canastillas y devoluciones no tiene errores que generen diferencias en caja.</td></tr>
+          <tr><td><strong>Integridad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>El conteo es honesto. No ajusta números para cuadrar diferencias.</td></tr>
+          <tr><td><strong>Precisión en manejo de mercancía</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>Los soportes de conteo coinciden con lo real. Las averías están correctamente separadas.</td></tr>
+          <tr><td><strong>Orden y organización</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>Canastillas ubicadas correctamente. Área de recibo organizada al cierre del turno.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DEVOLUCIONES -->
+  <div class="cargo-section" id="c-devoluciones">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar de devoluciones</div>
+        <div class="cargo-obj">Registra y controla devoluciones de clientes, autoriza notas crédito y valida el recibo de mercancía de Familia.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Logística y bodega</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · Herramientas ofimáticas · BPM · 6 meses exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Registra devoluciones en sistema por concepto (faltante, cliente sin dinero, negocio cerrado)</li>
+          <li>Autoriza notas crédito y ubica mercancía devuelta en buen estado</li>
+          <li>Valida recibo de mercancía Familia contra archivo ciego</li>
+          <li>Genera informe diario de devoluciones por ruta, asesor y concepto</li>
+          <li>Verifica registros en SODISTEC</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El informe de devoluciones sale todos los días sin que se lo recuerdes?</li>
+          <li>¿Registra el concepto correcto de cada devolución?</li>
+          <li>¿Las notas crédito están siempre soportadas con el físico?</li>
+          <li>¿Detecta inconsistencias entre SODISTEC y el físico?</li>
+          <li>¿Maneja las herramientas ofimáticas con fluidez?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>El informe diario de devoluciones está listo antes del cierre sin que se lo recuerden.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Usa EPP al manipular mercancía devuelta, incluidos productos de Familia.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Cada devolución con su concepto correcto. Las notas crédito cuadran con el físico.</td></tr>
+          <tr><td><strong>Integridad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Solo autoriza notas crédito con soporte físico real. No aprueba devoluciones sin verificar.</td></tr>
+          <tr><td><strong>Precisión en manejo de mercancía</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>El recibo de Familia contra archivo ciego no tiene diferencias por error de conteo.</td></tr>
+          <tr><td><strong>Orden y organización</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>Mercancía devuelta en buen estado ubicada correctamente. Averías separadas sin mezclar.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ENTREGA -->
+  <div class="cargo-section" id="c-entrega">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar logístico de entrega</div>
+        <div class="cargo-obj">Realiza las entregas efectivas a los clientes de la compañía y gestiona el recaudo de dinero.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Logística y bodega</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · Servicio al cliente · Manejo de efectivo · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Revisa facturación del día y comunica novedades al Auxiliar de despacho</li>
+          <li>Realiza entregas y cobra a los clientes</li>
+          <li>Hace caletas de dinero y consigna en entidades bancarias asignadas</li>
+          <li>Gestiona devoluciones con firma del cliente</li>
+          <li>Responde por mercancía, canastillas y facturas asignadas</li>
+          <li>Diligencia formato de cuadre final al regresar</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El cuadre de dinero al regresar siempre es exacto?</li>
+          <li>¿Las devoluciones las gestiona con firma del cliente o las trae sin soporte?</li>
+          <li>¿Consigna en los bancos asignados sin desviarse de la ruta?</li>
+          <li>¿Trata a los clientes con amabilidad y profesionalismo?</li>
+          <li>¿Llega siempre en los horarios establecidos con el vehículo completo?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida el vehículo y la mercancía. Reporta novedades de la ruta aunque sean incómodas.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>El cuadre final siempre cuadra. Si hay diferencias, las reporta él antes de que se las descubras.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Aplica normas de seguridad vial, usa cinturón, no usa celular manejando.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Los clientes reciben la mercancía correcta, en buen estado, con trato amable.</td></tr>
+          <tr><td><strong>Integridad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>El dinero recaudado siempre llega completo. No hay diferencias recurrentes en el cuadre.</td></tr>
+          <tr><td><strong>Precisión logística</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-B">B</span></td><td>Entrega la mercancía correcta a cada cliente según la factura.</td></tr>
+          <tr><td><strong>Cumplimiento de tiempos</strong></td><td><span class="tipo-badge tipo-LOG">Logística</span></td><td><span class="grado g-A">A</span></td><td>Regresa en el horario establecido con el cuadre listo para caja.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function verCargo(id, btn) {
+    document.querySelectorAll('.cargo-section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('c-' + id).classList.add('visible');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfiles de cargo — Gerente General · GH PRO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --navy: #1a2332; --blue: #1d3a6e; --bg: #f4f6f9; --border: #e2e8f0; --muted: #64748b; --radius: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--navy); font-size: 14px; line-height: 1.6; }
+    .topbar { background: var(--navy); color: #fff; padding: .85rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .topbar-logo { font-weight: 800; } .topbar-title { font-size: .88rem; color: rgba(255,255,255,.65); }
+    .topbar-badge { background: rgba(255,255,255,.15); color: #fff; font-size: .75rem; padding: .2em .8em; border-radius: 99px; font-weight: 600; }
+    .topbar-back { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,.3); color: rgba(255,255,255,.8); font-size: .78rem; padding: .3rem .8rem; border-radius: 6px; text-decoration: none; }
+    .topbar-back:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .hero { background: linear-gradient(135deg, #0f172a 0%, #1a2332 100%); color: #fff; padding: 2rem 2rem 1.5rem; }
+    .hero-sup { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.55); margin-bottom: .3rem; }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .3rem; }
+    .hero p { color: rgba(255,255,255,.7); font-size: .9rem; max-width: 600px; }
+    .hero-meta { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .hero-meta span { font-size: .82rem; color: rgba(255,255,255,.65); }
+    .hero-meta strong { color: #fff; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .tabs { display: flex; gap: .4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: .45rem 1.1rem; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: .84rem; font-weight: 500; cursor: pointer; color: var(--navy); transition: all .15s; }
+    .tab:hover { border-color: var(--navy); }
+    .tab.active { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 600; }
+    .cargo-section { display: none; } .cargo-section.visible { display: block; }
+    .cargo-header { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .cargo-nombre { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+    .cargo-obj { font-size: .88rem; color: var(--muted); line-height: 1.5; max-width: 600px; }
+    .cargo-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+    .tag-pill { padding: .2em .75em; border-radius: 99px; font-size: .75rem; font-weight: 600; }
+    .tag-area { background: #f1f5f9; color: #334155; } .tag-nivel { background: #e2e8f0; color: #475569; } .tag-perfil { background: #fef9c3; color: #854d0e; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    @media(max-width:700px){ .grid2 { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.1rem 1.25rem; }
+    .card h3 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .75rem; }
+    .card ul { margin: 0 0 0 1.1rem; } .card li { font-size: .88rem; margin-bottom: .3rem; color: #374151; }
+    .comp-tabla { width: 100%; border-collapse: collapse; }
+    .comp-tabla th { background: #f8fafc; padding: .5rem .85rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+    .comp-tabla td { padding: .6rem .85rem; border-bottom: 1px solid #f1f5f9; font-size: .86rem; vertical-align: middle; }
+    .comp-tabla tr:last-child td { border-bottom: none; }
+    .comp-tabla tr:hover td { background: #fafbfc; }
+    .grado { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: .85rem; }
+    .g-A { background: #dcfce7; color: #15803d; } .g-B { background: #dbeafe; color: #1d4ed8; }
+    .tipo-badge { font-size: .72rem; font-weight: 600; padding: .15em .6em; border-radius: 99px; }
+    .tipo-T { background: #f1f5f9; color: #475569; } .tipo-L { background: #ede9fe; color: #5b21b6; }
+    .tipo-F { background: #e0f2fe; color: #0369a1; }
+    .alert-tip { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: .85rem 1rem; font-size: .86rem; color: #334155; margin-bottom: 1.25rem; }
+    .alert-tip strong { color: var(--navy); }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-logo">GH PRO</div>
+  <div class="topbar-title">Perfiles de cargo</div>
+  <div class="topbar-badge">Gerente General — Personal a cargo</div>
+  <a class="topbar-back" href="manual-periodo-prueba.html">← Manual</a>
+</div>
+<div class="hero">
+  <div class="hero-sup">Guía de evaluación · Personal a cargo</div>
+  <h1>Perfiles de competencias</h1>
+  <p>Las competencias exigidas para los líderes de proceso que evalúas directamente: Coordinadora GGHH/SST, Jefe logístico, Coordinador comercial y Contador.</p>
+  <div class="hero-meta">
+    <span><strong>4 cargos</strong> bajo tu evaluación</span>
+    <span><strong>Versión:</strong> Diccionario v2 · Nov 2026</span>
+  </div>
+</div>
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="verCargo('gghh',this)">Coordinadora GGHH/SST</button>
+    <button class="tab" onclick="verCargo('logistico',this)">Jefe logístico</button>
+    <button class="tab" onclick="verCargo('comercial',this)">Coordinador comercial</button>
+    <button class="tab" onclick="verCargo('contador',this)">Contador</button>
+  </div>
+
+  <div class="alert-tip">
+    💡 <strong>Para cargos de liderazgo</strong> el periodo de prueba evalúa algo diferente a los cargos operativos: no solo si saben hacer su trabajo, sino si tienen la <strong>capacidad real de dirigir personas y tomar decisiones</strong>. Fíjate en cómo manejan a su equipo desde el primer mes.
+  </div>
+
+  <!-- COORDINADORA GGHH -->
+  <div class="cargo-section visible" id="c-gghh">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Coordinadora de GGHH/SST</div>
+        <div class="cargo-obj">Dirige los procesos de gestión humana y el SG-SST, garantizando personal idóneo, comprometido y protegido conforme a la normatividad laboral.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Liderazgo</span>
+          <span class="tag-pill tag-perfil">Profesional Psicología / Administración · 2 años exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones clave a observar</h3>
+        <ul>
+          <li>Dirige selección, contratación e inducción de personal vía GH PRO</li>
+          <li>Administra nómina, seguridad social y prestaciones</li>
+          <li>Lidera evaluaciones de periodo de prueba y desempeño</li>
+          <li>Mantiene el SG-SST y el plan anual al día</li>
+          <li>Coordina y evalúa a su equipo de 6 personas</li>
+          <li>Presenta indicadores de gestión humana a Gerencia</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Los procesos de nómina y SS salen sin errores ni reprocesos?</li>
+          <li>¿El SG-SST avanza según el plan o solo existe en papel?</li>
+          <li>¿Su equipo trabaja con autonomía o depende de ella para todo?</li>
+          <li>¿Maneja los temas laborales con criterio jurídico o improvisa?</li>
+          <li>¿Lleva los indicadores de GH al día y los presenta con análisis?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Propone mejoras al proceso de GH sin que se le pidan. Va más allá del trámite.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los indicadores de rotación, ausentismo e incapacidades los presenta mensualmente con tendencia y análisis.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Cuando hay un error en nómina o un vencimiento de SS, lo detecta antes de que cause un problema legal.</td></tr>
+          <tr><td><strong>Liderazgo</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>Su equipo sabe qué se espera de cada uno. Ella da retroalimentación directa, no evita los conflictos.</td></tr>
+          <tr><td><strong>Planificación y control</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>El plan de trabajo de GH y SST está actualizado y se ejecuta, no solo se elabora.</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Maneja información disciplinaria, salarial y médica con absoluta reserva.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Cuando tienes una duda laboral o de SST, sus respuestas están soportadas en normatividad, no en intuición.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- JEFE LOGISTICO -->
+  <div class="cargo-section" id="c-logistico">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Jefe logístico</div>
+        <div class="cargo-obj">Coordina el despacho adecuado de la mercancía según las zonas establecidas, dirigiendo el equipo de bodega y distribución.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Logística y bodega</span>
+          <span class="tag-pill tag-nivel">Liderazgo</span>
+          <span class="tag-pill tag-perfil">Tecnólogo · 1 año exp. liderando equipos logísticos</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones clave a observar</h3>
+        <ul>
+          <li>Coordina cargue y despacho entre las 5:00 y 7:00 a.m. todos los días</li>
+          <li>Dirige al equipo de 5 auxiliares de bodega</li>
+          <li>Coordina pedidos con proveedores y gestiona devoluciones</li>
+          <li>Realiza inventario de fin de mes</li>
+          <li>Elabora informes diarios de zona (pedidos, flete, devoluciones)</li>
+          <li>Controla el estado de los vehículos de distribución</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El despacho sale siempre antes de las 7:00 a.m. sin intervención tuya?</li>
+          <li>¿Su equipo trabaja ordenado o hay caos en bodega cuando él está?</li>
+          <li>¿Los informes diarios de zona llegan sin que los tengas que pedir?</li>
+          <li>¿Detecta faltantes y problemas de inventario con anticipación?</li>
+          <li>¿Toma decisiones en campo o te consulta todo?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los indicadores de despacho (% entrega efectiva, devoluciones) los presenta con análisis de causa.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Cuando hay un error de despacho, lo reporta antes de que el cliente llame a reclamar.</td></tr>
+          <tr><td><strong>Liderazgo</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>El equipo de bodega trabaja con orden y claridad. No necesita supervisión constante para funcionar.</td></tr>
+          <tr><td><strong>Toma de decisiones</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>Resuelve imprevistos de ruta o bodega en el momento, sin esperar instrucciones tuyas para cada situación.</td></tr>
+          <tr><td><strong>Planificación y control</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>La programación de despacho del día siguiente está lista antes de las 5:00 a.m.</td></tr>
+          <tr><td><strong>Efectividad bajo presión</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>En los picos de operación (fin de mes, lunes) mantiene la operación sin que se desborde.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COORDINADOR COMERCIAL -->
+  <div class="cargo-section" id="c-comercial">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Coordinador comercial</div>
+        <div class="cargo-obj">Dirige de forma integral la operación de los proveedores asignados, desde la compra hasta la entrega efectiva al cliente.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Comercial</span>
+          <span class="tag-pill tag-nivel">Liderazgo</span>
+          <span class="tag-pill tag-perfil">Profesional Administración / Mercadeo · 2 años exp. en consumo masivo</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones clave a observar</h3>
+        <ul>
+          <li>Negocia condiciones comerciales con proveedores</li>
+          <li>Define y ejecuta la estrategia comercial del portafolio asignado</li>
+          <li>Hace seguimiento a indicadores: ventas, cobertura, devoluciones, cartera</li>
+          <li>Genera órdenes de compra y controla inventario</li>
+          <li>Dirige y evalúa a los supervisores comerciales</li>
+          <li>Presenta resultados a Gerencia mensualmente</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Llega a las reuniones con proveedores preparado y con datos?</li>
+          <li>¿Los supervisores bajo su cargo mejoran o se estancan?</li>
+          <li>¿Los indicadores del portafolio muestran tendencia positiva desde el primer mes?</li>
+          <li>¿Detecta problemas de cartera o inventario antes de que exploten?</li>
+          <li>¿Las presentaciones a Gerencia tienen análisis o solo números?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Defiende los intereses de la empresa en las negociaciones con proveedores sin ceder innecesariamente.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los indicadores del portafolio asignado tienen metas claras y él tiene un plan cuando se desvían.</td></tr>
+          <tr><td><strong>Liderazgo</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>Los supervisores entienden la estrategia y la ejecutan. Él no tiene que microgestionar cada zona.</td></tr>
+          <tr><td><strong>Toma de decisiones</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>Cuando hay una oportunidad o un riesgo comercial, actúa con criterio sin esperar tu aprobación para cada cosa.</td></tr>
+          <tr><td><strong>Análisis de información</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Las presentaciones a Gerencia identifican tendencias, no solo muestran lo que ya pasó.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Conoce el portafolio, los márgenes y el mercado mejor que los proveedores que lo visitan.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CONTADOR -->
+  <div class="cargo-section" id="c-contador">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Contador</div>
+        <div class="cargo-obj">Dirige el proceso contable y de tesorería, garantizando información financiera confiable, cumplimiento tributario y pago ordenado a proveedores y terceros.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Liderazgo</span>
+          <span class="tag-pill tag-perfil">Contador Público con tarjeta vigente · 2 años exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones clave a observar</h3>
+        <ul>
+          <li>Dirige el proceso contable: registros, conciliaciones y cierres</li>
+          <li>Presenta estados financieros e informes a Gerencia mensualmente</li>
+          <li>Liquida y presenta declaraciones tributarias en fechas exactas</li>
+          <li>Dirige la tesorería: pagos a proveedores y dispersión de nómina</li>
+          <li>Controla flujo de caja, saldos bancarios y conciliaciones</li>
+          <li>Atiende al revisor fiscal y la DIAN con la información correcta</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El cierre mensual sale en las fechas comprometidas sin reprocesos?</li>
+          <li>¿El calendario tributario lo cumple sin que lo tengas que recordar?</li>
+          <li>¿Los informes financieros que presenta tienen análisis o solo estados?</li>
+          <li>¿Detecta inconsistencias entre contabilidad e inventario antes del cierre?</li>
+          <li>¿Su equipo (cajero, cartera, auxiliar) trabaja con orden y criterio?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Cierres en fecha, declaraciones sin extemporaneidad, informes financieros listos el día acordado.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Alerta sobre vencimientos tributarios con anticipación, no el día anterior.</td></tr>
+          <tr><td><strong>Liderazgo</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-B">B</span></td><td>Su equipo contable trabaja con orden y criterio. Los errores del equipo los detecta él antes que tú.</td></tr>
+          <tr><td><strong>Planificación y control</strong></td><td><span class="tipo-badge tipo-L">Liderazgo</span></td><td><span class="grado g-A">A</span></td><td>El cronograma de cierre mensual existe, se cumple y el equipo lo conoce.</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>La información financiera de la empresa no sale del área sin autorización tuya.</td></tr>
+          <tr><td><strong>Integridad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Los pagos solo se ejecutan con soporte y aprobación. Nunca por fuera del proceso.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Cuando el revisor fiscal o la DIAN hacen requerimientos, los responde con precisión y sin demoras.</td></tr>
+          <tr><td><strong>Análisis de información</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Los informes financieros que presenta identifican tendencias y riesgos, no solo registran lo que ya pasó.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  function verCargo(id, btn) {
+    document.querySelectorAll('.cargo-section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('c-' + id).classList.add('visible');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

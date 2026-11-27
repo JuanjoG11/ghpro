@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfiles de cargo — Contador · GH PRO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --navy: #1a2332; --blue: #1d3a6e; --bg: #f4f6f9; --border: #e2e8f0; --muted: #64748b; --radius: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--navy); font-size: 14px; line-height: 1.6; }
+    .topbar { background: var(--navy); color: #fff; padding: .85rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .topbar-logo { font-weight: 800; } .topbar-title { font-size: .88rem; color: rgba(255,255,255,.65); }
+    .topbar-badge { background: rgba(255,255,255,.15); color: #fff; font-size: .75rem; padding: .2em .8em; border-radius: 99px; font-weight: 600; }
+    .topbar-back { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,.3); color: rgba(255,255,255,.8); font-size: .78rem; padding: .3rem .8rem; border-radius: 6px; text-decoration: none; }
+    .topbar-back:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .hero { background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%); color: #fff; padding: 2rem 2rem 1.5rem; }
+    .hero-sup { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.55); margin-bottom: .3rem; }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .3rem; }
+    .hero p { color: rgba(255,255,255,.7); font-size: .9rem; max-width: 600px; }
+    .hero-meta { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .hero-meta span { font-size: .82rem; color: rgba(255,255,255,.65); }
+    .hero-meta strong { color: #fff; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .tabs { display: flex; gap: .4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: .45rem 1.1rem; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: .84rem; font-weight: 500; cursor: pointer; color: var(--navy); transition: all .15s; }
+    .tab:hover { border-color: var(--navy); }
+    .tab.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: 600; }
+    .cargo-section { display: none; } .cargo-section.visible { display: block; }
+    .cargo-header { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .cargo-nombre { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+    .cargo-obj { font-size: .88rem; color: var(--muted); line-height: 1.5; max-width: 600px; }
+    .cargo-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+    .tag-pill { padding: .2em .75em; border-radius: 99px; font-size: .75rem; font-weight: 600; }
+    .tag-area { background: #dbeafe; color: #1e40af; } .tag-nivel { background: #f1f5f9; color: #475569; } .tag-perfil { background: #fef9c3; color: #854d0e; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    @media(max-width:700px){ .grid2 { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.1rem 1.25rem; }
+    .card h3 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .75rem; }
+    .card ul { margin: 0 0 0 1.1rem; } .card li { font-size: .88rem; margin-bottom: .3rem; color: #374151; }
+    .comp-tabla { width: 100%; border-collapse: collapse; }
+    .comp-tabla th { background: #f8fafc; padding: .5rem .85rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+    .comp-tabla td { padding: .6rem .85rem; border-bottom: 1px solid #f1f5f9; font-size: .86rem; vertical-align: middle; }
+    .comp-tabla tr:last-child td { border-bottom: none; }
+    .comp-tabla tr:hover td { background: #fafbfc; }
+    .grado { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: .85rem; }
+    .g-A { background: #dcfce7; color: #15803d; } .g-B { background: #dbeafe; color: #1d4ed8; }
+    .tipo-badge { font-size: .72rem; font-weight: 600; padding: .15em .6em; border-radius: 99px; }
+    .tipo-T { background: #f1f5f9; color: #475569; } .tipo-L { background: #ede9fe; color: #5b21b6; } .tipo-F { background: #e0f2fe; color: #0369a1; }
+    .alert-tip { background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: .85rem 1rem; font-size: .86rem; color: #1e40af; margin-bottom: 1.25rem; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-logo">GH PRO</div>
+  <div class="topbar-title">Perfiles de cargo</div>
+  <div class="topbar-badge">Contador — Personal a cargo</div>
+  <a class="topbar-back" href="manual-periodo-prueba.html">← Manual</a>
+</div>
+<div class="hero">
+  <div class="hero-sup">Guía de evaluación · Personal a cargo</div>
+  <h1>Perfiles de competencias</h1>
+  <p>Las competencias exigidas para el equipo contable que evalúas: Auxiliar contable, Analista de cartera y Cajero(a).</p>
+  <div class="hero-meta">
+    <span><strong>3 cargos</strong> bajo tu evaluación</span>
+    <span><strong>Versión:</strong> Diccionario v2 · Nov 2026</span>
+  </div>
+</div>
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="verCargo('auxiliar',this)">Auxiliar contable</button>
+    <button class="tab" onclick="verCargo('cartera',this)">Analista de cartera</button>
+    <button class="tab" onclick="verCargo('cajero',this)">Cajero(a) / Aux. de caja</button>
+  </div>
+
+  <div class="alert-tip">
+    💡 <strong>Para el equipo contable</strong> la competencia más crítica en periodo de prueba es <strong>integridad y confidencialidad</strong>. Manejan información financiera y dinero — una brecha aquí no tiene plan de mejora, tiene consecuencias inmediatas.
+  </div>
+
+  <!-- AUXILIAR CONTABLE -->
+  <div class="cargo-section visible" id="c-auxiliar">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Auxiliar contable</div>
+        <div class="cargo-obj">Apoya el proceso contable mediante el registro, causación y archivo de documentos financieros bajo la supervisión del Contador.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Técnico o tecnólogo en contabilidad · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Registra y causa documentos contables en el sistema</li>
+          <li>Apoya conciliaciones bancarias y de proveedores</li>
+          <li>Archiva soportes contables de forma organizada</li>
+          <li>Apoya la preparación de información para declaraciones tributarias</li>
+          <li>Verifica facturas de proveedores antes del pago</li>
+          <li>Apoya al Contador en el cierre mensual</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Los registros que hace tienen errores de causación frecuentes?</li>
+          <li>¿El archivo físico y digital está organizado sin que se lo exijas?</li>
+          <li>¿Detecta inconsistencias en facturas antes de pasártelas?</li>
+          <li>¿Maneja el software contable con fluidez desde el primer mes?</li>
+          <li>¿Guarda reserva sobre la información financiera que maneja?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida los documentos y soportes contables. Avisa si detecta algo inusual aunque no sea su responsabilidad.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Los registros están al día para el cierre mensual sin acumulaciones de última hora.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuando comete un error de registro, lo reporta de inmediato para corregirlo antes del cierre.</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>No comenta cifras, saldos ni información de proveedores fuera del área. No puede haber brecha aquí.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Los registros no tienen errores de NIT, cuenta o valor. Verifica antes de guardar.</td></tr>
+          <tr><td><strong>Integridad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>No modifica registros sin autorización. Reporta cualquier irregularidad que detecte.</td></tr>
+          <tr><td><strong>Credibilidad técnica</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>Maneja el software contable y Excel con fluidez suficiente para su rol desde las primeras semanas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ANALISTA CARTERA -->
+  <div class="cargo-section" id="c-cartera">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Analista de cartera</div>
+        <div class="cargo-obj">Gestiona el recaudo de la cartera de clientes, controla la cartera vencida y mantiene informado al Contador y a la Gerencia sobre el estado de los créditos.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Profesional / Analista</span>
+          <span class="tag-pill tag-perfil">Técnico o tecnólogo · Gestión de cartera · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Controla y gestiona el recaudo de la cartera de clientes</li>
+          <li>Genera informes de cartera vencida por asesor y zona</li>
+          <li>Coordina con los supervisores comerciales el cobro en campo</li>
+          <li>Registra pagos y aplica notas crédito en el sistema</li>
+          <li>Presenta al Contador el informe de cartera para el cierre</li>
+          <li>Gestiona acuerdos de pago con clientes en mora</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El informe de cartera vencida sale puntualmente cada semana?</li>
+          <li>¿Tiene iniciativa para contactar clientes en mora o espera instrucciones?</li>
+          <li>¿Los pagos los aplica el mismo día que ingresan?</li>
+          <li>¿Coordina con los supervisores comerciales de forma efectiva?</li>
+          <li>¿Maneja la información de crédito con absoluta discreción?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Gestiona los cobros con firmeza pero sin dañar la relación comercial con el cliente.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>La cartera vencida muestra tendencia a bajar bajo su gestión, no a crecer.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Alerta al Contador cuando detecta un cliente con señales de no pago, sin esperar a que venza.</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>No comenta el estado de crédito de un cliente con personas ajenas al proceso.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Los pagos aplicados coinciden exactamente con las facturas. No hay cruce de pagos entre clientes.</td></tr>
+          <tr><td><strong>Integridad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Los acuerdos de pago los reporta siempre al Contador. No los gestiona de forma informal.</td></tr>
+          <tr><td><strong>Análisis de información</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-B">B</span></td><td>El informe de cartera identifica patrones: qué zona, qué asesor y qué tipo de cliente genera más mora.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CAJERO -->
+  <div class="cargo-section" id="c-cajero">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Cajero(a) / Auxiliar de caja</div>
+        <div class="cargo-obj">Recibe, registra y custodia el efectivo y otros medios de pago, garantizando el cuadre diario de caja y el cumplimiento de los controles internos.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Dirección y administrativo</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Técnico · Manejo de efectivo · 6 meses exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Recibe y registra pagos de los Auxiliares logísticos al regresar de ruta</li>
+          <li>Realiza el cuadre de caja al cierre del día</li>
+          <li>Realiza consignaciones bancarias según lo programado</li>
+          <li>Reporta diferencias de caja al Contador de inmediato</li>
+          <li>Custodia el efectivo bajo llave durante el día</li>
+          <li>Apoya arqueos sorpresivos realizados por el Contador</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El cuadre de caja cierra exacto todos los días?</li>
+          <li>¿Cuando hay diferencias, las reporta antes del cierre o espera?</li>
+          <li>¿Custodia el efectivo correctamente, sin dejarlo expuesto?</li>
+          <li>¿Las consignaciones las realiza en los bancos y horarios establecidos?</li>
+          <li>¿Su actitud en los arqueos sorpresivos es transparente y colaboradora?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuando hay una diferencia en caja, la reporta antes de que se la descubras. No la oculta ni la intenta resolver solo.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>El cuadre de caja sale exacto de forma consistente. Las diferencias son excepcionales, no recurrentes.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Aplica protocolos de seguridad para el manejo de efectivo (no revelar montos, rutas de consignación).</td></tr>
+          <tr><td><strong>Confidencialidad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>No comenta con nadie los montos de caja ni las rutas de consignación. No puede haber brecha aquí.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>Cuenta el dinero dos veces antes de registrar. Los billetes falsos los detecta en el momento del recibo.</td></tr>
+          <tr><td><strong>Integridad</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-A">A</span></td><td>En los arqueos sorpresivos, el efectivo siempre coincide con el registrado. Actitud completamente transparente.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  function verCargo(id, btn) {
+    document.querySelectorAll('.cargo-section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('c-' + id).classList.add('visible');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

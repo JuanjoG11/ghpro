@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfiles de cargo — Supervisor comercial · GH PRO</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --navy: #1a2332; --blue: #1d3a6e; --accent: #2563eb; --ok: #16a34a; --warn: #d97706; --danger: #dc2626; --bg: #f4f6f9; --border: #e2e8f0; --muted: #64748b; --radius: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--navy); font-size: 14px; line-height: 1.6; }
+    .topbar { background: var(--navy); color: #fff; padding: .85rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    .topbar-logo { font-weight: 800; } .topbar-title { font-size: .88rem; color: rgba(255,255,255,.65); }
+    .topbar-badge { background: rgba(255,255,255,.15); color: #fff; font-size: .75rem; padding: .2em .8em; border-radius: 99px; font-weight: 600; }
+    .topbar-back { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,.3); color: rgba(255,255,255,.8); font-size: .78rem; padding: .3rem .8rem; border-radius: 6px; text-decoration: none; }
+    .topbar-back:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .hero { background: linear-gradient(135deg, #92400e 0%, #b45309 100%); color: #fff; padding: 2rem 2rem 1.5rem; }
+    .hero-sup { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.55); margin-bottom: .3rem; }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: .3rem; }
+    .hero p { color: rgba(255,255,255,.7); font-size: .9rem; max-width: 600px; }
+    .hero-meta { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .hero-meta span { font-size: .82rem; color: rgba(255,255,255,.65); }
+    .hero-meta strong { color: #fff; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .tabs { display: flex; gap: .4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: .45rem 1.1rem; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: .84rem; font-weight: 500; cursor: pointer; color: var(--navy); transition: all .15s; }
+    .tab:hover { border-color: var(--navy); }
+    .tab.active { background: #b45309; color: #fff; border-color: #b45309; font-weight: 600; }
+    .cargo-section { display: none; } .cargo-section.visible { display: block; }
+    .cargo-header { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .cargo-nombre { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+    .cargo-obj { font-size: .88rem; color: var(--muted); line-height: 1.5; max-width: 600px; }
+    .cargo-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+    .tag-pill { padding: .2em .75em; border-radius: 99px; font-size: .75rem; font-weight: 600; }
+    .tag-area { background: #fef3c7; color: #92400e; } .tag-nivel { background: #f1f5f9; color: #475569; } .tag-perfil { background: #fef9c3; color: #854d0e; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    @media(max-width:700px){ .grid2 { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.1rem 1.25rem; }
+    .card h3 { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .75rem; }
+    .card ul { margin: 0 0 0 1.1rem; } .card li { font-size: .88rem; margin-bottom: .3rem; color: #374151; }
+    .comp-tabla { width: 100%; border-collapse: collapse; }
+    .comp-tabla th { background: #f8fafc; padding: .5rem .85rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+    .comp-tabla td { padding: .6rem .85rem; border-bottom: 1px solid #f1f5f9; font-size: .86rem; vertical-align: middle; }
+    .comp-tabla tr:last-child td { border-bottom: none; }
+    .grado { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: .85rem; }
+    .g-A { background: #dcfce7; color: #15803d; } .g-B { background: #dbeafe; color: #1d4ed8; } .g-C { background: #fef9c3; color: #b45309; }
+    .tipo-badge { font-size: .72rem; font-weight: 600; padding: .15em .6em; border-radius: 99px; }
+    .tipo-T { background: #f1f5f9; color: #475569; } .tipo-F { background: #e0f2fe; color: #0369a1; } .tipo-C { background: #fce7f3; color: #9d174d; }
+    .alert-tip { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: .85rem 1rem; font-size: .86rem; color: #92400e; margin-bottom: 1.25rem; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-logo">GH PRO</div>
+  <div class="topbar-title">Perfiles de cargo</div>
+  <div class="topbar-badge">Supervisor comercial</div>
+  <a class="topbar-back" href="manual-periodo-prueba.html">← Manual</a>
+</div>
+<div class="hero">
+  <div class="hero-sup">Guía de evaluación · Personal a cargo</div>
+  <h1>Perfiles de competencias</h1>
+  <p>Las competencias exigidas para el equipo comercial que evalúas: Asesor, Supernumerario y Mercaderista.</p>
+  <div class="hero-meta">
+    <span><strong>3 cargos</strong> bajo tu evaluación</span>
+    <span><strong>Versión:</strong> Diccionario v2 · Nov 2026</span>
+  </div>
+</div>
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="verCargo('asesor',this)">Asesor(a) comercial</button>
+    <button class="tab" onclick="verCargo('supernumerario',this)">Supernumerario comercial</button>
+    <button class="tab" onclick="verCargo('mercaderista',this)">Mercaderista</button>
+  </div>
+
+  <div class="alert-tip">
+    💡 <strong>Clave para el equipo comercial:</strong> Los tres cargos tienen competencias similares, pero el Supernumerario debe dominar <strong>varias zonas</strong> y el Mercaderista se diferencia por su trabajo en <strong>punto de venta</strong>. Evalúa en el contexto correcto de cada cargo.
+  </div>
+
+  <!-- ASESOR -->
+  <div class="cargo-section visible" id="c-asesor">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Asesor(a) comercial</div>
+        <div class="cargo-obj">Ofrece al cliente productos de excelente calidad enfocados en un buen servicio, cumpliendo los indicadores de la zona asignada.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Comercial</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · Técnicas de venta · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Planea y ejecuta visitas a la mayor cantidad de clientes posible</li>
+          <li>Presenta portafolio, orienta sobre ofertas y toma pedido en dispositivo móvil</li>
+          <li>Cobra, enruta facturas y coordina con el Auxiliar logístico</li>
+          <li>Actualiza la maestra de clientes</li>
+          <li>Cumple presupuestos de ventas y maneja clientes de crédito</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Cubre el 100% de los clientes de la zona todos los días?</li>
+          <li>¿Actualiza la maestra de clientes sin que se lo recuerdes?</li>
+          <li>¿El dispositivo móvil lo maneja con fluidez desde la primera semana?</li>
+          <li>¿Tiene actitud de servicio genuina con los clientes?</li>
+          <li>¿El cuadre de dinero al final del día siempre cuadra?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida el dispositivo móvil y los materiales de trabajo. Defiende la imagen de la empresa con los clientes.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Resuelve las quejas del cliente en la visita, no las deja para después. Tiene actitud de solución.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Llega a los indicadores de cobertura y efectividad de la zona sin que lo estés empujando.</td></tr>
+          <tr><td><strong>Trabajo en equipo</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Coordina bien con el Auxiliar logístico para las entregas. Comparte información de zona con el equipo.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>El cuadre de dinero siempre cuadra. Si hay diferencias, las reporta antes de que se las descubras.</td></tr>
+          <tr><td><strong>Orientación comercial</strong></td><td><span class="tipo-badge tipo-C">Comercial</span></td><td><span class="grado g-B">B</span></td><td>Conoce el portafolio completo y las ofertas vigentes. Puede explicarle al cliente por qué comprar.</td></tr>
+          <tr><td><strong>Técnica de ventas</strong></td><td><span class="tipo-badge tipo-C">Comercial</span></td><td><span class="grado g-B">B</span></td><td>No solo toma el pedido que el cliente pide — sugiere referencias nuevas y explica los beneficios.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-C">C</span></td><td>Los pedidos en el dispositivo móvil no tienen errores de precio o cantidad recurrentes.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SUPERNUMERARIO -->
+  <div class="cargo-section" id="c-supernumerario">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Supernumerario comercial</div>
+        <div class="cargo-obj">Garantiza cobertura del 100% de las zonas en indicadores cuando realiza un reemplazo o acompaña la inducción de un asesor nuevo.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Comercial</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · Técnicas de venta · 1 año exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Cubre el 100% de los clientes de la zona asignada al reemplazar</li>
+          <li>Acompaña al asesor nuevo, le enseña portafolio y aplicativo</li>
+          <li>Presenta los clientes al asesor nuevo y los relaciona</li>
+          <li>Garantiza indicadores diarios/semanales/mensuales en la zona</li>
+          <li>Mantiene confiabilidad de la maestra de clientes</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿Puede cubrir cualquier zona sin necesitar una preparación larga?</li>
+          <li>¿Cuando acompaña a un asesor nuevo, lo capacita bien o solo lo lleva de paseo?</li>
+          <li>¿Los indicadores de la zona no caen cuando él está cubriendo?</li>
+          <li>¿Conoce el portafolio completo de todos los proveedores?</li>
+          <li>¿Se adapta rápido a zonas con tipos de clientes muy diferentes?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Se preocupa por dejar la zona bien cuando termina el reemplazo, no solo cumplir el día.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los clientes no sienten diferencia en el servicio cuando el asesor titular no está.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-A">A</span></td><td>Los indicadores de la zona no bajan durante el reemplazo. Si bajan, tiene un análisis de por qué.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Entrega la zona al asesor nuevo en el mismo estado o mejor que como la recibió.</td></tr>
+          <tr><td><strong>Orientación comercial</strong></td><td><span class="tipo-badge tipo-C">Comercial</span></td><td><span class="grado g-B">B</span></td><td>Conoce el portafolio de todos los proveedores sin necesitar consultarte.</td></tr>
+          <tr><td><strong>Técnica de ventas</strong></td><td><span class="tipo-badge tipo-C">Comercial</span></td><td><span class="grado g-B">B</span></td><td>Cuando capacita al asesor nuevo, le enseña el proceso de venta completo, no solo cómo usar el dispositivo.</td></tr>
+          <tr><td><strong>Atención al detalle</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-C">C</span></td><td>La maestra de clientes que deja actualizada no tiene errores de dirección o contacto.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MERCADERISTA -->
+  <div class="cargo-section" id="c-mercaderista">
+    <div class="cargo-header">
+      <div>
+        <div class="cargo-nombre">Mercaderista</div>
+        <div class="cargo-obj">Asesora al cliente y al consumidor final y promociona los productos en el punto de venta de supermercados.</div>
+        <div class="cargo-tags">
+          <span class="tag-pill tag-area">Comercial</span>
+          <span class="tag-pill tag-nivel">Auxiliar / Operativo</span>
+          <span class="tag-pill tag-perfil">Bachiller · Servicio al cliente · BPM · 6 meses exp.</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Funciones principales a observar</h3>
+        <ul>
+          <li>Impulsa productos y asesora en manejo de nevera, temperaturas y rotación</li>
+          <li>Mantiene limpios y ordenados los puntos de exhibición</li>
+          <li>Revisa nevera y controla vencimientos diariamente</li>
+          <li>Registra pedidos en dispositivo móvil</li>
+          <li>Mantiene control de cartera del punto de venta</li>
+          <li>Maneja material POP y cumple presupuesto de zona</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Lo que más debes observar en periodo de prueba</h3>
+        <ul>
+          <li>¿El punto de venta siempre está surtido y organizado cuando haces visita?</li>
+          <li>¿Detecta vencimientos antes de que el supermercado los devuelva?</li>
+          <li>¿Tiene actitud de ventas o solo ordena la nevera?</li>
+          <li>¿Aplica BPM en el manejo de los productos de cadena de frío?</li>
+          <li>¿Los pedidos que registra reflejan la demanda real del punto?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3>Competencias exigidas y conductas a observar</h3>
+      <table class="comp-tabla">
+        <thead><tr><th>Competencia</th><th>Tipo</th><th>Grado</th><th>¿Qué observar?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sentido de pertenencia</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuida la exhibición como si fuera su propio negocio. Defiende el espacio de la marca.</td></tr>
+          <tr><td><strong>Orientación al cliente</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Cuando el consumidor le pregunta algo del producto, responde con conocimiento y amabilidad.</td></tr>
+          <tr><td><strong>Orientación a resultados</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>El presupuesto de zona no cae por falta de gestión en el punto.</td></tr>
+          <tr><td><strong>Responsabilidad</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Llega al punto de venta a la hora acordada. No hay reclamaciones del supermercado por ausencia.</td></tr>
+          <tr><td><strong>Autocuidado</strong></td><td><span class="tipo-badge tipo-T">Transversal</span></td><td><span class="grado g-B">B</span></td><td>Aplica BPM en la manipulación de productos refrigerados. Revisa temperaturas.</td></tr>
+          <tr><td><strong>Orientación comercial</strong></td><td><span class="tipo-badge tipo-F">Funcional</span></td><td><span class="grado g-C">C</span></td><td>Conoce el portafolio que maneja y puede explicarle al comprador del supermercado por qué pedirlo.</td></tr>
+          <tr><td><strong>Técnica de ventas</strong></td><td><span class="tipo-badge tipo-C">Comercial</span></td><td><span class="grado g-A">A</span></td><td>Ofrece degustación, sugiere pedido basado en la rotación y el historial del punto. No espera a que le pidan.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  function verCargo(id, btn) {
+    document.querySelectorAll('.cargo-section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('c-' + id).classList.add('visible');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
