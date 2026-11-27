@@ -303,12 +303,14 @@ const EvalMod = {
       ciclo:ciclo_id (tipo, nombre)
     `).order('created_at', { ascending: false });
 
-    // GH ve todo; cualquier otro rol (lider, gerencia) solo ve las suyas
-    if (!esGH) {
+    // Si el usuario GH tiene evaluaciones asignadas (es también evaluador),
+    // ve solo las suyas en la bandeja — igual que un líder.
+    // Si no tiene ninguna asignada, ve todo (administrador puro).
+    const esGHAdmin = esGH && !u.es_evaluador;
+    if (!esGHAdmin) {
       if (u.id) {
         q = q.eq('evaluador_usuario_id', u.id);
       } else {
-        // Fallback: filtrar por nombre si aún no tiene id vinculado
         q = q.eq('evaluador_nombre', u.nombre);
       }
     }
